@@ -1,0 +1,5 @@
+2026-10-08 15:58:49,582 INFO Crawl started at 2026-10-08T10:28:49.582367+00:00
+2026-10-08 15:58:49,594 INFO Crawl limits: {'max_depth': 3, 'max_pages_per_source': 100, 'request_delay_seconds': 1.0, 'timeout_seconds': 15}; dry_run=True
+2026-10-08 15:58:49,594 INFO Source started: alapiedu (https://www.alapiedu.com/)
+2026-10-08 15:58:50,769 WARNING Request failed (GET) https://www.alapiedu.com/robots.txt: HTTP Error 404: Not Found
+2026-10-08 15:58:50,770 WARNING Robots policy unavailable; proceeding cautiously for https://www.alapiedu.com

@@ -1,0 +1,15 @@
+2026-10-08 14:54:27,287 INFO Crawl started at 2026-10-08T09:24:27.287075+00:00
+2026-10-08 14:54:27,297 INFO Crawl limits: {'max_depth': 3, 'max_pages_per_source': 100, 'request_delay_seconds': 1.0, 'timeout_seconds': 15}; dry_run=True
+2026-10-08 14:54:27,297 INFO Source started: alapiedu (https://www.alapiedu.com/)
+2026-10-08 14:54:27,834 WARNING Request failed (GET) https://www.alapiedu.com/robots.txt: HTTP Error 404: Not Found
+2026-10-08 14:54:27,835 WARNING Robots policy unavailable; proceeding cautiously for https://www.alapiedu.com
+2026-10-08 14:56:21,210 INFO Source alapiedu pages_visited=61
+2026-10-08 14:56:21,210 INFO Source alapiedu pages_skipped=0
+2026-10-08 14:56:21,210 INFO Source alapiedu candidates_discovered=1453
+2026-10-08 14:56:21,210 INFO Source alapiedu errors=1
+2026-10-08 14:56:21,210 INFO Source alapiedu navigation_pages_excluded=4
+2026-10-08 14:56:21,210 INFO Source alapiedu listing_pages_excluded=16
+2026-10-08 14:56:21,221 INFO Source alapiedu duplicates_skipped=0
+2026-10-08 14:56:21,221 INFO Source completed: alapiedu
+2026-10-08 14:56:21,224 INFO Crawl completed: candidates_to_add=1453 elapsed_seconds=113.94
+2026-10-08 14:56:21,224 INFO Log file: /home/WS/Documents/SinhalaMMLU/PipeLine/sinhala-corpus/corpus/logs/discovery/discovery_20261008T092427Z_191081.log

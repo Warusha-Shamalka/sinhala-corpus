@@ -1,0 +1,44 @@
+sources:
+  - id: e_thaksalawa
+    name: e-Thaksalawa
+    base_url: "https://e-thaksalawa.moe.gov.lk/lcms/"
+    type: educational_portal
+    country: Sri Lanka
+    language: si
+    enabled: true
+    priority: high
+    verified: true
+    notes: "Primary source identified in the SinhalaMMLU paper; official URL needs verification."
+
+  - id: nie
+    name: National Institute of Education
+    base_url: "https://www.nie.ac.lk/"
+    type: educational_institution
+    country: Sri Lanka
+    language: si
+    enabled: true
+    priority: high
+    verified: true
+    notes: "Sri Lankan educational institution included as an additional source; official URL needs verification."
+
+  # - id: ministry_of_education
+  #   name: Ministry of Education
+  #   base_url: ""
+  #   type: government_education
+  #   country: Sri Lanka
+  #   language: si
+  #   enabled: true
+  #   priority: high
+  #   verified: false
+  #   notes: "Additional government education source, reflecting the SinhalaMMLU paper's mention of other government educational websites; official URL needs verification."
+
+  - id: alapiedu
+    name: AlApiEdu
+    base_url: "https://www.alapiedu.com/"
+    type: educational_portal
+    country: Sri Lanka
+    language: si
+    enabled: true
+    priority: medium
+    verified: true
+    notes: "URL provided by the user; official status and Sinhala educational scope need verification."
