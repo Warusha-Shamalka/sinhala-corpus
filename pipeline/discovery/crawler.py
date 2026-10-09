@@ -4,12 +4,16 @@ from __future__ import annotations
 
 import argparse
 import csv
+import fcntl
+import json
+import math
 import logging
 import os
 import re
 import tempfile
 import time
 from collections import Counter, deque
+from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -48,7 +52,16 @@ CATALOG_COLUMNS = (
     "extraction_method", "ocr_required", "page_count", "quality_score",
     "pipeline_version", "last_processed", "error",
 )
-DOC_ID_PATTERN = re.compile(r"^LK-EDU-(\d+)$")
+DOC_ID_PATTERN = re.compile(r"^LK-EDU-(\d{6,})$")
+PILOTS_PATH = ROOT / "corpus" / "catalog" / "pilots.json"
+CATALOG_STATUSES = {
+    "DISCOVERED", "DOWNLOADED", "EXTRACTED", "CLEANED", "DEDUPLICATED", "VALIDATED", "READY",
+    "DOWNLOAD_FAILED", "EXTRACTION_FAILED", "OCR_FAILED", "QUALITY_FAILED", "DUPLICATE",
+}
+DOCUMENT_TYPES = {"textbook", "teacher_guide", "syllabus", "past_paper", "marking_scheme",
+                  "lesson", "article", "workbook", "other"}
+ARTIFACT_STATUSES = {"DOWNLOADED", "EXTRACTED", "CLEANED", "DEDUPLICATED", "VALIDATED", "READY"}
+
 
 
 class CatalogError(Exception):
@@ -136,15 +149,96 @@ def _validate_range(details: dict, context: str) -> None:
         raise ValueError(f"Invalid grade range for {context}")
 
 
-def read_catalog(path: Path = CATALOG_PATH) -> list[dict[str, str]]:
+def _pilot_titles() -> dict[str, str]:
+    try:
+        data = json.loads(PILOTS_PATH.read_text(encoding="utf-8"))
+        if data.get("schema_version") != "pilot-annotations-1" or not isinstance(data.get("pilots"), list):
+            raise ValueError("invalid schema")
+        titles = {}
+        for item in data["pilots"]:
+            doc_id, title = item["doc_id"], item["title"]
+            if not isinstance(doc_id, str) or not DOC_ID_PATTERN.fullmatch(doc_id) or not isinstance(title, str) or not title.strip() or doc_id in titles:
+                raise ValueError("invalid or duplicate pilot annotation")
+            titles[doc_id] = title
+        return titles
+    except (OSError, ValueError, KeyError, TypeError, AttributeError) as exc:
+        raise CatalogError(f"Could not read pilot annotations: {exc}") from exc
+
+
+def _validate_rows(records: list[dict[str, str]], *, allow_pilots: bool) -> None:
+    pilots = _pilot_titles() if allow_pilots else {}
+    ids, urls = set(), set()
+    for index, row in enumerate(records, start=2):
+        def reject(reason: str) -> None:
+            raise CatalogError(f"Catalog row {index}: {reason}")
+
+        if any(not isinstance(value, str) for value in row.values()):
+            reject("missing or extra CSV fields")
+        doc_id = row.get("doc_id", "")
+        if not DOC_ID_PATTERN.fullmatch(doc_id) or int(doc_id.rsplit("-", 1)[1]) < 1:
+            reject("invalid doc_id")
+        if doc_id in ids:
+            reject(f"duplicate doc_id {doc_id}")
+        ids.add(doc_id)
+        if not row.get("title", "").strip():
+            reject("title is required")
+        status = row.get("status", "")
+        if status not in CATALOG_STATUSES:
+            reject(f"unknown status {status!r}")
+        if row.get("document_type", "") not in DOCUMENT_TYPES:
+            reject("unknown document_type")
+        raw_url = row.get("source_url", "")
+        url = normalize_url(raw_url)
+        is_pilot = status == "DISCOVERED" and pilots.get(doc_id) == row["title"]
+        if raw_url and not url:
+            reject("source_url must be a valid HTTP(S) URL")
+        if not is_pilot and (not url or not row.get("source", "").strip()):
+            reject("source and source_url are required outside annotated pilots")
+        if url:
+            if url in urls:
+                reject("duplicate normalized source_url")
+            urls.add(url)
+        sha = row.get("sha256", "")
+        if sha and not re.fullmatch(r"[0-9a-f]{64}", sha):
+            reject("sha256 must be 64 lowercase hexadecimal characters")
+        if status in ARTIFACT_STATUSES and (not sha or not row.get("local_filename", "")):
+            reject("processed states require raw artifact path and sha256")
+        for field in ("publication_year", "exam_year", "page_count"):
+            value = row.get(field, "")
+            if value and (not value.isascii() or not value.isdigit() or int(value) < 1):
+                reject(f"{field} must be a positive integer or empty")
+        grade = row.get("grade", "")
+        if grade:
+            match = re.fullmatch(r"([1-9]|1[0-3])(?:-([1-9]|1[0-3]))?", grade)
+            if not match or int(match[1]) > int(match[2] or match[1]):
+                reject("grade must be a valid grade or ascending range")
+        value = row.get("quality_score", "")
+        if value:
+            try:
+                if not math.isfinite(float(value)):
+                    reject("quality_score must be finite")
+            except ValueError:
+                reject("quality_score must be numeric or empty")
+        if row.get("ocr_required", "") not in {"", "true", "false"}:
+            reject("ocr_required must be empty, true or false")
+
+
+def _read_catalog(path: Path) -> tuple[list[str], list[dict[str, str]]]:
     try:
         with path.open("r", newline="", encoding="utf-8-sig") as stream:
-            reader = csv.DictReader(stream)
-            if reader.fieldnames is None or not set(CATALOG_COLUMNS).issubset(reader.fieldnames):
-                raise CatalogError("documents.csv is missing one or more expected columns")
-            return [dict(row) for row in reader]
-    except (OSError, csv.Error) as exc:
+            reader = csv.DictReader(stream, strict=True)
+            header = reader.fieldnames
+            if header is None or len(set(header)) != len(header) or not set(CATALOG_COLUMNS).issubset(header):
+                raise CatalogError("documents.csv has duplicate or missing expected columns")
+            records = list(reader)
+        _validate_rows(records, allow_pilots=True)
+        return header, records
+    except (OSError, UnicodeError, csv.Error) as exc:
         raise CatalogError(f"Could not safely read documents.csv: {exc}") from exc
+
+
+def read_catalog(path: Path = CATALOG_PATH) -> list[dict[str, str]]:
+    return _read_catalog(path)[1]
 
 
 def catalog_url_set(records: list[dict[str, str]]) -> set[str]:
@@ -177,30 +271,77 @@ def assign_ids(candidates: list[dict[str, str]], existing: list[dict[str, str]])
     return output
 
 
-def append_catalog(path: Path, new_records: list[dict[str, str]]) -> None:
-    """Atomically append records after validating and preserving the schema/data."""
-    existing = read_catalog(path)
-    with path.open("r", newline="", encoding="utf-8-sig") as stream:
-        header = next(csv.reader(stream), None)
-    if header is None or not set(CATALOG_COLUMNS).issubset(header):
-        raise CatalogError("documents.csv header changed before append")
-    path.parent.mkdir(parents=True, exist_ok=True)
-    fd, temp_name = tempfile.mkstemp(prefix=f".{path.name}.", suffix=".tmp", dir=path.parent)
-    try:
-        with os.fdopen(fd, "w", newline="", encoding="utf-8") as stream:
-            writer = csv.DictWriter(stream, fieldnames=header, extrasaction="ignore")
-            writer.writeheader()
-            writer.writerows(existing)
-            writer.writerows(new_records)
-            stream.flush()
-            os.fsync(stream.fileno())
-        os.replace(temp_name, path)
-    except Exception:
+@contextmanager
+def _catalog_lock(path: Path, timeout: float):
+    """Lock a stable sidecar inode; replacing the CSV must not replace its lock."""
+    if not math.isfinite(timeout) or timeout < 0:
+        raise CatalogError("Catalog lock timeout must be finite and nonnegative")
+    lock_path = path.with_name(f".{path.name}.lock")
+    with lock_path.open("a", encoding="utf-8") as lock:
+        deadline = time.monotonic() + timeout
+        while True:
+            try:
+                fcntl.flock(lock.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+                break
+            except BlockingIOError:
+                if time.monotonic() >= deadline:
+                    raise CatalogError(f"Timed out waiting for catalog lock: {lock_path}")
+                time.sleep(min(0.05, max(0, deadline - time.monotonic())))
         try:
-            os.unlink(temp_name)
-        except OSError:
-            pass
-        raise
+            yield
+        finally:
+            fcntl.flock(lock.fileno(), fcntl.LOCK_UN)
+
+
+def append_catalog(path: Path, new_records: list[dict[str, str]], *, lock_timeout: float = 10.0) -> list[dict[str, str]]:
+    """Commit discovery candidates under a lock and return only committed rows.
+
+    Incoming IDs are previews only. Allocate real IDs from the locked snapshot.
+    Existing metadata and extension columns are preserved; duplicates are skipped.
+    """
+    path = path.resolve()
+    with _catalog_lock(path, lock_timeout):
+        header, existing = _read_catalog(path)
+        urls = catalog_url_set(existing)
+        candidates = []
+        allowed_fields = set(header) | {"_candidate_score", "_candidate_reasons", "_language_hint"}
+        for candidate in new_records:
+            if not isinstance(candidate, dict) or set(candidate) - allowed_fields:
+                raise CatalogError("Discovery candidate has unknown fields")
+            if any(not isinstance(value, str) for value in candidate.values()):
+                raise CatalogError("Discovery candidate values must be strings")
+            if candidate.get("status", "DISCOVERED") != "DISCOVERED":
+                raise CatalogError("Only DISCOVERED candidates can be appended")
+            url = normalize_url(candidate.get("source_url", ""))
+            if not url or not candidate.get("source", "").strip() or not candidate.get("title", "").strip():
+                raise CatalogError("Discovery candidates require title, source and valid HTTP(S) source_url")
+            if url in urls:
+                continue
+            urls.add(url)
+            row = {key: value for key, value in candidate.items() if key in header}
+            row["source_url"] = url
+            candidates.append(row)
+        rows = assign_ids(candidates, existing)
+        _validate_rows(rows, allow_pilots=False)
+        if not rows:
+            return []
+        fd, temp_name = tempfile.mkstemp(prefix=f".{path.name}.", suffix=".tmp", dir=path.parent)
+        try:
+            with os.fdopen(fd, "w", newline="", encoding="utf-8") as stream:
+                writer = csv.DictWriter(stream, fieldnames=header)
+                writer.writeheader()
+                writer.writerows(existing)
+                writer.writerows(rows)
+                stream.flush()
+                os.fsync(stream.fileno())
+            os.replace(temp_name, path)
+        except Exception:
+            try:
+                os.unlink(temp_name)
+            except OSError:
+                pass
+            raise
+        return rows
 
 
 def create_logger() -> tuple[logging.Logger, Path]:
@@ -393,7 +534,7 @@ def run(args: argparse.Namespace) -> int:
     logger.info("Crawl started at %s", datetime.now(timezone.utc).isoformat())
     try:
         sources, subjects_config = load_configuration()
-        existing = read_catalog()
+        existing = read_catalog(CATALOG_PATH)
     except (OSError, ValueError, yaml.YAMLError, CatalogError) as exc:
         logger.error("Configuration/catalog validation failed: %s", exc)
         return 2
@@ -499,7 +640,7 @@ def run(args: argparse.Namespace) -> int:
             row.pop("_candidate_reasons", None)
             row.pop("_language_hint", None)
         try:
-            append_catalog(CATALOG_PATH, rows)
+            rows = append_catalog(CATALOG_PATH, rows)
         except (OSError, CatalogError, csv.Error) as exc:
             logger.error("Catalog append failed; no successful update reported: %s", exc)
             return 2

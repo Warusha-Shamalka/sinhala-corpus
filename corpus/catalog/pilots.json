@@ -1,0 +1,46 @@
+{
+  "schema_version": "pilot-annotations-1",
+  "purpose": "Intended pilot documents from the supplied project handover; missing provenance is not download eligibility.",
+  "pilots": [
+    {
+      "doc_id": "LK-EDU-000001",
+      "title": "Grade 6 History",
+      "provenance_state": "AWAITING_SOURCE_URL"
+    },
+    {
+      "doc_id": "LK-EDU-000002",
+      "title": "Grade 7 History",
+      "provenance_state": "AWAITING_SOURCE_URL"
+    },
+    {
+      "doc_id": "LK-EDU-000003",
+      "title": "Grade 10 History",
+      "provenance_state": "AWAITING_SOURCE_URL"
+    },
+    {
+      "doc_id": "LK-EDU-000004",
+      "title": "O/L History past paper",
+      "provenance_state": "AWAITING_SOURCE_URL"
+    },
+    {
+      "doc_id": "LK-EDU-000005",
+      "title": "Grade 10 Sinhala Language and Literature",
+      "provenance_state": "AWAITING_SOURCE_URL"
+    },
+    {
+      "doc_id": "LK-EDU-000006",
+      "title": "Grade 11 Business and Accounting Studies",
+      "provenance_state": "AWAITING_SOURCE_URL"
+    },
+    {
+      "doc_id": "LK-EDU-000007",
+      "title": "A/L Economics",
+      "provenance_state": "AWAITING_SOURCE_URL"
+    },
+    {
+      "doc_id": "LK-EDU-000008",
+      "title": "A/L Political Science",
+      "provenance_state": "AWAITING_SOURCE_URL"
+    }
+  ]
+}

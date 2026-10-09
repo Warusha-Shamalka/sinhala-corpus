@@ -140,6 +140,8 @@ Keep configuration, code, and documentation changes explicit. Avoid large accide
 
 ## Additional documentation
 
+See [the project TODO list](docs/TODO.md) for completed milestones and remaining work.
+
 The main handoff and continuation guide is in:
 
 - `docs/PIPELINE_GUIDE.md`
