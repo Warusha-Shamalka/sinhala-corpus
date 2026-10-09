@@ -146,7 +146,7 @@ class URLAndParserRegressionTests(unittest.TestCase):
             error_count = 0
             requested = []
 
-            def __init__(self, *args):
+            def __init__(self, *args, **kwargs):
                 pass
 
             def robots_allowed(self, url):
