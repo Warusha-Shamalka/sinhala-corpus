@@ -198,7 +198,7 @@ class CatalogTests(unittest.TestCase):
         class FakeFetcher:
             requested = []
 
-            def __init__(self, delay, timeout, logger):
+            def __init__(self, delay, timeout, logger, **kwargs):
                 self.error_count = 0
 
             def robots_allowed(self, url):
