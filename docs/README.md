@@ -6,6 +6,8 @@ Read in this order:
 
 Implementation update: the [9 October discovery validation results](DISCOVERY_VALIDATION_RESULTS.md) document completed fixes and current verification. The original current-state review below remains a dated baseline rather than a claim that every listed defect is still open.
 
+The subsequent [catalog integrity results](CATALOG_INTEGRITY_RESULTS.md) describe transaction-safe local discovery appends and row validation.
+
 | Document | Purpose |
 | --- | --- |
 | [CURRENT_STATE_REVIEW.md](CURRENT_STATE_REVIEW.md) | What exists, measured progress, limitations, and confirmed bugs |

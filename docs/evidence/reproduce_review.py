@@ -60,8 +60,8 @@ def main() -> None:
         with catalog.open("w", newline="", encoding="utf-8") as stream:
             writer = csv.DictWriter(stream, fieldnames=crawler.CATALOG_COLUMNS)
             writer.writeheader()
-        first = crawler.assign_ids([{"source_url": "https://school.test/a.pdf"}], [])
-        stale = crawler.assign_ids([{"source_url": "https://school.test/b.pdf"}], [])
+        first = crawler.assign_ids([{"source_url": "https://school.test/a.pdf", "title": "Resource A", "source": "School", "document_type": "other"}], [])
+        stale = crawler.assign_ids([{"source_url": "https://school.test/b.pdf", "title": "Resource B", "source": "School", "document_type": "other"}], [])
         crawler.append_catalog(catalog, first)
         crawler.append_catalog(catalog, stale)
         report["stale_writer_ids"] = [row["doc_id"] for row in crawler.read_catalog(catalog)]

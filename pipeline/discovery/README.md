@@ -40,4 +40,4 @@ Available options are `--source`, `--max-pages`, `--max-depth`, `--delay`, `--ti
 - Robots retrieval failures are logged and treated as unavailable policy; verify the site's terms and robots guidance before enabling a source.
 - No PDFs or other files are downloaded; there is no OCR, extraction, deduplication by file hash, dataset building, RAG, or downloader implementation in this stage.
 
-The 9 October implementation and exact test/live-run results are recorded in [DISCOVERY_VALIDATION_RESULTS.md](../../docs/DISCOVERY_VALIDATION_RESULTS.md). Catalog atomic replacement still requires a separate concurrency/integrity fix before competing normal-mode writers are safe.
+The discovery implementation and test/live-run results are recorded in [DISCOVERY_VALIDATION_RESULTS.md](../../docs/DISCOVERY_VALIDATION_RESULTS.md). Subsequent [catalog integrity work](../../docs/CATALOG_INTEGRITY_RESULTS.md) adds a cooperative local POSIX lock covering validation, deduplication, ID allocation and atomic replacement. Drive-mounted multi-writer semantics remain unsupported.

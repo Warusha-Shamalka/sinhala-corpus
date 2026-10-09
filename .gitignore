@@ -52,6 +52,7 @@ secrets.*
 *.orig
 *.rej
 *.log
+corpus/catalog/.*.lock
 **/logs/**/*.log
 **/tmp/
 **/temp/
