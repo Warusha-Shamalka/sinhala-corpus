@@ -1,5 +1,7 @@
 # Purpose
 
+`discovery_review.py` implements offline sampling and reporting for independent discovery-candidate review. Other corpus content-quality validation remains planned. See [DISCOVERY_REVIEW_GUIDE.md](../../docs/DISCOVERY_REVIEW_GUIDE.md) for commands, labeling rules and statistical limits.
+
 This directory is reserved for quality-assessment workflows.
 
 # Contents

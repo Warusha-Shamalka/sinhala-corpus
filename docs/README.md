@@ -13,6 +13,7 @@ The latest [discovery reliability and audit results](DISCOVERY_AUDIT_RESULTS.md)
 | Document | Purpose |
 | --- | --- |
 | [TODO.md](TODO.md) | Completed milestones and the ordered remaining checklist |
+| [DISCOVERY_REVIEW_GUIDE.md](DISCOVERY_REVIEW_GUIDE.md) | Label the generated candidate sample and calculate quality reports |
 | [CURRENT_STATE_REVIEW.md](CURRENT_STATE_REVIEW.md) | What exists, measured progress, limitations, and confirmed bugs |
 | [IMPLEMENTATION_BACKLOG.md](IMPLEMENTATION_BACKLOG.md) | Ordered work, proposed branches, dependencies, and acceptance criteria |
 | [COMPETITION_COMPLIANCE.md](COMPETITION_COMPLIANCE.md) | Rules supplied by the team, data separation, parameter accounting, and reproducibility |

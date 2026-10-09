@@ -31,12 +31,16 @@ Updated: 9 October 2026. This checklist tracks implemented work separately from 
 - [x] Reject/report truncated and undecodable HTML/robots responses.
 - [x] Persist decision evidence and run summaries with honest source outcomes/exit codes.
 - [x] Pass all 63 tests and verify the audit on a bounded live dry run.
+- [x] Build reproducible stratified candidate sampling and reports that require independent review labels.
+- [x] Prepare an 80-row AlApiEdu review sample, with labels blank and the quality gate pending.
+- [x] Pass all 73 tests, including 10 review-tool tests.
 
 Verification details: [discovery results](DISCOVERY_VALIDATION_RESULTS.md) and [catalog integrity results](CATALOG_INTEGRITY_RESULTS.md). The small fixed examples are regression checks, not a real-source quality audit. Locking is verified on a local POSIX filesystem, not for concurrent Drive-mounted writers.
 
 ## Next: finish discovery reliability
 
-- [ ] Review/commit the discovery reliability checkpoint on `feat/discovery-audit`, then merge into `dev`.
+- [ ] Bring the discovery-audit implementation already merged into `main` into `dev`; refreshed `origin/dev` still lacks it.
+- [ ] Review/commit `feat/discovery-quality` after its prerequisite is present in `dev`.
 - [ ] Add resource-local evidence for generic download links without inheriting unrelated page context.
 - [ ] Extend reviewed Sinhala aliases and explicit grade/level forms without merging distinct subjects.
 - [ ] Add an explicit mapping between project taxonomy and benchmark taxonomy; keep grade targets separate from verified curriculum facts.
