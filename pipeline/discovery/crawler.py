@@ -10,10 +10,11 @@ import re
 import tempfile
 import time
 from collections import Counter, deque
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from urllib.error import HTTPError, URLError
-from urllib.parse import urljoin, urlsplit
+from urllib.parse import urlsplit
 from urllib.request import HTTPRedirectHandler, Request, build_opener
 from urllib.robotparser import RobotFileParser
 
@@ -23,6 +24,7 @@ from .filters import (
     should_crawl,
     is_within_domain,
     normalize_url,
+    resolve_url,
 )
 from .parser import Link, evaluate_link, parse_html
 
@@ -61,7 +63,7 @@ class _DomainRedirectHandler(HTTPRedirectHandler):
         self.base_url = base_url
 
     def redirect_request(self, req, fp, code, msg, headers, newurl):
-        target = normalize_url(urljoin(req.full_url, newurl))
+        target = resolve_url(req.full_url, newurl)
         if not target or not is_within_domain(target, self.base_url):
             raise HTTPError(req.full_url, code, "redirect outside configured source domain", headers, fp)
         return super().redirect_request(req, fp, code, msg, headers, target)
@@ -75,12 +77,63 @@ def load_configuration() -> tuple[list[dict], dict]:
         sources_data = yaml.safe_load(stream) or {}
     with SUBJECTS_PATH.open(encoding="utf-8") as stream:
         subjects_config = yaml.safe_load(stream) or {}
+    if not isinstance(sources_data, dict) or not isinstance(subjects_config, dict):
+        raise ValueError("Source and subject configurations must be mappings")
     sources = sources_data.get("sources")
     if not isinstance(sources, list):
         raise ValueError("configs/sources.yaml must contain a 'sources' list")
     if not isinstance(subjects_config.get("domains"), dict):
         raise ValueError("configs/subjects.yaml must contain a 'domains' mapping")
+    ids = set()
+    for source in sources:
+        if not isinstance(source, dict) or not isinstance(source.get("id"), str) or not source["id"]:
+            raise ValueError("Every source requires a nonempty string id")
+        if source["id"] in ids:
+            raise ValueError(f"Duplicate source id: {source['id']}")
+        ids.add(source["id"])
+        for flag in ("enabled", "verified"):
+            if type(source.get(flag)) is not bool:
+                raise ValueError(f"Source {source['id']} requires boolean {flag}")
+        base_url = source.get("base_url", "")
+        if not isinstance(base_url, str) or (base_url and not normalize_url(base_url)) or (
+            source["enabled"] and source["verified"] and not base_url
+        ):
+            raise ValueError(f"Source {source['id']} requires a valid HTTP(S) base_url")
+    for domain, details in subjects_config["domains"].items():
+        if not isinstance(details, dict) or not isinstance(details.get("subjects"), list):
+            raise ValueError(f"Domain {domain} requires a subjects list")
+        for subject in details["subjects"]:
+            if not isinstance(subject, dict) or not isinstance(subject.get("name"), str) or not subject["name"]:
+                raise ValueError(f"Domain {domain} contains an invalid subject")
+            _validate_aliases(subject.get("aliases", []), f"subject {subject['name']}")
+            _validate_range(subject, f"subject {subject['name']}")
+    levels = subjects_config.get("education_levels")
+    if not isinstance(levels, dict):
+        raise ValueError("education_levels must be a mapping")
+    for level, details in levels.items():
+        if not isinstance(details, dict):
+            raise ValueError(f"Invalid education level: {level}")
+        _validate_range(details, f"level {level}")
+        _validate_aliases(details.get("aliases", []), f"level {level}")
+    markers = subjects_config.get("grade_markers", {})
+    if not isinstance(markers, dict):
+        raise ValueError("grade_markers must be a mapping")
+    for position, values in markers.items():
+        if position not in {"before_number", "after_number"}:
+            raise ValueError(f"Unknown grade marker position: {position}")
+        _validate_aliases(values, f"grade markers {position}")
     return sources, subjects_config
+
+
+def _validate_aliases(values: object, context: str) -> None:
+    if not isinstance(values, list) or any(not isinstance(value, str) or not value.strip() for value in values):
+        raise ValueError(f"{context} aliases/markers must be a list of nonempty strings")
+
+
+def _validate_range(details: dict, context: str) -> None:
+    low, high = details.get("grade_min"), details.get("grade_max")
+    if type(low) is not int or type(high) is not int or not 1 <= low <= high <= 13:
+        raise ValueError(f"Invalid grade range for {context}")
 
 
 def read_catalog(path: Path = CATALOG_PATH) -> list[dict[str, str]]:
@@ -167,6 +220,12 @@ def create_logger() -> tuple[logging.Logger, Path]:
     return logger, log_path
 
 
+@dataclass(frozen=True)
+class FetchedPage:
+    html: str
+    final_url: str
+
+
 class PoliteFetcher:
     def __init__(self, delay: float, timeout: float, logger: logging.Logger) -> None:
         self.delay = delay
@@ -220,7 +279,7 @@ class PoliteFetcher:
             self.robots[origin] = parser
         return self.robots[origin].can_fetch(USER_AGENT, url)
 
-    def fetch_html(self, url: str, base_url: str) -> str | None:
+    def fetch_html(self, url: str, base_url: str) -> FetchedPage | None:
         response = self._request(url, base_url)
         if response is None:
             return None
@@ -234,8 +293,8 @@ class PoliteFetcher:
                 self.logger.info("Skipped non-HTML response (%s): %s", content_type, url)
                 return None
             charset = response.headers.get_content_charset() or "utf-8"
-            return response.read(2_000_000).decode(charset, errors="replace")
-        except (OSError, LookupError, UnicodeError) as exc:
+            return FetchedPage(response.read(2_000_000).decode(charset, errors="replace"), final_url)
+        except (OSError, LookupError, UnicodeError, ValueError) as exc:
             self.error_count += 1
             self.logger.warning("Could not read HTML page %s: %s", url, exc)
             return None
@@ -267,7 +326,7 @@ def discover_source(
 
     def process_link(link: Link, page_title: str, page_url: str) -> None:
         candidate, decision = evaluate_link(link, page_title, page_url, source, subjects_config)
-        candidate_url = normalize_url(urljoin(page_url, link.href))
+        candidate_url = resolve_url(page_url, link.href)
         if candidate and is_within_domain(candidate["source_url"], base_url):
             candidate_by_url.setdefault(candidate["source_url"], candidate)
         elif candidate_url and is_within_domain(candidate_url, base_url):
@@ -290,15 +349,20 @@ def discover_source(
             stats["pages_skipped"] += 1
             continue
         stats["pages_visited"] += 1
-        html = fetcher.fetch_html(page_url, base_url)
-        if html is None:
+        fetched = fetcher.fetch_html(page_url, base_url)
+        if fetched is None:
             stats["pages_skipped"] += 1
             continue
-        page = parse_html(html)
+        final_url = fetched.final_url
+        if final_url != page_url and final_url in visited:
+            continue
+        visited.add(final_url)
+        page_url = final_url
+        page = parse_html(fetched.html)
         process_link(Link(href=page_url, text=page.title), page.title, page_url)
         for link in page.links:
             process_link(link, page.title, page_url)
-            target = normalize_url(urljoin(page_url, link.href))
+            target = resolve_url(page_url, link.href)
             if not target or not is_within_domain(target, base_url) or target in visited:
                 continue
             if depth >= limits["max_depth"] or not should_crawl(target):
@@ -433,6 +497,7 @@ def run(args: argparse.Namespace) -> int:
         for row in rows:
             row.pop("_candidate_score", None)
             row.pop("_candidate_reasons", None)
+            row.pop("_language_hint", None)
         try:
             append_catalog(CATALOG_PATH, rows)
         except (OSError, CatalogError, csv.Error) as exc:

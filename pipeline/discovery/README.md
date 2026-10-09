@@ -14,6 +14,10 @@ Page traversal is deliberately independent from catalog decisions: same-domain H
 
 ## Catalog updates
 
+URLs must be HTTP(S), without credentials or malformed hosts/ports. Spaces and Unicode URL paths are percent-encoded while existing escapes/query semantics are retained. Relative links resolve against the final redirected page URL. Script, style and template content cannot supply candidate evidence.
+
+Subject `aliases` are optional lists in `configs/subjects.yaml`; specific contained names take precedence, while independent subject mentions remain ambiguous. Eight initial Sinhala aliases are configured without merging distinct taxonomy labels. `grade_markers.before_number` and `after_number` configure grade labels, and education-level `aliases` configure Sinhala/English level phrases. Explicit grade ranges are retained; incompatible grades/levels stay unknown. Source-wide language is exposed only as an internal `_language_hint`; the candidate's catalog `language` remains blank until document validation.
+
 The existing CSV header is checked against the expected catalog columns before use. Existing normalized `source_url` values are excluded, IDs continue from the highest existing `LK-EDU-NNNNNN` number, and new rows are written with `status=DISCOVERED`. Unavailable metadata, hashes, years, licenses, and local-file fields remain empty. Normal-mode updates preserve existing rows and replace the catalog atomically after writing a complete CSV.
 
 ## Usage
@@ -30,8 +34,10 @@ Available options are `--source`, `--max-pages`, `--max-depth`, `--delay`, `--ti
 ## Limitations and deliberate omissions
 
 - The crawler does not run unless a source has a configured URL and `verified: true`. Current unverified sources are skipped by design.
-- Subject recognition matches configured English subject names; Sinhala aliases must be explicitly added to configuration to be recognized.
-- Grade extraction requires explicit “Grade N” or “Class N” text. Resource links without useful anchor/page metadata may remain unclassified or be missed.
+- Subject recognition matches configured names and aliases; Sinhala coverage is partial and needs reviewed extensions.
+- Grade extraction requires explicit configured labels or level phrases. Generic links lacking local resource evidence may remain unclassified; broad page titles are not inherited automatically.
 - Some websites omit or mislabel HTML content types; non-HTML/unknown content types are skipped rather than risk reading a document.
 - Robots retrieval failures are logged and treated as unavailable policy; verify the site's terms and robots guidance before enabling a source.
 - No PDFs or other files are downloaded; there is no OCR, extraction, deduplication by file hash, dataset building, RAG, or downloader implementation in this stage.
+
+The 9 October implementation and exact test/live-run results are recorded in [DISCOVERY_VALIDATION_RESULTS.md](../../docs/DISCOVERY_VALIDATION_RESULTS.md). Catalog atomic replacement still requires a separate concurrency/integrity fix before competing normal-mode writers are safe.

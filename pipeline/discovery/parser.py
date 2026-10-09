@@ -4,12 +4,12 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from html.parser import HTMLParser
-from urllib.parse import unquote, urljoin, urlsplit
+from urllib.parse import unquote, urlsplit
 
 from .filters import (
     CandidateDecision,
     classify_candidate,
-    normalize_url,
+    resolve_url,
 )
 
 @dataclass
@@ -38,11 +38,17 @@ class _PageParser(HTMLParser):
         self.title_parts: list[str] = []
         self.page_parts: list[str] = []
         self.links: list[Link] = []
+        self._ignored_tag: str | None = None
         self._title_depth = 0
         self._active_link: Link | None = None
         self._after_link: Link | None = None
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        if self._ignored_tag is not None:
+            return
+        if tag.lower() in {"script", "style", "template"}:
+            self._ignored_tag = tag.lower()
+            return
         attributes = dict(attrs)
         if tag.lower() == "title":
             self._title_depth += 1
@@ -56,6 +62,10 @@ class _PageParser(HTMLParser):
             self.links.append(self._active_link)
 
     def handle_endtag(self, tag: str) -> None:
+        if self._ignored_tag is not None:
+            if tag.lower() == self._ignored_tag:
+                self._ignored_tag = None
+            return
         if tag.lower() == "title" and self._title_depth:
             self._title_depth -= 1
         if tag.lower() == "a" and self._active_link is not None:
@@ -63,6 +73,8 @@ class _PageParser(HTMLParser):
             self._active_link = None
 
     def handle_data(self, data: str) -> None:
+        if self._ignored_tag is not None:
+            return
         text = " ".join(data.split())
         if not text:
             return
@@ -102,7 +114,7 @@ def evaluate_link(
     subjects_config: dict,
 ) -> tuple[dict | None, CandidateDecision]:
     """Return the optional catalog record and its explainable classifier decision."""
-    url = normalize_url(urljoin(page_url, link.href))
+    url = resolve_url(page_url, link.href)
     title = link.text.strip() or link.title.strip()
     if not url:
         return None, CandidateDecision(False, -999, title, rejection_reason="invalid URL")
@@ -130,7 +142,8 @@ def evaluate_link(
         "document_type": decision.document_type,
         "source": str(source.get("name", "")),
         "source_url": url,
-        "language": str(source.get("language", "")),
+        "language": "",  # Source-wide language is only an unverified hint.
+        "_language_hint": str(source.get("language", "")),
         "status": "DISCOVERED",
         "_candidate_score": str(decision.score),
         "_candidate_reasons": "; ".join(decision.reasons),

@@ -1,0 +1,15 @@
+[
+  {"path": "/teacher-guides?subject=Biology", "title": "Biology", "expected": false},
+  {"path": "/category/economics", "title": "2024 Economics past papers", "expected": false},
+  {"path": "/Paper", "title": "Paper Hub", "expected": false},
+  {"path": "/Note", "title": "Note Hub", "expected": false},
+  {"path": "/home", "title": "Home", "expected": false},
+  {"path": "/AboutEng", "title": "About", "expected": false},
+  {"path": "/Contact", "title": "Contact", "expected": false},
+  {"path": "/files/history.pdf", "title": "History textbook", "expected": true},
+  {"path": "/Paper/physics-2024", "title": "2024 Physics past paper", "expected": true},
+  {"path": "/files/history-marking.pdf", "title": "History marking scheme", "expected": true},
+  {"path": "/teacher-guides/history-grade-11", "title": "Grade 11 History Teacher Guide", "expected": true},
+  {"path": "/history-notes", "title": "ඉතිහාසය සටහන්", "expected": true},
+  {"path": "/resource", "title": "8 ශ්‍රේණිය ඉතිහාසය", "expected": true}
+]
