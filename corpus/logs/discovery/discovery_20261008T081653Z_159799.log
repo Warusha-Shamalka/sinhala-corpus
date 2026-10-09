@@ -1,0 +1,5 @@
+2026-10-08 13:46:53,937 INFO Crawl started at 2026-10-08T08:16:53.937068+00:00
+2026-10-08 13:46:53,964 INFO Crawl limits: {'max_depth': 3, 'max_pages_per_source': 100, 'request_delay_seconds': 0.0, 'timeout_seconds': 15}; dry_run=True
+2026-10-08 13:46:53,964 WARNING SKIPPED_UNVERIFIED_SOURCE alapiedu
+2026-10-08 13:46:53,964 INFO Crawl completed: candidates_to_add=0 elapsed_seconds=0.03
+2026-10-08 13:46:53,964 INFO Log file: /home/WS/Documents/SinhalaMMLU/PipeLine/sinhala-corpus/corpus/logs/discovery/discovery_20261008T081653Z_159799.log

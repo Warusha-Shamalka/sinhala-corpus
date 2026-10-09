@@ -1,0 +1,139 @@
+domains:
+  STEM:
+    subjects:
+      - name: Physics
+        aliases: ["භෞතික විද්‍යාව"]
+        grade_min: 12
+        grade_max: 13
+      - name: Chemistry
+        aliases: ["රසායන විද්‍යාව"]
+        grade_min: 12
+        grade_max: 13
+      - name: Biology
+        aliases: ["ජීව විද්‍යාව"]
+        grade_min: 12
+        grade_max: 13
+      - name: Science
+        aliases: ["විද්‍යාව"]
+        grade_min: 6
+        grade_max: 11
+
+  Humanities:
+    subjects:
+      - name: History
+        aliases: ["ඉතිහාසය"]
+        grade_min: 6
+        grade_max: 13
+      - name: Drama and Theatre
+        grade_min: 6
+        grade_max: 13
+      - name: Dancing
+        grade_min: 6
+        grade_max: 13
+      - name: Eastern Music
+        grade_min: 6
+        grade_max: 13
+      - name: Buddhism
+        grade_min: 6
+        grade_max: 13
+      - name: Catholicism
+        grade_min: 6
+        grade_max: 13
+      - name: Christianity
+        grade_min: 6
+        grade_max: 13
+      - name: Islam
+        grade_min: 6
+        grade_max: 13
+      - name: Buddhist Civilization
+        grade_min: 6
+        grade_max: 13
+      - name: Arts
+        grade_min: 6
+        grade_max: 13
+      - name: Oriental Music
+        grade_min: 12
+        grade_max: 13
+      - name: History of Sri Lanka
+        grade_min: 12
+        grade_max: 13
+      - name: Dancing Indigenous
+        grade_min: 12
+        grade_max: 13
+
+  Social Science:
+    subjects:
+      - name: Geography
+        aliases: ["භූගෝල විද්‍යාව"]
+        grade_min: 6
+        grade_max: 13
+      - name: Political Science
+        aliases: ["දේශපාලන විද්‍යාව"]
+        grade_min: 12
+        grade_max: 13
+      - name: Citizenship Education
+        grade_min: 6
+        grade_max: 11
+      - name: Health and Physical Science
+        grade_min: 6
+        grade_max: 11
+
+  Language:
+    subjects:
+      - name: Sinhala Language and Literature
+        grade_min: 6
+        grade_max: 11
+      - name: Sinhala
+        grade_min: 12
+        grade_max: 13
+
+  Business Studies:
+    subjects:
+      - name: Business and Accounting Studies
+        grade_min: 10
+        grade_max: 11
+      - name: Economics
+        aliases: ["ආර්ථික විද්‍යාව"]
+        grade_min: 12
+        grade_max: 13
+      - name: Business Studies
+        grade_min: 12
+        grade_max: 13
+      - name: Entrepreneurship Studies
+        grade_min: 10
+        grade_max: 11
+
+  Other:
+    subjects:
+      - name: Home Economics
+        grade_min: 10
+        grade_max: 11
+      - name: Agriculture and Food Technology
+        grade_min: 10
+        grade_max: 11
+      - name: Communication and Media Studies
+        grade_min: 10
+        grade_max: 13
+      - name: Design and Construction Technology
+        grade_min: 10
+        grade_max: 11
+      - name: Biosystems Technology
+        grade_min: 12
+        grade_max: 13
+
+grade_markers:
+  before_number: [grade, grades, class, "ශ්‍රේණිය"]
+  after_number: ["ශ්‍රේණිය", "වසර"]
+
+education_levels:
+  Junior Secondary:
+    grade_min: 6
+    grade_max: 9
+  O-Level:
+    aliases: ["O/L", "ordinary level", "සාමාන්‍ය පෙළ"]
+    grade_min: 10
+    grade_max: 11
+  A-Level:
+    aliases: ["A/L", "advanced level", "උසස් පෙළ"]
+    grade_min: 12
+    grade_max: 13

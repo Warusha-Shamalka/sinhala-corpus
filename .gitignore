@@ -1,0 +1,105 @@
+# Project metadata and source code
+!configs/
+!configs/*.yaml
+!configs/*.yml
+!corpus/catalog/
+!corpus/catalog/*.csv
+!corpus/catalog/README.md
+!README.md
+!docs/
+!docs/**/*.md
+!pipeline/
+!pipeline/**/*.py
+!pipeline/**/*.md
+!tests/
+!tests/**/*.py
+
+# Python virtual environments and package caches
+.venv/
+venv/
+env/
+ENV/
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# IDE and OS artifacts
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# Local environment and secrets
+.env
+.env.*
+*.env
+secrets.*
+*.pem
+*.key
+*.crt
+
+# Temporary and local development artifacts
+*.tmp
+*.temp
+*.bak
+*.orig
+*.rej
+*.log
+corpus/catalog/.*.lock
+**/logs/**/*.log
+**/tmp/
+**/temp/
+**/.cache/
+
+# Large generated or downloaded artifacts
+corpus/raw/**
+!corpus/raw/**/README.md
+corpus/clean/**
+!corpus/clean/**/README.md
+corpus/extracted/**
+!corpus/extracted/**/README.md
+corpus/logs/**
+!corpus/logs/**/README.md
+
+datasets/**
+!datasets/**/README.md
+
+# Model weights and large local outputs
+*.bin
+*.ckpt
+*.pt
+*.pth
+*.safetensors
+*.onnx
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+
+# Local crawler output and generated artifacts
+crawl_output/
+output/
+local_cache/
+
+# Keep the repository metadata and handoff docs intact
+!configs/
+!configs/*.yaml
+!configs/*.yml
+!corpus/catalog/
+!corpus/catalog/*.csv
+!corpus/catalog/README.md
+!README.md
+!docs/
+!docs/**/*.md
+!pipeline/
+!pipeline/**/*.py
+!pipeline/**/*.md
+!tests/
+!tests/**/*.py

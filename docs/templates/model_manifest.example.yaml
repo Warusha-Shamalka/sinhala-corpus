@@ -1,0 +1,43 @@
+# Template only: replace nulls and validate before submission.
+schema_version: model-manifest-1
+status: TEMPLATE_INCOMPLETE
+rule_source: user-supplied rules, 2026-10-08; replace with official version
+inference_parameter_cap: 8000000000
+release_date_exclusive_cutoff: "2026-10-01"
+system_revision: null
+inference_models:
+  - component_id: base_model
+    role: single-answer MCQ inference
+    model_name: null
+    open_weight_license: null
+    original_release_date: null
+    release_evidence_url: null
+    upstream_revision: null
+    local_artifact_path: null
+    artifact_sha256: null
+    parameter_count: null
+    parameter_count_method: null
+    total_moe_parameters_if_applicable: null
+    quantization: null
+    tokenizer_revision: null
+    tokenizer_sha256: null
+# Add every separate inference adapter/router/classifier/translator/model.
+# Count ensemble members even when loaded sequentially and separate adapters.
+# For merged weights, record actual deployed tensor counts and merging evidence.
+adapter_handling: null
+summed_inference_parameter_count: null
+training_only_models: []
+closed_api_training_generation:
+  used: null
+  disclosures: []
+offline_reproduction:
+  completed: false
+  hardware: null
+  dependency_lock_sha256: null
+  input_schema_version: null
+  prompt_sha256: null
+  inference_config_sha256: null
+  command: null
+  output_sha256: null
+  runtime_seconds: null
+  peak_memory_bytes: null

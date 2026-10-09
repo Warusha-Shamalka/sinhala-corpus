@@ -1,0 +1,33 @@
+# Template only: this file does not claim a completed release.
+schema_version: data-release-1
+status: TEMPLATE_INCOMPLETE
+release_id: null
+dataset_role: null # pretraining / instruction / qa / evaluation / general_rag
+created_at_utc: null
+code_revision: null
+pipeline_config_sha256: null
+source_snapshot_sha256: null
+catalog_snapshot_sha256: null
+files: [] # each: relative path, bytes, SHA256, record count
+sources: [] # each: source ID, provenance, rights evidence and release decision
+counts:
+  raw_documents: null
+  accepted_documents: null
+  rejected_documents: null
+  verified_real_mcqs: null
+  synthetic_mcqs: null
+split_policy:
+  grouping_keys: []
+  algorithm_version: null
+  seed: null
+  duplicate_group_overlap_count: null
+  authorised_development_policy: null
+contamination_controls:
+  benchmark_mirrors_excluded: null
+  authorised_development_overlap_checks: null
+  hidden_test_used: false
+  limitations: independent public-source overlap cannot be ruled out using hidden tests
+quality_audits: [] # each: sample method/size, metrics, reviewer/method
+synthetic_generators: [] # each: provider/model, open/closed, prompt/config hashes, counts
+closed_api_generation_disclosure: null
+rebuild_command: null
