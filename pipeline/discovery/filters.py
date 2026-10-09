@@ -4,8 +4,9 @@ from __future__ import annotations
 
 import posixpath
 import re
+import unicodedata
 from dataclasses import dataclass, field
-from urllib.parse import urlsplit, urlunsplit
+from urllib.parse import quote, unquote, urljoin, urlsplit, urlunsplit
 
 
 DEFAULT_CANDIDATE_THRESHOLD = 4
@@ -51,13 +52,14 @@ class CandidateDecision:
 
 
 def _normalized_text(value: str) -> str:
-    return re.sub(r"[\s_\-]+", " ", value.casefold()).strip()
+    value = unicodedata.normalize("NFC", unquote(value)).casefold().replace("\u200d", "").replace("\u200c", "")
+    return re.sub(r"[\s_\-]+", " ", value).strip()
 
 
 def _contains_phrase(text: str, phrase: str) -> bool:
     normalized_text = _normalized_text(text)
     normalized_phrase = _normalized_text(phrase)
-    return bool(re.search(rf"(?<!\w){re.escape(normalized_phrase)}(?!\w)", normalized_text))
+    return bool(re.search(rf"(?<![\w\u0d80-\u0dff]){re.escape(normalized_phrase)}(?![\w\u0d80-\u0dff])", normalized_text))
 
 
 def _title_path_segments(url: str, metadata: dict) -> tuple[str, str]:
@@ -69,13 +71,17 @@ def _title_path_segments(url: str, metadata: dict) -> tuple[str, str]:
 
 def normalize_url(url: str) -> str:
     """Normalize URL host/path and drop fragments while retaining query strings."""
-    parts = urlsplit(url.strip())
-    scheme = parts.scheme.lower()
-    hostname = (parts.hostname or "").lower()
-    if not scheme or not hostname:
+    if not isinstance(url, str) or any(ord(char) < 32 for char in url):
         return ""
     try:
+        parts = urlsplit(url.strip())
+        scheme = parts.scheme.lower()
+        hostname = (parts.hostname or "").lower()
         port = parts.port
+        if scheme not in {"http", "https"} or not hostname or parts.username is not None or parts.password is not None:
+            return ""
+        if any(char.isspace() for char in hostname):
+            return ""
     except ValueError:
         return ""
     if ":" in hostname and not hostname.startswith("["):
@@ -90,58 +96,98 @@ def normalize_url(url: str) -> str:
         path = f"/{path}"
     if trailing_slash and path != "/":
         path += "/"
-    return urlunsplit((scheme, netloc, path, parts.query, ""))
+    path = quote(path, safe="/%:@!$&'()*+,;=-._~")
+    query = quote(parts.query, safe="/%?:@!$&'()*+,;=-._~[]")
+    return urlunsplit((scheme, netloc, path, query, ""))
+
+
+def resolve_url(base_url: str, href: str) -> str:
+    """Resolve malformed or unsupported anchors safely before any crawl action."""
+    if not isinstance(href, str) or any(ord(char) < 32 for char in href):
+        return ""
+    try:
+        return normalize_url(urljoin(base_url, href))
+    except ValueError:
+        return ""
 
 
 def is_within_domain(url: str, base_url: str) -> bool:
-    """Return true for the source host and its subdomains, never lookalikes."""
-    candidate_host = (urlsplit(url).hostname or "").lower().rstrip(".")
-    source_host = (urlsplit(base_url).hostname or "").lower().rstrip(".")
-    return bool(candidate_host and source_host and (
-        candidate_host == source_host or candidate_host.endswith(f".{source_host}")
-    ))
+    """Return true for HTTP(S) source hosts/subdomains, never lookalikes."""
+    candidate = normalize_url(url)
+    base = normalize_url(base_url)
+    if not candidate or not base:
+        return False
+    candidate_host = urlsplit(candidate).hostname.rstrip(".")
+    source_host = urlsplit(base).hostname.rstrip(".")
+    return candidate_host == source_host or candidate_host.endswith(f".{source_host}")
 
 
 def subject_matches(text: str, subjects_config: dict) -> tuple[str, str]:
-    """Return a uniquely matched configured subject and domain, else empty fields."""
-    normalized_text = re.sub(r"\s+", " ", text).casefold()
-    matches: list[tuple[str, str]] = []
+    """Prefer contained specific names, while retaining independent ambiguity."""
+    normalized = _normalized_text(text)
+    matches = []
     for domain, data in subjects_config.get("domains", {}).items():
         for subject in data.get("subjects", []):
-            name = str(subject.get("name", "")).strip()
-            if not name:
-                continue
-            pattern = rf"(?<![\w]){re.escape(name.casefold())}(?![\w])"
-            if re.search(pattern, normalized_text):
-                matches.append((name, str(domain)))
-    unique = list(dict.fromkeys(matches))
+            name = subject["name"]
+            for alias in (name, *subject.get("aliases", [])):
+                phrase = _normalized_text(alias)
+                pattern = rf"(?<![\w\u0d80-\u0dff]){re.escape(phrase)}(?![\w\u0d80-\u0dff])"
+                for match in re.finditer(pattern, normalized):
+                    matches.append((match.start(), match.end(), name, str(domain)))
+    specific = [
+        item for item in matches
+        if not any(other[0] <= item[0] and item[1] <= other[1]
+                   and (other[0], other[1]) != (item[0], item[1]) for other in matches)
+    ]
+    unique = list(dict.fromkeys((name, domain) for _, _, name, domain in specific))
     return unique[0] if len(unique) == 1 else ("", "")
 
 
 def extract_grade(text: str, subjects_config: dict) -> tuple[str, str]:
-    """Conservatively extract explicit grade numbers or O/L and A/L levels."""
-    normalized = re.sub(r"[._-]+", " ", text.casefold())
-    level_match = re.search(
-        r"\b(?:gce\s*)?(?:(o\s*/\s*l|ordinary\s+level)|(a\s*/\s*l|advanced\s+level))\b",
-        normalized,
-        re.IGNORECASE,
-    )
-    if level_match:
-        is_olevel = bool(level_match.group(1))
-        level = "O-Level" if is_olevel else "A-Level"
-        for configured_level, details in subjects_config.get("education_levels", {}).items():
-            if configured_level.casefold() == level.casefold():
-                return f"{details.get('grade_min', '')}-{details.get('grade_max', '')}", str(configured_level)
-        return ("10-11" if is_olevel else "12-13"), level
-
-    match = re.search(r"\b(?:grade|class)\s*[-:]?\s*(1[0-3]|[6-9])\b", normalized, re.IGNORECASE)
-    if not match:
+    """Extract explicit ranges/grades and compatible levels; conflicts stay unknown."""
+    normalized = unicodedata.normalize("NFC", unquote(text)).casefold().replace("\u200d", "").replace("\u200c", "")
+    normalized = re.sub(r"[._]+", " ", normalized)
+    normalized = re.sub(r"\s*/\s*", "/", normalized)
+    markers = subjects_config.get("grade_markers", {})
+    before = markers.get("before_number", ["grade", "grades", "class"])
+    after = markers.get("after_number", [])
+    # Match the full number first, so grade 15 cannot accidentally become grade 1.
+    number = r"(?P<low>\d{1,2})(?:\s*(?:[-–—]|to)\s*(?P<high>\d{1,2}))?(?!\d)"
+    ranges = set()
+    for labels, prefix in ((before, True), (after, False)):
+        if not labels:
+            continue
+        label = "(?:" + "|".join(re.escape(_normalized_text(x)) for x in labels) + ")"
+        pattern = (rf"(?<![\w\u0d80-\u0dff]){label}\s*[-:]?\s*{number}" if prefix
+                   else rf"(?<!\d){number}\s*{label}(?![\w\u0d80-\u0dff])")
+        for match in re.finditer(pattern, normalized):
+            low = int(match["low"])
+            high = int(match["high"] or low)
+            if not 6 <= low <= high <= 13:
+                return "", ""
+            ranges.add((low, high))
+    levels = subjects_config.get("education_levels", {})
+    matched_levels = []
+    defaults = {"O-Level": ["o/l", "ordinary level"], "A-Level": ["a/l", "advanced level"]}
+    for level, details in levels.items():
+        aliases = details.get("aliases", defaults.get(level, []))
+        if any(_contains_phrase(normalized, alias) for alias in aliases):
+            matched_levels.append((level, details))
+    if len(ranges) > 1 or len(matched_levels) > 1:
         return "", ""
-    grade = int(match.group(1))
-    for level, details in subjects_config.get("education_levels", {}).items():
-        if details.get("grade_min", grade + 1) <= grade <= details.get("grade_max", grade - 1):
-            return str(grade), str(level)
-    return str(grade), ""
+    if ranges:
+        low, high = next(iter(ranges))
+        if matched_levels:
+            _, details = matched_levels[0]
+            if not details["grade_min"] <= low <= high <= details["grade_max"]:
+                return "", ""
+        level = next((name for name, details in levels.items()
+                      if details["grade_min"] <= low <= high <= details["grade_max"]), "")
+        return (str(low) if low == high else f"{low}-{high}"), level
+    if matched_levels:
+        level, details = matched_levels[0]
+        return f'{details["grade_min"]}-{details["grade_max"]}', level
+    return "", ""
 
 
 def detect_document_type(url: str, text: str) -> str:
@@ -170,8 +216,8 @@ def is_educational_candidate(url: str, text: str, subject_names: list[str]) -> b
 
 def should_crawl(url: str, metadata: dict | None = None) -> bool:
     """Navigation/listing pages remain crawlable; only non-HTTP and file links do not."""
-    parts = urlsplit(url)
-    return parts.scheme.lower() in {"http", "https"} and bool(parts.hostname) and not is_obvious_file_url(url)
+    normalized = normalize_url(url)
+    return bool(normalized) and not is_obvious_file_url(normalized)
 
 
 def classify_candidate(
@@ -181,12 +227,14 @@ def classify_candidate(
     threshold: int = DEFAULT_CANDIDATE_THRESHOLD,
 ) -> CandidateDecision:
     """Score metadata transparently; keep crawls broad and catalog acceptance selective."""
+    url = normalize_url(url)
+    if not url:
+        return CandidateDecision(False, -999, str(metadata.get("title", "")), rejection_reason="invalid URL")
     title, path = _title_path_segments(url, metadata)
     anchor = str(metadata.get("anchor_text", ""))
     filename = str(metadata.get("filename", ""))
     surrounding = str(metadata.get("surrounding_text", ""))
     item_evidence = " ".join((urlsplit(url).path, filename, anchor, title))
-    evidence = f"{item_evidence} {surrounding}"
     normalized_title = _normalized_text(title)
     normalized_path = _normalized_text(path)
     normalized_evidence = _normalized_text(item_evidence)
@@ -261,8 +309,7 @@ def classify_candidate(
     category_route = bool(path_segments & {"category", "categories", "tag", "tags", "search"})
     has_explicit_year = bool(re.search(r"\b(?:19|20)\d{2}\b", item_evidence))
     concrete_resource_identity = has_specific_resource and bool(grade or subject or has_explicit_year)
-    if has_explicit_year and subject and _contains_phrase(item_evidence, "paper"):
-        category_route = False
+    listing_route = normalized_path in {"paper", "note", "notes", "marking", "teacher guides", "notesearch"}
     root_landing_page = urlsplit(url).path.rstrip("/") == "" and not has_specific_resource
     listing = (
         any(_contains_phrase(navigation_text, term) for term in LISTING_TERMS)
@@ -294,7 +341,7 @@ def classify_candidate(
     # Exact infrastructure/navigation labels cannot become resources by inheriting
     # broad page context; direct files and explicit resource titles can override it.
     strong_resource = is_document_link or (
-        concrete_resource_identity and not category_route
+        concrete_resource_identity and not category_route and not listing_route
     )
     timetable = _contains_phrase(normalized_title, "timetable")
     accepted = (

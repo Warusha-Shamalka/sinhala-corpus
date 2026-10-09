@@ -261,3 +261,17 @@ Only mark a stage as implemented if it exists in the repository and is actively 
 The recommended next step is to proceed to the downloader stage only after the discovery stage is stable and the source list is verified. Do not begin extraction or dataset generation until the discovery and catalog stages are validated and the source configuration is intentional.
 
 This keeps the pipeline predictable and helps preserve data provenance as the project grows.
+
+## 15. Review and immediate continuation
+
+The [8 October 2026 review index](README.md) incorporates the supplied project handover and links to confirmed defects, the source plan, stage/data contracts, and backlog. The crawler already separates crawlability from candidate suitability and has integer scores/reasons and navigation/listing tests. Remaining work is to fix edge cases and measure discovery precision/recall before downloading at scale.
+
+The eight catalog entries are intended pilots with stable IDs and missing URLs. Preserve them, fill provenance from evidence, and do not queue incomplete rows for download. Source `verified` means approval to crawl, not document quality. Grade ranges are collection targets unless supported independently.
+
+## 16. Adding a stage safely
+
+Keep each stage in `pipeline/<stage>/`, with a small API/CLI and only necessary dependencies. Define input/output/state contracts first. Use offline fixtures for success, failure and interrupted/resumed processing. Persist outputs and verify hashes before updating catalog states. Preserve immutable raw files and previous successful outputs.
+
+Add `configs/pipeline.yaml` when a consuming stage exists, with paths configurable for local and Drive/Colab runs. Colab scratch is not permanent storage. Use one catalog writer, checkpoint manifests and snapshots to persistent storage, and demonstrate recovery on the pilot.
+
+Use [PIPELINE_DESIGN.md](PIPELINE_DESIGN.md), [DATA_CONTRACTS.md](DATA_CONTRACTS.md), and [IMPLEMENTATION_BACKLOG.md](IMPLEMENTATION_BACKLOG.md) for planned behavior and acceptance criteria. These specifications do not claim later stages are implemented.

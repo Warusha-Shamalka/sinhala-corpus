@@ -2,21 +2,26 @@ domains:
   STEM:
     subjects:
       - name: Physics
+        aliases: ["භෞතික විද්‍යාව"]
         grade_min: 12
         grade_max: 13
       - name: Chemistry
+        aliases: ["රසායන විද්‍යාව"]
         grade_min: 12
         grade_max: 13
       - name: Biology
+        aliases: ["ජීව විද්‍යාව"]
         grade_min: 12
         grade_max: 13
       - name: Science
+        aliases: ["විද්‍යාව"]
         grade_min: 6
         grade_max: 11
 
   Humanities:
     subjects:
       - name: History
+        aliases: ["ඉතිහාසය"]
         grade_min: 6
         grade_max: 13
       - name: Drama and Theatre
@@ -59,9 +64,11 @@ domains:
   Social Science:
     subjects:
       - name: Geography
+        aliases: ["භූගෝල විද්‍යාව"]
         grade_min: 6
         grade_max: 13
       - name: Political Science
+        aliases: ["දේශපාලන විද්‍යාව"]
         grade_min: 12
         grade_max: 13
       - name: Citizenship Education
@@ -86,6 +93,7 @@ domains:
         grade_min: 10
         grade_max: 11
       - name: Economics
+        aliases: ["ආර්ථික විද්‍යාව"]
         grade_min: 12
         grade_max: 13
       - name: Business Studies
@@ -113,13 +121,19 @@ domains:
         grade_min: 12
         grade_max: 13
 
+grade_markers:
+  before_number: [grade, grades, class, "ශ්‍රේණිය"]
+  after_number: ["ශ්‍රේණිය", "වසර"]
+
 education_levels:
   Junior Secondary:
     grade_min: 6
     grade_max: 9
   O-Level:
+    aliases: ["O/L", "ordinary level", "සාමාන්‍ය පෙළ"]
     grade_min: 10
     grade_max: 11
   A-Level:
+    aliases: ["A/L", "advanced level", "උසස් පෙළ"]
     grade_min: 12
     grade_max: 13

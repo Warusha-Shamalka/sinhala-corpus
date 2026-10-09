@@ -206,7 +206,7 @@ class CatalogTests(unittest.TestCase):
 
             def fetch_html(self, url, base_url):
                 self.requested.append(url)
-                return pages.get(url)
+                return crawler.FetchedPage(pages[url], url) if url in pages else None
 
         logger = logging.getLogger("discovery-bfs-test")
         with patch.object(crawler, "PoliteFetcher", FakeFetcher):
