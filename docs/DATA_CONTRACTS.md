@@ -1,6 +1,6 @@
 # Proposed data contracts
 
-Status: design specification. No schemas, migrations or validation CLI are implemented by this document. Preserve the existing 23-column CSV until a reviewed migration is needed; use versioned sidecars for richer provenance and stage outcomes.
+Status: mixed implementation/design specification. Catalog validation and PDF download receipts/checkpoints are implemented; richer metadata, extraction and dataset contracts remain proposed. See [download validation](DOWNLOAD_VALIDATION_RESULTS.md). Preserve the existing 23-column CSV until a reviewed migration is needed; use versioned sidecars for richer provenance and stage outcomes.
 
 ## Catalog contract
 

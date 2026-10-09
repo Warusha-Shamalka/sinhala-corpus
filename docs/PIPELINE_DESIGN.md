@@ -21,7 +21,7 @@ The raw corpus is the authoritative content; the catalog is authoritative tracki
 | Stage | Input | Output and successful transition | Required checks |
 | --- | --- | --- | --- |
 | Discovery (implemented) | Enabled + crawl-approved sources, subjects | Catalog candidates `DISCOVERED`; proposed evidence sidecar | HTTP(S), domain, limits, robots, URL dedup, navigation/resource distinction |
-| Download (planned) | Approved `DISCOVERED` rows with actual URLs | Immutable `corpus/raw/` file, hash and fetch metadata; `DOWNLOADED` | Status/MIME/magic bytes, redirects, byte limits, source approval, durable persistence |
+| PDF download (implemented; other formats planned) | Approved `DISCOVERED` rows with actual URLs | Immutable `corpus/raw/` file, hash and fetch metadata; `DOWNLOADED` | Status/MIME/magic bytes, redirects, byte limits, source approval, durable persistence |
 | Extraction (planned) | Raw hash + extractor config | `corpus/extracted/pages/` blocks and `text/`; `EXTRACTED` after required OCR | Page count, layout/order, Unicode quality, completeness and assets |
 | OCR (planned) | Pages needing OCR | Page text/boxes and OCR confidence, tool/config versions | Sinhala fidelity, missing math/figures, confidence and page coverage |
 | Cleaning (planned) | Extracted pages + config | `corpus/clean/` text and transform evidence; `CLEANED` | Safe normalization, preserved options/negation/math, no raw mutation |

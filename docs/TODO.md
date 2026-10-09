@@ -43,9 +43,10 @@ Verification details: [discovery results](DISCOVERY_VALIDATION_RESULTS.md) and [
 - [x] Commit and merge the discovery review tool and Git-trackable 80-row review bundle.
 - [ ] Complete the teammate review issue; validate the first 10-row PR before finishing the sample.
 - [x] Add bounded structural evidence for generic download links, preserving item boundaries and recording audit reasons.
-- [ ] Commit/push `fix/discovery-local-evidence` and verify its CI before merging into `dev`.
+- [x] Commit/push local discovery evidence changes; implementation is present on `dev` (`d4e113c`).
+- [ ] Distinguish language-medium tokens from subject names and syllabus-version wording from document type.
 - [ ] Extend reviewed Sinhala aliases and explicit grade/level forms without merging distinct subjects.
-- [ ] Add an explicit mapping between project taxonomy and benchmark taxonomy; keep grade targets separate from verified curriculum facts.
+- [ ] Keep this repository focused on corpus acquisition; coordinate benchmark taxonomy/model work with the separate training repository when needed.
 
 ## Before downloading
 
@@ -60,18 +61,22 @@ Verification details: [discovery results](DISCOVERY_VALIDATION_RESULTS.md) and [
 - [x] Commit/push the checks branch; all four Python CI jobs passed (reported by maintainer).
 - [ ] Remove tracked bytecode/transient logs from version control through a reviewed maintenance change.
 
-**Gate:** do not begin bulk downloading until discovery quality and provenance are accepted.
+**Current decision:** the maintainer authorised proceeding with candidate suitability as a provisional assumption. Human labels and measured precision remain pending; do not mark the review as completed or claim measured accuracy. Start bounded download batches, retain uncertain metadata and record provenance.
 
 ## Pilot download and persistent storage
 
-- [ ] Implement a download queue that excludes incomplete/unapproved records.
-- [ ] Stream downloads with safe filenames, size/time limits, redirect checks and bounded retries.
-- [ ] Validate MIME/signatures and reject login/error pages disguised as documents.
-- [ ] Store immutable raw artifacts with SHA256 and requested/final URL provenance.
-- [ ] Make retries/resume idempotent; preserve changed source versions separately.
+- [x] Implement a download queue that excludes incomplete/unapproved records.
+- [x] Stream PDF downloads with safe filenames, size/time limits, robots/redirect checks and bounded request retries.
+- [x] Validate PDF MIME/signatures and reject login/error pages disguised as documents.
+- [x] Store immutable PDF artifacts and receipts with SHA256 and requested/final URL provenance.
+- [x] Verify/recover successful raw artifacts on restart and retain changed versions; interrupted bodies restart from the beginning.
 - [ ] Configure Drive as persistent storage and Colab as temporary compute; keep one persistent-store catalog writer.
 - [ ] Checkpoint catalog/artifact manifests and demonstrate recovery from persistent storage on the pilot.
-- [ ] Add `configs/pipeline.yaml` when its first consuming stage exists.
+- [x] Add `configs/pipeline.yaml` with download paths and bounded transfer settings.
+
+- [ ] Commit/push `feat/pilot-downloader`, verify CI and merge into `dev`.
+- [ ] Add real approved resource URLs to the master catalog, preserving the eight pilot IDs.
+- [ ] Extend downloading to HTML/scans/other formats only with format-specific validation.
 
 ## Extraction, OCR and cleaning
 
@@ -106,4 +111,6 @@ Verification details: [discovery results](DISCOVERY_VALIDATION_RESULTS.md) and [
 
 ## Current data reality
 
-The catalog still contains eight `DISCOVERED` pilot rows without source URLs. No raw-document download, extraction/OCR stage, labeled MCQ training release, model training or competition submission has been implemented. Candidate URLs are not verified documents or training examples.
+The catalog still contains eight `DISCOVERED` pilot rows without source URLs. A PDF download stage is implemented and one 2.1 MB real PDF was verified in an isolated smoke catalog; the production catalog still has zero downloadable jobs. All 109 tests pass. See [download validation](DOWNLOAD_VALIDATION_RESULTS.md).
+
+Extraction/OCR and derived-dataset stages remain planned. Model training and competition submission belong in the separate training repository. Candidate URLs are not verified documents or training examples.
