@@ -51,3 +51,7 @@ Additional options: `--max-queue` (1000), `--max-requests` (250), `--max-seconds
 Exit codes: `0` for completed useful processing (including a genuinely empty source), `1` for partial processing, and `2` for failure or no processable selected sources. Hitting a page cap with pending pages returns `1`; inspect the summary's stop reason. Time budgets are checked between bounded operations and are not a hard external process deadline.
 
 See [DISCOVERY_AUDIT_RESULTS.md](../../docs/DISCOVERY_AUDIT_RESULTS.md) for exact offline/live verification and interpretation.
+
+## Generic resource links
+
+Generic Download/Open links can use a short, completed table row, list item, article, description item or explicitly marked resource card with a single distinct destination. The parser no longer takes context from preceding page fragments. Informative anchor text/title attributes are preserved; unrelated global headings, navigation/hidden content, oversized sections and ambiguous multi-link cards do not supply metadata. Decisions retain the scoped text and its container kind for inspection. See [resource-local evidence results](../../docs/DISCOVERY_LOCAL_EVIDENCE_RESULTS.md) for supported structures, limits and validation.

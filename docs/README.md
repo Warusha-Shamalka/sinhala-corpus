@@ -50,3 +50,5 @@ Keep the existing modular Python stages, CSV catalog, stable document IDs, sourc
 The immediate priority remains discovery filtering and validation. Several handover tasks are already implemented at the reviewed commit: separate `should_crawl` and candidate classification, integer scores/reasons, navigation/category rejection tests, and dry-run safety. Do not repeat that work or interpret the historical count of 1,465 as the current baseline. The supplied handover names MathsAPI; it is not in the current source configuration and is a proposed addition only. Grade ranges are collection targets unless independently supported. General corpus RAG outputs may be built later, but are excluded from challenge inference.
 
 - [Development and automated checks](DEVELOPMENT_CHECKS.md): pinned setup, CI and teammate review validation.
+
+- [Resource-local discovery evidence](DISCOVERY_LOCAL_EVIDENCE_RESULTS.md): generic-link handling, regression coverage and bounded live comparison.

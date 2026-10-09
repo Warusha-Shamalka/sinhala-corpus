@@ -600,14 +600,15 @@ def discover_source(
         in_domain = bool(candidate_url) and is_within_domain(candidate_url, base_url)
         if decision_sink is not None:
             decision_sink({
-                "schema_version": "discovery-decision-1", "rule_version": "discovery-0.2",
+                "schema_version": "discovery-decision-1", "rule_version": "discovery-0.3",
                 "source_id": source["id"], "referring_url": page_url, "candidate_url": candidate_url,
                 "href": link.href,
                 "title": decision.title, "accepted": bool(candidate and in_domain),
                 "score": decision.score, "reasons": decision.reasons,
                 "rejection_reason": (decision.rejection_reason if in_domain else "invalid or external URL"),
                 "subject": decision.subject, "grade": decision.grade, "document_type": decision.document_type,
-                "evidence": {"anchor": link.text, "title": link.title, "before": link.before, "after": link.after},
+                "evidence": {"anchor": link.text, "title": link.title, "before": link.before, "after": link.after,
+                             "resource_context": link.resource_context, "context_kind": link.context_kind},
                 "observed_at_utc": datetime.now(timezone.utc).isoformat(),
             })
         if candidate and in_domain:
