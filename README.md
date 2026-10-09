@@ -6,6 +6,8 @@ This repository is being built to support research and downstream machine-learni
 
 The project collects and organizes educational resources relevant to Sri Lanka, especially Sinhala-language materials used in school education. The emphasis is on disciplined pipeline work: discover candidates, record them in the catalog, download only approved content, extract and clean data, validate quality, and produce derived datasets.
 
+SinhalaMMLU is a key use case. Corpus preparation is separate from challenge inference, which must use model weights and a prompt within the supplied 8B cap, without internet or retrieval. General corpus products may support other research. Google Drive is the intended persistent store and Colab is temporary compute; this deployment is planned, not configured here.
+
 ## High-level architecture
 
 - `configs/` stores controlled source and subject configurations.
@@ -66,6 +68,15 @@ python -m pip install --upgrade pip
 ```
 
 Install only the dependencies that a concrete stage requires. This repository does not assume a large general-purpose dependency set until a later stage genuinely needs it.
+
+Current discovery and its tests require PyYAML:
+
+```bash
+python -m pip install PyYAML
+python -B -m unittest discover -s tests -v
+```
+
+There is currently no pinned dependency file; dependency locking is in the implementation backlog.
 
 ## How to run discovery
 
@@ -132,6 +143,10 @@ Keep configuration, code, and documentation changes explicit. Avoid large accide
 The main handoff and continuation guide is in:
 
 - `docs/PIPELINE_GUIDE.md`
+
+The competition review, confirmed bugs, source plan, data contracts, implementation backlog, and report/manifest templates are indexed in [docs/README.md](docs/README.md). The current catalog contains eight intended pilots without source URLs. Finish discovery validation before bulk downloading.
+
+In this project, `verified` is explicit source approval for crawling. It does not verify all hosted documents, their language, answer correctness, or redistribution rights. Preserve separate evidence for those checks.
 
 Use that file to understand the end-to-end pipeline and the intended next steps.
 
