@@ -1,0 +1,2 @@
+# Only third-party dependency used by the implemented stages and tests.
+PyYAML==6.0.3

@@ -47,6 +47,8 @@ Implemented:
 - discovery dry-run support
 - source/subject configuration
 - document catalog metadata
+- offline discovery review sampling and reporting
+- pinned dependencies and automated regression/review checks
 
 Planned / not yet implemented:
 - downloader
@@ -69,14 +71,16 @@ python -m pip install --upgrade pip
 
 Install only the dependencies that a concrete stage requires. This repository does not assume a large general-purpose dependency set until a later stage genuinely needs it.
 
-Current discovery and its tests require PyYAML:
+The implemented stages use PyYAML, pinned in `requirements.txt`. Target runtime: Python 3.11–3.14 on Linux/POSIX (catalog locking uses `fcntl`). CI checks this version range; local verification so far uses Python 3.14.7.
 
 ```bash
-python -m pip install PyYAML
-python -B -m unittest discover -s tests -v
+python -m pip install -r requirements.txt
+python -B scripts/check_offline.py
 ```
 
-There is currently no pinned dependency file; dependency locking is in the implementation backlog.
+The check command runs the regression suite and validates all tracked review CSV/manifest bundles. Unfinished reviews are allowed; malformed labels or altered candidate evidence fail validation. It blocks network connections and DNS lookups in the main check process. GitHub Actions runs it for PRs targeting `dev` or `main` and pushes to those branches. Dependency installation requires network access; the tests do not crawl websites.
+
+See [the development checks guide](docs/DEVELOPMENT_CHECKS.md) for setup, CI behavior and troubleshooting.
 
 ## How to run discovery
 

@@ -39,8 +39,9 @@ Verification details: [discovery results](DISCOVERY_VALIDATION_RESULTS.md) and [
 
 ## Next: finish discovery reliability
 
-- [ ] Bring the discovery-audit implementation already merged into `main` into `dev`; refreshed `origin/dev` still lacks it.
-- [ ] Review/commit `feat/discovery-quality` after its prerequisite is present in `dev`.
+- [x] Bring discovery-audit and discovery-quality into `dev` (verified at merge `d204a38`).
+- [x] Commit and merge the discovery review tool and Git-trackable 80-row review bundle.
+- [ ] Complete the teammate review issue; validate the first 10-row PR before finishing the sample.
 - [ ] Add resource-local evidence for generic download links without inheriting unrelated page context.
 - [ ] Extend reviewed Sinhala aliases and explicit grade/level forms without merging distinct subjects.
 - [ ] Add an explicit mapping between project taxonomy and benchmark taxonomy; keep grade targets separate from verified curriculum facts.
@@ -54,7 +55,8 @@ Verification details: [discovery results](DISCOVERY_VALIDATION_RESULTS.md) and [
 - [ ] Confirm navigation rejection and preservation of PDFs, papers, notes, guides and answer keys.
 - [ ] Fill the eight pilot source URLs from real evidence, preserving their IDs.
 - [ ] Add MathsAPI only after source review and crawl approval; it is not currently configured.
-- [ ] Declare supported Python and pin required dependencies; add offline CI checks.
+- [x] Declare Linux/POSIX Python 3.11–3.14 CI targets, pin PyYAML, and implement automated offline regression/review checks.
+- [ ] Commit/push the checks branch and verify the Python matrix passes on GitHub.
 - [ ] Remove tracked bytecode/transient logs from version control through a reviewed maintenance change.
 
 **Gate:** do not begin bulk downloading until discovery quality and provenance are accepted.
