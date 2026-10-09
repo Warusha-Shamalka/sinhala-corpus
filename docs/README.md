@@ -8,6 +8,8 @@ Implementation update: the [9 October discovery validation results](DISCOVERY_VA
 
 The subsequent [catalog integrity results](CATALOG_INTEGRITY_RESULTS.md) describe transaction-safe local discovery appends and row validation.
 
+The latest [discovery reliability and audit results](DISCOVERY_AUDIT_RESULTS.md) cover robots policies, budgets, exit codes and persisted decisions.
+
 | Document | Purpose |
 | --- | --- |
 | [TODO.md](TODO.md) | Completed milestones and the ordered remaining checklist |

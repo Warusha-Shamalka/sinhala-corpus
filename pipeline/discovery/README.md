@@ -37,7 +37,17 @@ Available options are `--source`, `--max-pages`, `--max-depth`, `--delay`, `--ti
 - Subject recognition matches configured names and aliases; Sinhala coverage is partial and needs reviewed extensions.
 - Grade extraction requires explicit configured labels or level phrases. Generic links lacking local resource evidence may remain unclassified; broad page titles are not inherited automatically.
 - Some websites omit or mislabel HTML content types; non-HTML/unknown content types are skipped rather than risk reading a document.
-- Robots retrieval failures are logged and treated as unavailable policy; verify the site's terms and robots guidance before enabling a source.
+- Robots policy handling is conservative: only absent policies (404/410) allow crawling without a policy. Forbidden/unavailable/invalid policies block that origin for the run. HTML/robots truncation and decoding failures are explicit, with bounded retries for transient request failures.
 - No PDFs or other files are downloaded; there is no OCR, extraction, deduplication by file hash, dataset building, RAG, or downloader implementation in this stage.
 
 The discovery implementation and test/live-run results are recorded in [DISCOVERY_VALIDATION_RESULTS.md](../../docs/DISCOVERY_VALIDATION_RESULTS.md). Subsequent [catalog integrity work](../../docs/CATALOG_INTEGRITY_RESULTS.md) adds a cooperative local POSIX lock covering validation, deduplication, ID allocation and atomic replacement. Drive-mounted multi-writer semantics remain unsupported.
+
+## Reliability and audit outputs
+
+Each run writes a unique `*.decisions.jsonl` and `*.summary.json` alongside its log under `corpus/logs/discovery/`, including during dry runs. Decisions retain local evidence and scores/reasons; summaries record source outcomes and limits. Catalog contents remain unchanged during dry runs.
+
+Additional options: `--max-queue` (1000), `--max-requests` (250), `--max-seconds` (300), `--max-retries` (2), and `--max-retry-wait` (30). Queue/request/time budgets apply per source, and requests count redirects and retries. Available robots crawl delays/request rates and Retry-After are respected. A server-requested wait exceeding the retry budget defers that request.
+
+Exit codes: `0` for completed useful processing (including a genuinely empty source), `1` for partial processing, and `2` for failure or no processable selected sources. Hitting a page cap with pending pages returns `1`; inspect the summary's stop reason. Time budgets are checked between bounded operations and are not a hard external process deadline.
+
+See [DISCOVERY_AUDIT_RESULTS.md](../../docs/DISCOVERY_AUDIT_RESULTS.md) for exact offline/live verification and interpretation.
