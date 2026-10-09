@@ -1,0 +1,14 @@
+schema_version: pipeline-1
+# Paths are relative to this repository, or absolute on persistent storage.
+download:
+  catalog_path: corpus/catalog/documents.csv
+  raw_root: corpus/raw
+  log_root: corpus/logs/download
+  max_documents: 5
+  max_bytes: 52428800
+  max_seconds: 300
+  timeout_seconds: 20
+  request_delay_seconds: 1
+  max_requests: 50
+  max_retries: 2
+  max_retry_wait: 30

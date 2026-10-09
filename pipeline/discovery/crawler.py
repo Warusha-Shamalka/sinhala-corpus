@@ -379,7 +379,8 @@ class PoliteFetcher:
 
     def __init__(self, delay: float, timeout: float, logger: logging.Logger, *,
                  max_requests: int = 250, max_seconds: float = 300,
-                 max_retries: int = 2, max_retry_wait: float = 30) -> None:
+                 max_retries: int = 2, max_retry_wait: float = 30,
+                 user_agent: str = USER_AGENT, allowed_hosts: set[str] | None = None) -> None:
         self.delay, self.timeout, self.logger = delay, timeout, logger
         self.last_request = 0.0
         self.robots: dict[str, RobotFileParser] = {}
@@ -394,6 +395,8 @@ class PoliteFetcher:
         self.budget_reason = ""
         self.last_failure = ""
         self.last_http_status = None
+        self.user_agent = user_agent
+        self.allowed_hosts = allowed_hosts
 
     def _remaining(self) -> float:
         remaining = self.deadline - time.monotonic()
@@ -432,13 +435,17 @@ class PoliteFetcher:
         except (ValueError, TypeError, OverflowError):
             return None
 
-    def _request(self, url: str, base_url: str, method: str = "GET"):
+    def _request(self, url: str, base_url: str, method: str = "GET", *, check_redirect_robots: bool = False):
         self.last_failure, self.last_http_status = "", None
         owner = self
 
         class BoundedRedirectHandler(_DomainRedirectHandler):
             def redirect_request(self, req, fp, code, msg, headers, newurl):
                 redirected = super().redirect_request(req, fp, code, msg, headers, newurl)
+                if owner.allowed_hosts is not None and urlsplit(redirected.full_url).hostname not in owner.allowed_hosts:
+                    raise HTTPError(req.full_url, code, "redirect outside allowed resource hosts", headers, fp)
+                if check_redirect_robots and not owner.robots_allowed(redirected.full_url):
+                    raise HTTPError(req.full_url, code, "redirect forbidden by robots policy", headers, fp)
                 if not owner._wait() or not owner._charge_request():
                     raise HTTPError(req.full_url, code, "redirect budget exhausted", headers, fp)
                 owner.last_request = time.monotonic()
@@ -448,7 +455,7 @@ class PoliteFetcher:
             if not self._wait() or not self._charge_request():
                 self.last_failure = self.budget_reason
                 return None
-            request = Request(url, headers={"User-Agent": USER_AGENT}, method=method)
+            request = Request(url, headers={"User-Agent": self.user_agent}, method=method)
             self.last_request = time.monotonic()
             try:
                 response = build_opener(BoundedRedirectHandler(base_url)).open(
@@ -528,12 +535,28 @@ class PoliteFetcher:
             parser.parse(lines)
             self.robots[origin] = parser
             self.robots_outcomes[origin] = outcome
-            crawl_delay = parser.crawl_delay(USER_AGENT)
-            request_rate = parser.request_rate(USER_AGENT)
+            crawl_delay = parser.crawl_delay(self.user_agent)
+            request_rate = parser.request_rate(self.user_agent)
             self.delay = max(self.delay, crawl_delay or 0,
                              request_rate.seconds / request_rate.requests if request_rate and request_rate.requests else 0)
             self.logger.info("Robots policy %s: %s", origin, outcome)
-        return self.robots[origin].can_fetch(USER_AGENT, url)
+        return self.robots[origin].can_fetch(self.user_agent, url)
+
+    def open_resource(self, url: str, base_url: str):
+        """Open an approved resource with robots checks before every redirect GET.
+
+        Caller owns response closure and streaming/type validation. Discovery
+        continues to use fetch_html and never calls this resource API.
+        """
+        if not is_within_domain(url, base_url) or (
+            self.allowed_hosts is not None and urlsplit(url).hostname not in self.allowed_hosts
+        ):
+            self.last_failure = "unapproved_resource_host"
+            return None
+        if not self.robots_allowed(url):
+            self.last_failure = "robots_blocked"
+            return None
+        return self._request(url, base_url, check_redirect_robots=True)
 
     def fetch_html(self, url: str, base_url: str) -> FetchedPage | None:
         response = self._request(url, base_url)
