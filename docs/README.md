@@ -10,6 +10,7 @@ The subsequent [catalog integrity results](CATALOG_INTEGRITY_RESULTS.md) describ
 
 | Document | Purpose |
 | --- | --- |
+| [TODO.md](TODO.md) | Completed milestones and the ordered remaining checklist |
 | [CURRENT_STATE_REVIEW.md](CURRENT_STATE_REVIEW.md) | What exists, measured progress, limitations, and confirmed bugs |
 | [IMPLEMENTATION_BACKLOG.md](IMPLEMENTATION_BACKLOG.md) | Ordered work, proposed branches, dependencies, and acceptance criteria |
 | [COMPETITION_COMPLIANCE.md](COMPETITION_COMPLIANCE.md) | Rules supplied by the team, data separation, parameter accounting, and reproducibility |
