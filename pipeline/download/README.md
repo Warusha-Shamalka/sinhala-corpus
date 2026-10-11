@@ -76,3 +76,7 @@ Use one downloader and one catalog on a local POSIX filesystem. A separate worke
 Request retries cover transient opening/HTTP failures. Interrupted response bodies are cleaned up and retried from the beginning on a later run; HTTP Range/partial-byte resume is not implemented. Time budgets are checked between operations and reads, so a blocking socket read can overrun by its timeout. Other resource formats, authenticated downloads, external resource hosts, extraction and OCR remain planned.
 
 Run all offline tests with `python3 -B scripts/check_offline.py`. See [download validation](../../docs/DOWNLOAD_VALIDATION_RESULTS.md) for verification and the isolated live smoke test. Raw files and logs remain ignored by Git; keep catalog/config/code/docs and move accepted corpus data to persistent storage under the project's storage policy.
+
+## Live progress and background status
+
+Discovery and downloads now support `--progress auto|plain|off` and `--quiet`, with atomic per-run snapshots and a read-only `python3 -B -m pipeline.progress <snapshot-path>` checker. Download reports remain JSON on stdout; discovery offers `--json`. See the [progress guide](../../docs/PROGRESS_GUIDE.md) for commands, counters, snapshot paths and interruption/staleness behavior. Downloader dry-runs still make no requests or writes.

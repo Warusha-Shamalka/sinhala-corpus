@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import io
 import fcntl
 import json
 import math
@@ -13,7 +14,7 @@ import re
 import tempfile
 import time
 from collections import Counter, deque
-from contextlib import contextmanager
+from contextlib import contextmanager, redirect_stdout, nullcontext
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from email.utils import parsedate_to_datetime
@@ -25,6 +26,8 @@ from urllib.request import HTTPRedirectHandler, Request, build_opener
 from urllib.robotparser import RobotFileParser
 
 import yaml  # type: ignore[import-not-found]
+
+from pipeline.progress import ProgressReporter
 
 from .filters import (
     should_crawl,
@@ -380,7 +383,7 @@ class PoliteFetcher:
     def __init__(self, delay: float, timeout: float, logger: logging.Logger, *,
                  max_requests: int = 250, max_seconds: float = 300,
                  max_retries: int = 2, max_retry_wait: float = 30,
-                 user_agent: str = USER_AGENT, allowed_hosts: set[str] | None = None) -> None:
+                 user_agent: str = USER_AGENT, allowed_hosts: set[str] | None = None, progress=None) -> None:
         self.delay, self.timeout, self.logger = delay, timeout, logger
         self.last_request = 0.0
         self.robots: dict[str, RobotFileParser] = {}
@@ -397,6 +400,7 @@ class PoliteFetcher:
         self.last_http_status = None
         self.user_agent = user_agent
         self.allowed_hosts = allowed_hosts
+        self.progress = progress
 
     def _remaining(self) -> float:
         remaining = self.deadline - time.monotonic()
@@ -410,6 +414,8 @@ class PoliteFetcher:
             self.budget_reason = "time_limit"
             return False
         if wait:
+            if self.progress:
+                self.progress.update(force=True, phase="retry_wait" if minimum else "rate_wait", wait_seconds=wait)
             time.sleep(wait)
         return True
 
@@ -420,6 +426,8 @@ class PoliteFetcher:
             self.budget_reason = "request_limit"
             return False
         self.request_count += 1
+        if self.progress:
+            self.progress.update(force=True, phase="connecting", counts={"requests": self.request_count, "retries": self.retry_count})
         return True
 
     def _retry_after(self, value: str | None) -> float | None:
@@ -470,7 +478,8 @@ class PoliteFetcher:
                 retry_after = self._retry_after(exc.headers.get("Retry-After")) if isinstance(exc, HTTPError) and exc.headers else None
                 if isinstance(exc, HTTPError):
                     exc.close()
-                self.logger.warning("Request failed (%s) %s: %s", method, url, exc)
+                log = self.logger.debug if status in {404, 410} and urlsplit(url).path == "/robots.txt" else self.logger.warning
+                log("Request failed (%s) %s: %s", method, url, exc)
                 transient = status in {429, 500, 502, 503, 504} or status is None
                 if self.budget_reason or not transient or attempt == self.max_retries:
                     return None
@@ -479,6 +488,8 @@ class PoliteFetcher:
                     self.last_failure = "retry_deferred"
                     self.logger.warning("Retry deferred: server wait exceeds retry-wait budget for %s", url)
                     return None
+                if self.progress:
+                    self.progress.update(force=True, phase="retry_wait", wait_seconds=wait)
                 if not self._wait(wait):
                     self.last_failure = self.budget_reason
                     return None
@@ -508,6 +519,8 @@ class PoliteFetcher:
         origin = f"{parts.scheme}://{parts.netloc}"
         if origin not in self.robots:
             robots_url = f"{origin}/robots.txt"
+            if self.progress:
+                self.progress.update(force=True, phase="robots_lookup", robots_outcome="")
             response = self._request(robots_url, url)
             parser = RobotFileParser(robots_url)
             outcome = "unavailable"
@@ -540,6 +553,8 @@ class PoliteFetcher:
             self.delay = max(self.delay, crawl_delay or 0,
                              request_rate.seconds / request_rate.requests if request_rate and request_rate.requests else 0)
             self.logger.info("Robots policy %s: %s", origin, outcome)
+            if self.progress:
+                self.progress.update(force=True, robots_outcome=outcome, robots_http_status=self.last_http_status)
         return self.robots[origin].can_fetch(self.user_agent, url)
 
     def open_resource(self, url: str, base_url: str):
@@ -593,6 +608,7 @@ def discover_source(
     limits: dict,
     logger: logging.Logger,
     decision_sink=None,
+    progress=None,
 ) -> tuple[list[dict[str, str]], dict]:
     stats: dict = {
         "pages_visited": 0, "pages_skipped": 0, "candidates_discovered": 0, "errors": 0,
@@ -611,6 +627,9 @@ def discover_source(
     fetcher = PoliteFetcher(limits["request_delay_seconds"], limits["timeout_seconds"], logger,
                             max_requests=limits["max_requests"], max_seconds=limits["max_seconds"],
                             max_retries=limits["max_retries"], max_retry_wait=limits["max_retry_wait"])
+    if progress:
+        fetcher.progress = progress
+        progress.update(force=True, source_id=source["id"], robots_outcome="", stop_reason="", transfer={}, counts={"pages_visited": 0, "queued": 1, "candidates": 0, "rejected": 0, "requests": 0, "retries": 0})
     queue = deque([(base_url, 0)])
     scheduled = {base_url}
     visited: set[str] = set()
@@ -649,7 +668,11 @@ def discover_source(
         if getattr(fetcher, "budget_reason", ""):
             stats["stop_reason"] = fetcher.budget_reason
             break
+        if progress:
+            progress.update(phase="discovering", counts={"pages_visited": stats["pages_visited"], "queued": len(queue), "candidates": len(candidate_by_url), "rejected": len(rejected_by_url)})
         page_url, depth = queue.popleft()
+        if progress:
+            progress.update(item={"url": page_url})
         page_url = normalize_url(page_url)
         if not page_url or page_url in visited:
             continue
@@ -723,6 +746,8 @@ def discover_source(
         {"title": title, "score": score, "reason": reason, "url": url}
         for url, (title, score, reason) in list(rejected_by_url.items())[:20]
     ]
+    if progress:
+        progress.update(force=True, phase="source_finished", stop_reason=stats["stop_reason"], counts={"pages_visited": stats["pages_visited"], "queued": len(queue), "candidates": len(candidate_by_url), "rejected": len(rejected_by_url), "requests": stats["requests"], "retries": stats["retries"]})
     return list(candidate_by_url.values()), stats
 
 
@@ -734,13 +759,26 @@ def run(args: argparse.Namespace) -> int:
     summary = {"schema_version": "discovery-run-1", "run_id": run_id,
                "dry_run": args.dry_run, "sources": [], "outcome": "failed",
                "started_at_utc": datetime.now(timezone.utc).isoformat()}
+    progress = None
+    if getattr(args, "progress", None) is not None:
+        progress = ProgressReporter("discovery", run_id=run_id, path=log_path.with_suffix(".progress.json"), mode="off" if getattr(args, "quiet", False) else args.progress)
+        summary["progress_path"] = str(progress.path)
+    if getattr(args, "quiet", False):
+        for handler in list(logger.handlers):
+            if isinstance(handler, logging.StreamHandler) and not isinstance(handler, logging.FileHandler):
+                logger.removeHandler(handler)
     result = 2
     try:
         with decisions_path.open("w", encoding="utf-8") as stream:
             def record(decision):
                 stream.write(json.dumps({"run_id": run_id, **decision}, ensure_ascii=False) + "\n")
                 stream.flush()
-            result = _run(args, logger, log_path, record, summary)
+            with redirect_stdout(io.StringIO()) if getattr(args, "json", False) else nullcontext():
+                result = _run(args, logger, log_path, record, summary, progress)
+    except KeyboardInterrupt:
+        if progress:
+            progress.finish("interrupted")
+        raise
     except (OSError, ValueError, CatalogError) as exc:
         result = 2
         summary["error"] = str(exc)
@@ -750,17 +788,22 @@ def run(args: argparse.Namespace) -> int:
     summary.update(exit_code=result, finished_at_utc=datetime.now(timezone.utc).isoformat())
     try:
         summary_path.write_text(json.dumps(summary, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-        print(f"Run outcome: {summary['outcome']}; exit code: {result}")
-        print(f"Decisions: {decisions_path}\nSummary: {summary_path}")
+        if getattr(args, "json", False):
+            print(json.dumps({**summary, "decisions_path": str(decisions_path), "summary_path": str(summary_path)}, ensure_ascii=False, indent=2))
+        else:
+            print(f"Run outcome: {summary['outcome']}; exit code: {result}")
+            print(f"Decisions: {decisions_path}\nSummary: {summary_path}")
     except OSError as exc:
         logger.error("Could not persist run summary: %s", exc)
         result = 2
+    if progress:
+        progress.finish({"success": "completed", "partial": "partial", "skipped": "skipped"}.get(summary["outcome"], "failed") if result != 2 else "failed", counts={"candidates_to_add": summary.get("candidates_to_add", 0)})
     for handler in logger.handlers:
         handler.flush()
     return result
 
 
-def _run(args, logger, log_path, decision_sink, summary) -> int:
+def _run(args, logger, log_path, decision_sink, summary, progress=None) -> int:
     started = time.monotonic()
     logger.info("Crawl started at %s", datetime.now(timezone.utc).isoformat())
     try:
@@ -823,7 +866,10 @@ def _run(args, logger, log_path, decision_sink, summary) -> int:
             summary["sources"].append({"source_id": source_id, "outcome": "skipped", "reason": "missing_url"})
             continue
         logger.info("Source started: %s (%s)", source_id, source.get("base_url"))
-        candidates, stats = discover_source(source, subjects_config, limits, logger, decision_sink)
+        if progress:
+            candidates, stats = discover_source(source, subjects_config, limits, logger, decision_sink, progress=progress)
+        else:
+            candidates, stats = discover_source(source, subjects_config, limits, logger, decision_sink)
         stats.setdefault("outcome", "failed" if stats.get("errors") and not stats.get("pages_visited") else "success")
         if stats["outcome"] == "success" and not candidates:
             stats["outcome"] = "success_empty"
@@ -935,6 +981,9 @@ def build_argument_parser() -> argparse.ArgumentParser:
     parser.add_argument("--max-retries", type=int, default=DEFAULT_LIMITS["max_retries"])
     parser.add_argument("--max-retry-wait", type=float, default=DEFAULT_LIMITS["max_retry_wait"])
     parser.add_argument("--dry-run", action="store_true", help="Discover and preview candidates without modifying the catalog")
+    parser.add_argument("--progress", choices=("auto", "plain", "off"), default="auto")
+    parser.add_argument("--quiet", action="store_true", help="Suppress terminal progress and console logging")
+    parser.add_argument("--json", action="store_true", help="Emit only the final JSON report on stdout")
     return parser
 
 
@@ -948,7 +997,10 @@ def main() -> int:
                              ("max_queue", "max_requests", "max_seconds", "max_retries", "max_retry_wait")}})
     except ValueError as exc:
         parser.error(str(exc))
-    return run(args)
+    try:
+        return run(args)
+    except KeyboardInterrupt:
+        return 130
 
 
 if __name__ == "__main__":

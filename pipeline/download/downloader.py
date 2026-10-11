@@ -11,6 +11,7 @@ import logging
 import math
 import os
 from pathlib import Path
+import sys
 import tempfile
 from datetime import datetime, timezone
 from uuid import uuid4
@@ -23,6 +24,7 @@ from pipeline.discovery.crawler import (
     _catalog_lock, _read_catalog, _validate_rows, read_catalog,
 )
 from pipeline.discovery.filters import normalize_url
+from pipeline.progress import ProgressReporter
 
 
 VERSION = "download-0.1"
@@ -190,7 +192,7 @@ def recover(row: dict, raw_root: Path) -> dict | None:
     return None
 
 
-def persist_pdf(row: dict, source: dict, settings: dict, fetcher: PoliteFetcher) -> dict:
+def persist_pdf(row: dict, source: dict, settings: dict, fetcher: PoliteFetcher, progress=None) -> dict:
     url = normalize_url(row["source_url"])
     response = fetcher.open_resource(url, normalize_url(source["base_url"]))
     if response is None:
@@ -211,6 +213,8 @@ def persist_pdf(row: dict, source: dict, settings: dict, fetcher: PoliteFetcher)
         declared = response.headers.get("Content-Length")
         if declared is not None and (not declared.isdigit() or int(declared) > settings["max_bytes"]):
             raise DownloadError("Invalid or excessive Content-Length")
+        if progress:
+            progress.begin_transfer(int(declared) if declared is not None else None)
         folder = settings["raw_root"] / "pdf" / row["doc_id"]
         folder.mkdir(parents=True, exist_ok=True)
         fd, name = tempfile.mkstemp(prefix=".download-", suffix=".tmp", dir=folder)
@@ -233,12 +237,16 @@ def persist_pdf(row: dict, source: dict, settings: dict, fetcher: PoliteFetcher)
                 tail = (tail + chunk)[-2048:]
                 digest.update(chunk)
                 stream.write(chunk)
+                if progress:
+                    progress.transfer(size, int(declared) if declared is not None else None)
             if declared is not None and size != int(declared):
                 raise DownloadError("Content-Length mismatch; interrupted response")
             if not prefix.startswith(b"%PDF-") or b"%%EOF" not in tail:
                 raise DownloadError("Incomplete PDF signature/end marker")
             stream.flush()
             os.fsync(stream.fileno())
+        if progress:
+            progress.update(force=True, phase="persisting")
         sha = digest.hexdigest()
         artifact = folder / f"{sha}.pdf"
         if artifact.exists():
@@ -273,7 +281,7 @@ def persist_pdf(row: dict, source: dict, settings: dict, fetcher: PoliteFetcher)
             temporary.unlink(missing_ok=True)
 
 
-def run(settings: dict, sources: list[dict], *, source_id=None, doc_ids=None, dry_run=False, refresh=False) -> dict:
+def run(settings: dict, sources: list[dict], *, source_id=None, doc_ids=None, dry_run=False, refresh=False, progress_mode=None) -> dict:
     catalog = settings["catalog_path"]
     jobs, excluded = plan_downloads(read_catalog(catalog), sources, source_id=source_id,
                                    doc_ids=doc_ids, maximum=settings["max_documents"], refresh=refresh)
@@ -287,40 +295,61 @@ def run(settings: dict, sources: list[dict], *, source_id=None, doc_ids=None, dr
         log_root.mkdir(parents=True, exist_ok=True)
         events = log_root / f"download_{datetime.now(timezone.utc):%Y%m%dT%H%M%SZ}_{uuid4().hex[:8]}.jsonl"
         report["events_path"] = str(events)
+        progress = ProgressReporter("download", run_id=events.stem, path=events.with_suffix(".progress.json"), mode=progress_mode) if progress_mode is not None else None
+        if progress:
+            report["progress_path"] = str(progress.path)
+            progress.update(force=True, counts={"jobs_total": len(jobs), "jobs_completed": 0, "excluded": len(excluded), "deferred": sum(r["reason"] == "batch_limit" for r in excluded), **{key: 0 for key in ("downloaded", "verified_existing", "recovered", "failed", "catalog_conflict")}})
         fetchers = {}
-        with events.open("x", encoding="utf-8") as audit:
-            for row, source in jobs:
-                result = {"doc_id": row["doc_id"], "at_utc": utc_now()}
-                try:
-                    receipt = None if refresh else recover(row, settings["raw_root"])
-                    if receipt is None:
-                        if source["id"] not in fetchers:
-                            fetchers[source["id"]] = PoliteFetcher(
-                                settings["request_delay_seconds"], settings["timeout_seconds"], logging.getLogger(__name__),
-                                max_requests=settings["max_requests"], max_seconds=settings["max_seconds"],
-                                max_retries=settings["max_retries"], max_retry_wait=settings["max_retry_wait"],
-                                user_agent="SinhalaCorpusDownload/0.1 (+educational corpus resource downloader)",
-                                allowed_hosts={urlsplit(normalize_url(source["base_url"])).hostname})
-                        receipt = persist_pdf(row, source, settings, fetchers[source["id"]])
-                        result["outcome"] = "downloaded"
-                    else:
-                        result["outcome"] = "verified_existing" if row["status"] == "DOWNLOADED" else "recovered"
-                    result["sha256"] = receipt["sha256"]
-                    updates = {"status": "DOWNLOADED", "sha256": receipt["sha256"],
-                               "local_filename": receipt["local_filename"], "pipeline_version": VERSION,
-                               "last_processed": utc_now(), "error": ""}
-                    if not checkpoint(catalog, row, updates):
-                        result["outcome"] = "catalog_conflict"
-                except (DownloadError, HTTPException, OSError, ValueError, KeyError, CatalogError) as exc:
-                    result.update(outcome="failed", error=str(exc))
-                    # A failed refresh must preserve the previous successful version.
-                    if row["status"] != "DOWNLOADED":
-                        checkpoint(catalog, row, {"status": "DOWNLOAD_FAILED", "error": str(exc),
-                                                  "last_processed": utc_now(), "pipeline_version": VERSION})
-                audit.write(json.dumps(result, ensure_ascii=False) + "\n")
-                audit.flush()
-                os.fsync(audit.fileno())
-                report["results"].append(result)
+        try:
+            with events.open("x", encoding="utf-8") as audit:
+                for row, source in jobs:
+                    result = {"doc_id": row["doc_id"], "at_utc": utc_now()}
+                    if progress:
+                        if progress.state.get("source_id") != source["id"]:
+                            progress.update(counts={"requests": 0, "retries": 0})
+                        progress.update(force=True, phase="verifying_existing", source_id=source["id"], item={"doc_id": row["doc_id"], "title": row["title"]}, transfer={}, robots_outcome="")
+                    try:
+                        receipt = None if refresh else recover(row, settings["raw_root"])
+                        if receipt is None:
+                            if source["id"] not in fetchers:
+                                fetchers[source["id"]] = PoliteFetcher(
+                                    settings["request_delay_seconds"], settings["timeout_seconds"], logging.getLogger(__name__),
+                                    max_requests=settings["max_requests"], max_seconds=settings["max_seconds"],
+                                    max_retries=settings["max_retries"], max_retry_wait=settings["max_retry_wait"],
+                                    user_agent="SinhalaCorpusDownload/0.1 (+educational corpus resource downloader)",
+                                    allowed_hosts={urlsplit(normalize_url(source["base_url"])).hostname})
+                            if progress:
+                                fetchers[source["id"]].progress = progress
+                            receipt = persist_pdf(row, source, settings, fetchers[source["id"]], progress)
+                            result["outcome"] = "downloaded"
+                        else:
+                            result["outcome"] = "verified_existing" if row["status"] == "DOWNLOADED" else "recovered"
+                        result["sha256"] = receipt["sha256"]
+                        updates = {"status": "DOWNLOADED", "sha256": receipt["sha256"],
+                                   "local_filename": receipt["local_filename"], "pipeline_version": VERSION,
+                                   "last_processed": utc_now(), "error": ""}
+                        if progress:
+                            progress.update(force=True, phase="catalog_checkpoint")
+                        if not checkpoint(catalog, row, updates):
+                            result["outcome"] = "catalog_conflict"
+                    except (DownloadError, HTTPException, OSError, ValueError, KeyError, CatalogError) as exc:
+                        result.update(outcome="failed", error=str(exc))
+                        # A failed refresh must preserve the previous successful version.
+                        if row["status"] != "DOWNLOADED":
+                            checkpoint(catalog, row, {"status": "DOWNLOAD_FAILED", "error": str(exc),
+                                                      "last_processed": utc_now(), "pipeline_version": VERSION})
+                    audit.write(json.dumps(result, ensure_ascii=False) + "\n")
+                    audit.flush()
+                    os.fsync(audit.fileno())
+                    report["results"].append(result)
+                    if progress:
+                        progress.update(force=True, phase="job_finished", counts={"jobs_completed": len(report["results"]), **{key: sum(r["outcome"] == key for r in report["results"]) for key in ("downloaded", "verified_existing", "recovered", "failed", "catalog_conflict")}})
+        except BaseException as exc:
+            if progress:
+                progress.finish("interrupted" if isinstance(exc, KeyboardInterrupt) else "failed")
+            raise
+        if progress:
+            progress.finish("failed" if any(r["outcome"] in {"failed", "catalog_conflict"} for r in report["results"]) else "completed")
     return report
 
 
@@ -333,6 +362,8 @@ def main() -> int:
     parser.add_argument("--max-documents", type=int)
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--refresh", action="store_true", help="Fetch a new version; retain old raw artifacts")
+    parser.add_argument("--progress", choices=("auto", "plain", "off"), default="auto")
+    parser.add_argument("--quiet", action="store_true", help="Suppress terminal progress (snapshots still saved)")
     args = parser.parse_args()
     try:
         settings = load_settings(args.config)
@@ -341,9 +372,12 @@ def main() -> int:
                 raise ValueError("max-documents must be positive")
             settings["max_documents"] = args.max_documents
         report = run(settings, load_sources(args.sources), source_id=args.source, doc_ids=args.doc_ids,
-                     dry_run=args.dry_run, refresh=args.refresh)
+                     dry_run=args.dry_run, refresh=args.refresh, progress_mode="off" if args.quiet else args.progress)
         print(json.dumps(report, ensure_ascii=False, indent=2))
         return int(any(r["outcome"] in {"failed", "catalog_conflict"} for r in report["results"]))
+    except KeyboardInterrupt:
+        print("Download interrupted; inspect the progress snapshot and event log.", file=sys.stderr)
+        return 130
     except (OSError, ValueError, CatalogError) as exc:
         parser.exit(2, f"Download configuration/catalog error: {exc}\n")
 

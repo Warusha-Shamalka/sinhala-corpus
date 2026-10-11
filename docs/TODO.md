@@ -82,15 +82,17 @@ Verification details: [discovery results](DISCOVERY_VALIDATION_RESULTS.md) and [
 
 ## Progress reporting across pipeline stages
 
-- [ ] Add shared progress reporting for discovery, downloading and future extraction/OCR/cleaning stages.
-- [ ] Discovery: show current source/page, pages visited, queued URLs, candidates accepted/rejected, request count, elapsed time and the reason for stopping. The crawl's total is unknown; do not present the page cap as percent completion of the website.
-- [ ] Downloading: show current document ID/title, job number out of selected jobs, bytes transferred, known file size, transfer speed and estimated remaining time when enough information exists. Show bytes without a percentage when Content-Length is unknown.
-- [ ] Show active phases such as robots lookup, connecting, transferring, retry wait, stored-file verification and catalog checkpoint so users can distinguish work from waiting.
-- [ ] Count downloaded, verified-existing, recovered, failed and conflicted jobs separately; explain batch-limited exclusions as deferred jobs rather than errors. Report missing robots.txt as an absent policy while retaining its HTTP observation.
-- [ ] Write human-readable progress to stderr and keep the final JSON report on stdout; support quiet/noninteractive modes and throttle updates so redirected logs and Colab remain readable.
-- [ ] Persist a lightweight per-run progress snapshot with run ID, stage, current item, counts and last-update time, allowing a read-only status command to inspect background runs. Distinguish running, completed, failed, interrupted and potentially stale snapshots without claiming a stale heartbeat proves failure.
+- [x] Add shared progress reporting for discovery and downloading; provide a reusable reporter for future stages.
+- [x] Discovery: show current source/page, pages visited, queued URLs, candidates accepted/rejected, request count, elapsed time and the reason for stopping. The crawl's total is unknown; do not present the page cap as percent completion of the website.
+- [x] Downloading: show current document ID/title, job number out of selected jobs, bytes transferred, known file size, transfer speed and estimated remaining time when enough information exists. Show bytes without a percentage when Content-Length is unknown.
+- [x] Show active phases such as robots lookup, connecting, transferring, retry wait, stored-file verification and catalog checkpoint so users can distinguish work from waiting.
+- [x] Count downloaded, verified-existing, recovered, failed and conflicted jobs separately; explain batch-limited exclusions as deferred jobs rather than errors. Report missing robots.txt as an absent policy while retaining its HTTP observation.
+- [x] Write human-readable progress to stderr and keep the final JSON report on stdout; support quiet/noninteractive modes and throttle updates so redirected logs and Colab remain readable.
+- [x] Persist a lightweight per-run progress snapshot with run ID, stage, current item, counts and last-update time, allowing a read-only status command to inspect background runs. Distinguish running, completed, failed, interrupted and potentially stale snapshots without claiming a stale heartbeat proves failure.
 - [ ] Future page-processing stages: report documents/pages completed, OCR-required pages, failures and rejected records; estimate completion only when the task total is known.
-- [ ] Add offline tests for known/unknown file sizes, retries, silent/redirected output, interrupted runs and final progress totals matching actual outcomes. Document the progress and background-status commands before marking this feature complete.
+- [x] Add offline tests for known/unknown file sizes, retries, silent/redirected output, interrupted runs and final progress totals matching actual outcomes. Document the progress and background-status commands before marking this feature complete.
+
+See [PROGRESS_GUIDE.md](PROGRESS_GUIDE.md) for usage and limitations.
 
 ## Extraction, OCR and cleaning
 

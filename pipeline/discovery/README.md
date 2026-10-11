@@ -55,3 +55,7 @@ See [DISCOVERY_AUDIT_RESULTS.md](../../docs/DISCOVERY_AUDIT_RESULTS.md) for exac
 ## Generic resource links
 
 Generic Download/Open links can use a short, completed table row, list item, article, description item or explicitly marked resource card with a single distinct destination. The parser no longer takes context from preceding page fragments. Informative anchor text/title attributes are preserved; unrelated global headings, navigation/hidden content, oversized sections and ambiguous multi-link cards do not supply metadata. Decisions retain the scoped text and its container kind for inspection. See [resource-local evidence results](../../docs/DISCOVERY_LOCAL_EVIDENCE_RESULTS.md) for supported structures, limits and validation.
+
+## Live progress and background status
+
+Discovery and downloads now support `--progress auto|plain|off` and `--quiet`, with atomic per-run snapshots and a read-only `python3 -B -m pipeline.progress <snapshot-path>` checker. Download reports remain JSON on stdout; discovery offers `--json`. See the [progress guide](../../docs/PROGRESS_GUIDE.md) for commands, counters, snapshot paths and interruption/staleness behavior. Downloader dry-runs still make no requests or writes.
