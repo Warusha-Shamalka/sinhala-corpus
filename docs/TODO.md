@@ -157,9 +157,10 @@ Native PDF extraction and selective OCR are implemented; cleaning and derived-da
 - [x] Add optional Gemma/DeepSeek snapshot adapters and a beginner Colab notebook; keep heavyweight dependencies outside core requirements.
 - [x] Mark every raw neural result as pending review and unapproved for training; preserve production catalog/native bundles.
 - [ ] Have two Sinhala readers transcribe/verify the ten samples; currently zero verified references.
-- [ ] Run Gemma on an available Colab GPU and freeze its successful dependency environment.
+- [ ] Finish the Gemma Colab pilot and archive its dependency/model manifests. Maintainer supplied T4 results for two pages; the first hit a repetition/token-limit failure.
 - [ ] Validate DeepSeek upstream environment on a BF16-capable GPU and implement completion detection; completion-unverified output is currently excluded from accuracy scoring.
 - [ ] Expand evaluation beyond the current source pilot to printed Sinhala, MCQs, tables, diagrams and subject diversity.
+- [x] Add phase progress plus Gemma repetition-loop/soft-deadline stopping; stopped output remains truncated. Local fixture checks pass; updated GPU behavior remains pending.
 - [ ] Review holdout CER/WER plus missing-line, option, number and equation errors before selecting an OCR backend.
 - [ ] Implement reviewed-page acceptance and an exporter that rejects pending/reserved evaluation documents.
 - [ ] Keep bulk OCR/training export deferred until these accuracy and acceptance checks pass.

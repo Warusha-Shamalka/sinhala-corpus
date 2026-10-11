@@ -54,4 +54,10 @@ Prepared `reviews/ocr/pilot_20261011`: ten rendered pages across seven raw PDFs,
 
 Added the independent review/checksum/CER/WER tool, optional snapshot-based neural runner and Colab notebook. Offline checks now pass **166 tests**, including 13 new accuracy/orchestration tests, the real Tesseract integration test, and notebook code-cell syntax checks. CI validates OCR review metadata without requiring the generated images or heavyweight GPU dependencies. Neural fixtures are software tests, not model accuracy evidence.
 
-**No Gemma or DeepSeek GPU execution has occurred.** Hardware/library compatibility remains to be validated in Colab. DeepSeek upstream completion evidence is not available through its text-returning API; these results are explicitly incomplete and excluded from scored comparisons. No CER/WER, model winner, human-reviewed text or training acceptance is claimed.
+**At the initial workflow checkpoint, no Gemma or DeepSeek GPU execution had occurred.** Hardware/library compatibility remains to be validated in Colab. DeepSeek upstream completion evidence is not available through its text-returning API; these results are explicitly incomplete and excluded from scored comparisons. No CER/WER, model winner, human-reviewed text or training acceptance is claimed.
+
+## Subsequent maintainer-supplied Colab evidence
+
+Gemma now has actual T4 execution evidence supplied by the maintainer: the first page spent 604.84 seconds reaching the 8,192-token cap in a repetition loop; the second completed in 21.899 seconds with 284 tokens. See [Colab trial details](COLAB_OCR_GUIDE.md#observed-gemma-t4-trial-and-loop-protection). This establishes execution, not transcription accuracy or completion of the ten-page comparison.
+
+Added phase progress, a generated-token repetition guard and a soft generation deadline. Their interrupted outputs remain truncated and excluded from scoring. The safeguard behavior and progress snapshots have local fixture coverage; GPU execution of the updated guard remains pending.

@@ -114,6 +114,49 @@ class AccuracyTests(unittest.TestCase):
         run=self.predict(name='unverified',engine=Unverified())
         self.assertEqual(benchmark.evaluate(self.packet,[run])['models'][0]['metrics']['calibration']['scored_pages'],0)
 
+    def test_repetition_guard_detects_long_loops_without_removing_text(self):
+        self.assertTrue(neural.repetition_loop([1, 2, 3, 4, 5, 6, 7] * 25))
+        self.assertTrue(neural.repetition_loop([9] * 128))
+        self.assertFalse(neural.repetition_loop([1, 2] * 10))
+        self.assertFalse(neural.repetition_loop(list(range(256))))
+        self.assertFalse(neural.repetition_loop([1, 2] * 100 + list(range(50))))
+
+    def test_generation_guard_excludes_prompt_and_reports_soft_deadline(self):
+        class Tokens:
+            def __init__(self, values):
+                self.values = values
+                self.shape = (1, len(values))
+            def __getitem__(self, key):
+                return Tokens(self.values[key[1]])
+            def tolist(self):
+                return self.values
+        now = [0]
+        guard = neural.GenerationGuard(128, 120, clock=lambda:now[0])
+        self.assertFalse(guard(Tokens([7]*128 + list(range(64))), None))
+        self.assertTrue(guard(Tokens([7]*128 + [9]*128), None))
+        self.assertEqual(guard.reason, 'repetition_loop')
+        guard = neural.GenerationGuard(128, 120, clock=lambda:now[0])
+        now[0] = 121
+        self.assertTrue(guard(Tokens([7]*129), None))
+        self.assertEqual(guard.reason, 'time_limit')
+
+    def test_progress_snapshot_identifies_page_before_recognition(self):
+        outer = self
+        observed = []
+        class InspectingModel(FakeModel):
+            def recognize(self, image):
+                snapshot = json.loads((outer.root/'progress'/'run.json').read_text())
+                outer.assertEqual(snapshot['status'], 'running')
+                outer.assertEqual(snapshot['current_sample'], image.stem)
+                outer.assertEqual(snapshot['completed_pages'], len(observed))
+                observed.append(image.stem)
+                return super().recognize(image)
+        directory = self.predict(name='progress', engine=InspectingModel())
+        final = json.loads((directory/'run.json').read_text())
+        self.assertEqual(final['completed_pages'], 2)
+        self.assertIsNone(final['current_sample'])
+        self.assertEqual(len(observed), 2)
+
     def test_outputs_immutable_and_manifest_bound(self):
         run=self.predict()
         with self.assertRaisesRegex(ValueError,'existing'):self.predict()
@@ -136,7 +179,14 @@ class AccuracyTests(unittest.TestCase):
         notebook=json.loads(path.read_text())
         for cell in notebook['cells']:
             if cell['cell_type']=='code':
-                ast.parse(''.join(cell['source']))
+                tree = ast.parse(''.join(cell['source']))
+                # Also validate Python scripts embedded for subprocess -c.
+                for node in tree.body:
+                    if isinstance(node, ast.Assign) and any(
+                        isinstance(target, ast.Name) and target.id == 'selection_code'
+                        for target in node.targets
+                    ):
+                        ast.parse(ast.literal_eval(node.value))
                 self.assertEqual(cell['outputs'],[])
 
 

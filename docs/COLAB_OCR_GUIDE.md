@@ -10,11 +10,11 @@ Colab runs Python on a remote machine. Your laptop needs a browser and an intern
 4. Choose **Runtime → Change runtime type**, then choose a GPU accelerator. A T4 is a candidate for the smaller Gemma run; memory and compatibility still need checking on the actual runtime. GPU availability is not guaranteed, including on paid plans.
 5. Leave `BACKEND = 'gemma'`. Click the triangle beside each code cell, starting at the top. Wait for one cell to finish before running the next. The first cell asks permission to mount your Drive.
 6. Follow the notebook's Hugging Face access instructions if the model requires authentication. Store a read token using the Colab Secrets panel, never in code or notebook output.
-7. Packages and weights may take several minutes to download. The transcription cell prints `[1/10] ...`, then saves each page's JSON immediately to Drive. Start with `MAX_PAGES = 1` for a small compatibility trial; use a new run folder for the full ten-page run.
+7. Packages and weights may take several minutes to download. The transcription cell reports weight verification, model loading, and `[1/10] ... starting transcription`, then saves each completed page's JSON immediately to Drive. Start with `MAX_PAGES = 1` for a small compatibility trial; use a new run folder for the full ten-page run.
 8. Inspect the results in `My Drive/sinhala-corpus/ocr-comparison/gemma_<timestamp>/`. Keep `predictions`, `model_selection.json`, `repository_commit.txt`, `requirements.lock.txt`, and `accuracy_report.json` together.
 9. When finished, choose **Runtime → Disconnect and delete runtime**. Saved Drive outputs persist. Cached model weights in `/content` will need downloading again in a new runtime.
 
-**Current validation:** notebook JSON/code syntax and orchestration are checked locally with fixtures. Neither neural model has run on a GPU in this project yet. No Sinhala accuracy claim is available. First-run dependency installation resolves packages; the resulting lock file records exact installed versions for reproduction, rather than claiming an already validated fixed neural environment.
+**Current validation:** notebook JSON/code syntax and orchestration are checked locally with fixtures. The maintainer has now supplied Gemma T4 execution artifacts (see the trial below); DeepSeek execution remains pending. The newly added generation safeguards have only been tested with local fixtures, and no Sinhala accuracy claim is available. First-run dependency installation resolves packages; the resulting lock file records exact installed versions for reproduction, rather than claiming an already validated fixed neural environment.
 
 ## What the notebook does
 
@@ -40,11 +40,22 @@ Do not spend GPU time typing reference transcriptions: human review can happen o
 | --- | --- |
 | Missing manifest/image | Upload the entire review folder, including ignored `images`, to the exact Drive path. |
 | `nvidia-smi` or CUDA unavailable | Change runtime type to GPU; wait for an available runtime. |
+| Environment creation fails | The setup cell prints the original venv error and tries virtualenv using the same runtime Python. Use the updated cell; if fallback fails too, share its full preceding output. This commonly indicates missing venv/ensurepip support, but the error output is needed to confirm. |
+| Download command reports an unterminated string | Update the download cell: `selection_code` must use a raw triple-quoted string (`r"""`). Retry the subprocess block using the existing `RUN` folder so earlier setup and artifacts are preserved. |
 | Model access denied | Check model-page access conditions and the read token in Secrets. |
 | Out of memory | Preserve the failure log. Start with one page to diagnose; page count does not reduce model weight memory. Smaller image settings or another GPU require a separate documented experiment. |
 | DeepSeek BF16 error | Use a suitable GPU or continue the Gemma pilot; do not buy compute until the requirement is understood. |
 | Flash Attention installation fails | Save the installation error and runtime versions; this upstream environment has not been GPU validated here. |
 | Existing repository/run directory | Inspect existing results. Use a fresh runtime/new output folder; the runner refuses overwrites. |
+| Long silence during transcription | Older notebook checkouts print only after a page finishes. Inspect `predictions/run.json` in Drive: `loading` means model setup; `running` means the page-processing loop started. Updated code records `current_sample` and `completed_pages` and prints phase starts. These snapshots are checkpoints, not liveness heartbeats. |
 | Runtime disconnects | Completed page JSONs already saved on Drive remain. A later run uses a new folder; partial runs are not reported as complete comparisons. |
 
 Sources: [Colab FAQ](https://research.google.com/colaboratory/faq.html), [Gemma E2B model instructions](https://huggingface.co/google/gemma-4-E2B-it), [DeepSeek-OCR-2 upstream setup](https://github.com/deepseek-ai/DeepSeek-OCR-2). Hardware choices are engineering trial targets, not verified Sinhala accuracy findings.
+
+## Observed Gemma T4 trial and loop protection
+
+The maintainer supplied Colab artifacts on 11 October 2026: Gemma E2B revision `3e22461f65e89153144f8adb70e3b8c2cc9845a7`, Tesla T4, Python 3.13.15, Torch 2.11.0+cu130, Transformers 5.19.0, Accelerate 1.15.0, Pillow 11.3.0, float16/eager attention. The supplied first-page artifact (`LK-EDU-000009_p000001`) generated 8,192 tokens, repeated `[සම්බන්ධ]` 1,358 times, took 604.84 seconds and was correctly marked truncated. The second supplied artifact (`LK-EDU-000010_p000001`) generated 284 tokens in 21.899 seconds and ended normally. These are user-reported GPU execution results; no independent reference accuracy has been measured. They supersede the earlier pending-execution checkpoint for this Gemma configuration only. DeepSeek GPU execution remains pending.
+
+Updated Gemma generation stops on a long, exactly repeated token tail or a default 120-second soft deadline. Raw/partial text is preserved with `completion_status` `repetition_loop` or `time_limit`, outcome `truncated`, and no training approval. The heuristic can flag legitimately repetitive material, which must be reviewed rather than silently repaired. It checks only generated tokens, not source prompt tokens. The deadline is checked between generation steps, excludes loading/preprocessing, and is not a hard process timeout. DeepSeek's upstream text-returning API has neither guard in this adapter.
+
+Push the changed Python module before cloning a fresh Colab checkout. Changes in your laptop repository do not change an already running Colab process. Keep previous run outputs as evidence and choose a new prediction folder for any retry. Use one page for a compatibility trial before all ten.

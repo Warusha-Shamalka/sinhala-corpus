@@ -22,6 +22,40 @@ PROMPT = ('Transcribe all visible text from this Sinhala educational page in rea
 MODELS = {'gemma': 'google/gemma-4-E2B-it', 'deepseek': 'deepseek-ai/DeepSeek-OCR-2'}
 
 
+def repetition_loop(tokens):
+    """Conservative exact-token tail heuristic; flagged text always needs review."""
+    if len(tokens) < 128:
+        return False
+    for width in range(1, 65):
+        copies = max(4, (128 + width - 1) // width)
+        length = width * copies
+        if length <= len(tokens):
+            block = tokens[-width:]
+            if tokens[-length:] == block * copies:
+                return True
+    return False
+
+
+class GenerationGuard:
+    """Single-image soft deadline/repetition stopping criterion for Gemma."""
+    def __init__(self, prompt_length, max_seconds, *, clock=time.monotonic):
+        self.prompt_length, self.max_seconds, self.clock = prompt_length, max_seconds, clock
+        self.started = clock()
+        self.reason = None
+
+    def __call__(self, input_ids, scores, **kwargs):
+        if self.clock() - self.started >= self.max_seconds:
+            self.reason = 'time_limit'
+            return True
+        count = input_ids.shape[-1] - self.prompt_length
+        # Limit device synchronization and ignore prompt tokens entirely.
+        if count >= 128 and count % 32 == 0:
+            if repetition_loop(input_ids[0, -min(count, 256):].tolist()):
+                self.reason = 'repetition_loop'
+                return True
+        return False
+
+
 def write_json(path, value):
     path = Path(path)
     temporary = path.with_suffix('.tmp')
@@ -41,11 +75,12 @@ def response_text(parsed):
 
 
 class GPUBackend:
-    def __init__(self, backend, model_path, max_new_tokens):
+    def __init__(self, backend, model_path, max_new_tokens, max_generation_seconds=120):
         import torch
         if not torch.cuda.is_available():
             raise ValueError('Select a GPU runtime in Colab; CUDA is unavailable')
         self.backend, self.maximum, self.torch = backend, max_new_tokens, torch
+        self.max_generation_seconds = max_generation_seconds
         versions = {}
         for package in ('torch', 'transformers', 'accelerate', 'Pillow', 'flash-attn'):
             try: versions[package] = importlib.metadata.version(package)
@@ -56,7 +91,8 @@ class GPUBackend:
             self.processor = AutoProcessor.from_pretrained(model_path, local_files_only=True)
             self.model = AutoModelForMultimodalLM.from_pretrained(model_path, local_files_only=True,
                 dtype=torch.float16, device_map={'': 0}, attn_implementation='eager').eval()
-            self.identity.update(dtype='float16', attention='eager')
+            self.identity.update(dtype='float16', attention='eager', repetition_guard='exact_token_tail_v1',
+                                 max_generation_seconds=max_generation_seconds)
         else:
             if torch.cuda.get_device_capability(0)[0] < 8 or not torch.cuda.is_bf16_supported(including_emulation=False):
                 raise ValueError('Upstream DeepSeek-OCR-2 uses BF16: select an L4/A100-class GPU; this adapter cannot run on T4')
@@ -85,16 +121,20 @@ class GPUBackend:
             inputs = self.processor.apply_chat_template(messages, tokenize=True, return_dict=True,
                 return_tensors='pt', add_generation_prompt=True, enable_thinking=False).to(self.model.device)
             size = inputs['input_ids'].shape[-1]
-            output = self.model.generate(**inputs, max_new_tokens=self.maximum, do_sample=False)
+            from transformers import StoppingCriteriaList
+            guard = GenerationGuard(size, self.max_generation_seconds)
+            output = self.model.generate(**inputs, max_new_tokens=self.maximum, do_sample=False,
+                stopping_criteria=StoppingCriteriaList([guard]))
             tokens = output[0][size:]
             raw = self.processor.decode(tokens, skip_special_tokens=False)
             text = response_text(self.processor.parse_response(raw, prefix=inputs['input_ids']))
             limited = len(tokens) >= self.maximum
+            reason = guard.reason or ('token_limit' if limited else 'complete')
             return {'text':text, 'raw_response':raw, 'generated_tokens':len(tokens),
-                    'completion_status':'token_limit' if limited else 'complete', 'outcome':'truncated' if limited else 'predicted'}
+                    'completion_status':reason, 'outcome':'truncated' if reason != 'complete' else 'predicted'}
 
 
-def run(packet, output, backend, model_path, revision, *, max_pages=10, max_new_tokens=8192, engine=None):
+def run(packet, output, backend, model_path, revision, *, max_pages=10, max_new_tokens=8192, max_generation_seconds=120, engine=None):
     packet, output, model_path = Path(packet), Path(output), Path(model_path)
     manifest = load_packet(packet)
     if backend not in MODELS or not re.fullmatch(r'[0-9a-f]{40}', revision):
@@ -102,24 +142,39 @@ def run(packet, output, backend, model_path, revision, *, max_pages=10, max_new_
     if not model_path.is_dir(): raise ValueError('Download a local model snapshot first')
     if type(max_pages) is not int or max_pages < 1 or type(max_new_tokens) is not int or not 1 <= max_new_tokens <= 8192:
         raise ValueError('Invalid page/token limit')
+    if type(max_generation_seconds) is not int or not 1 <= max_generation_seconds <= 3600:
+        raise ValueError('Generation time limit must be 1–3600 seconds')
     if output.exists(): raise ValueError('Choose a new output directory; existing runs are preserved')
     # Frozen input identities; references and review labels are deliberately not opened here.
     selected = manifest['samples'][:max_pages]
-    weights = {str(p.relative_to(model_path)):file_hash(p) for p in sorted(model_path.rglob('*.safetensors'))}
+    weight_files = sorted(model_path.rglob('*.safetensors'))
+    print(f'Verifying {len(weight_files)} model weight files...', flush=True)
+    weights = {}
+    for index, path in enumerate(weight_files, 1):
+        print(f'Weights [{index}/{len(weight_files)}]: {path.name}', flush=True)
+        weights[str(path.relative_to(model_path))] = file_hash(path)
     if engine is None and not weights: raise ValueError('Local snapshot has no safetensors weights')
     metadata = {'schema_version':'neural-ocr-run-1','backend':backend,'model_id':MODELS[backend], 'model_revision':revision,
                 'weights_sha256':weights, 'packet_manifest_sha256':file_hash(packet/'manifest.json'), 'prompt':PROMPT,
                 'max_new_tokens':max_new_tokens,'max_pages':max_pages,'selected_samples':[s['sample_id'] for s in selected],
+                'gemma_generation_guard':{'max_seconds':max_generation_seconds,'repetition':'exact_token_tail_v1'} if backend == 'gemma' else None,
                 'created_at_utc':utc_now(),'review_required':True,'training_approved':False}
     identity = hashlib.sha256(json.dumps(metadata,sort_keys=True).encode()).hexdigest()
     metadata['run_id'] = identity
     output.mkdir(parents=True)
     metadata['status']='loading';write_json(output/'run.json',metadata)
     try:
-        engine = engine or GPUBackend(backend, model_path, max_new_tokens)
-        metadata.update(runtime=engine.identity, status='running');write_json(output/'run.json',metadata)
+        print(f'Loading {MODELS[backend]} on the GPU...', flush=True)
+        loading_started = time.monotonic()
+        engine = engine or GPUBackend(backend, model_path, max_new_tokens, max_generation_seconds)
+        metadata.update(runtime=engine.identity, status='running', completed_pages=0)
+        write_json(output/'run.json',metadata)
+        print(f'Model loaded in {time.monotonic()-loading_started:.1f}s; {len(selected)} pages selected.', flush=True)
         for index, sample in enumerate(selected,1):
             start=time.monotonic()
+            metadata.update(current_sample=sample['sample_id'], updated_at_utc=utc_now())
+            write_json(output/'run.json',metadata)
+            print(f"[{index}/{len(selected)}] {sample['sample_id']}: starting transcription", flush=True)
             image=relative_file(packet,sample['image_path'])
             record={'schema_version':'neural-ocr-prediction-1','sample_id':sample['sample_id'],
                     'run_id':identity,'image_sha256':sample['image_sha256'],'review_required':True,'training_approved':False}
@@ -133,8 +188,10 @@ def run(packet, output, backend, model_path, revision, *, max_pages=10, max_new_
                 record.update(outcome='failed',text='',error=f'{type(exc).__name__}: {exc}')
             record['seconds']=round(time.monotonic()-start,3)
             write_json(output/f"{sample['sample_id']}.json",record)
-            print(f"[{index}/{len(selected)}] {sample['sample_id']}: {record['outcome']}",flush=True)
-        metadata['status']='finished'
+            metadata.update(completed_pages=index, updated_at_utc=utc_now())
+            write_json(output/'run.json',metadata)
+            print(f"[{index}/{len(selected)}] {sample['sample_id']}: {record['outcome']} ({record['seconds']:.1f}s)",flush=True)
+        metadata.update(status='finished', current_sample=None)
     except Exception as exc:
         metadata.update(status='failed',error=f'{type(exc).__name__}: {exc}')
         raise
@@ -149,8 +206,9 @@ def main():
     parser.add_argument('--backend',choices=MODELS,required=True);parser.add_argument('--model-path',type=Path,required=True)
     parser.add_argument('--revision',required=True);parser.add_argument('--max-pages',type=int,default=10)
     parser.add_argument('--max-new-tokens',type=int,default=8192)
+    parser.add_argument('--max-generation-seconds',type=int,default=120,help='Gemma soft generation deadline; excludes model loading/image preprocessing; not applied to DeepSeek upstream infer')
     args=parser.parse_args()
-    try:run(args.packet,args.output,args.backend,args.model_path,args.revision,max_pages=args.max_pages,max_new_tokens=args.max_new_tokens)
+    try:run(args.packet,args.output,args.backend,args.model_path,args.revision,max_pages=args.max_pages,max_new_tokens=args.max_new_tokens,max_generation_seconds=args.max_generation_seconds)
     except Exception as exc:parser.exit(2,f'Neural OCR comparison error: {exc}\n')
 
 if __name__=='__main__':main()
