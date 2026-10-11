@@ -140,7 +140,7 @@ def format_status(state: dict) -> str:
     if "jobs_total" in counts:
         pieces.append(f"jobs={counts.get('jobs_completed', 0)}/{counts['jobs_total']}")
     if item.get("page_number") is not None:
-        pieces.append(f"page={item["page_number"]}")
+        pieces.append(f"page={item['page_number']}")
     if item.get("doc_id"):
         pieces.append(safe_text(item["doc_id"]))
     if item.get("title") or item.get("url"):
