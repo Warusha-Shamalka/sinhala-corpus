@@ -1,5 +1,7 @@
 # Selective OCR
 
+For production, use [CORPUS_PRODUCTION_GUIDE.md](../../docs/CORPUS_PRODUCTION_GUIDE.md): `backends.py` exposes replaceable local-image adapters, with Surya as the current default. The comparison adapter ran on T4; the new production worker still needs its small Colab trial. Every output requires source review/corrections before training export.
+
 Implemented: local Tesseract Sinhala/English OCR for native-extraction flagged pages, with saved page PNG, raw TSV, text, word boxes/confidence, provenance, immutable restart recovery and progress. Every result remains pending quality review. This baseline does not solve handwriting/equations or advance catalog states.
 
 ```bash

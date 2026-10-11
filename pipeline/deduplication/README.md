@@ -1,5 +1,9 @@
 # Purpose
 
+`grouping.py` groups exact and conservative word-shingle near-duplicates for the
+reviewed corpus exporter. It rejects duplicate groups crossing dataset splits.
+See [the production guide](../../docs/CORPUS_PRODUCTION_GUIDE.md) for thresholds and limits.
+
 This directory is reserved for deduplication logic.
 
 # Contents

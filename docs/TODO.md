@@ -213,3 +213,20 @@ See [SURYA_OCR_TRIAL.md](SURYA_OCR_TRIAL.md). Shared run `surya_20261011T174018Z
 - [ ] Add near-duplicate/document-version grouping before scaling train/evaluation releases.
 
 See [NATIVE_TEXT_DATASET_GUIDE.md](NATIVE_TEXT_DATASET_GUIDE.md).
+
+## Production corpus path (12 October 2026)
+
+- [x] Create `feat/corpus-pipeline`; commit the completed native-text path separately.
+- [x] Add replaceable OCR factory, defaulting to pinned Surya with frozen local checkpoints.
+- [x] Process verified PDFs into immutable native/OCR page bundles with source images, raw outputs, warnings, progress, selected-page support and restart verification.
+- [x] Add explicitly enabled HTML download, strict static main-content extraction and provenance; flag visual/math/table content for review.
+- [x] Build side-by-side review packets, editable correction drafts and two-reviewer approval sealing.
+- [x] Export reviewed text with exact/near deduplication and source-document/version split protection.
+- [x] Configure persistent store initialization, discovery path overrides and common collect/process/status/review/export commands.
+- [x] Add a production Colab notebook with an isolated pinned environment and two-page initial trial.
+- [ ] Push the new branch and execute the two-page production Surya trial in Colab; verify Drive artifacts and restart behavior.
+- [ ] Complete real source review, source-use evidence and the first approved pretraining release.
+- [ ] Measure OCR accuracy on independent references before considering automated acceptance for any source/style.
+- [ ] Add richer verified subject/grade metadata and instruction/QA outputs when the text corpus is validated.
+
+See [CORPUS_PRODUCTION_GUIDE.md](CORPUS_PRODUCTION_GUIDE.md) for current limits and supported formats. No accurate training release is claimed from test fixtures.

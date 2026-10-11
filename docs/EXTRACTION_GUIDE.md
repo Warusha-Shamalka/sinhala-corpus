@@ -1,6 +1,6 @@
 # PDF extraction guide
 
-Implemented: local native PDF text extraction, page/block/word coordinates, provenance, OCR routing flags, immutable bundles, catalog checkpoints, retry recovery and progress. OCR, image/table asset extraction, HTML extraction and cleaning remain planned.
+This guide covers the standalone native PDF extractor: page/block/word coordinates, provenance, OCR routing flags, immutable bundles, catalog checkpoints, retry recovery and progress. The separate production workflow now provides Surya OCR, static HTML extraction, conservative cleaning and reviewed dataset export; see [CORPUS_PRODUCTION_GUIDE.md](CORPUS_PRODUCTION_GUIDE.md). Full image/table asset extraction remains planned.
 
 ## Setup and first run
 
@@ -97,4 +97,4 @@ python3 -B scripts/check_offline.py
 
 Tests cover native Sinhala layout fixtures, real native/blank PDFs, mixed-page routing, malformed/encrypted PDFs, replacement characters, raw corruption, output corruption, page/output/command limits, idempotent reuse, config changes, interruptions, catalog conflicts and dry-run safety. See [EXTRACTION_VALIDATION_RESULTS.md](EXTRACTION_VALIDATION_RESULTS.md) for the real pilot.
 
-Next: review representative flagged pages, then implement selective Sinhala OCR as a separate stage. The pilot includes handwriting and equations, so successful printed-text OCR alone will not establish quality on these documents. Keep OCR output separately versioned and measure accuracy against reviewed page text before moving documents towards cleaning or dataset generation.
+Next: run the two-page production Colab trial and review its source images against the transcription. The pilot includes handwriting and equations, so successful printed-text OCR alone will not establish quality on these documents. Production output is separately versioned and requires source-checked human corrections before dataset export.

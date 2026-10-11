@@ -29,7 +29,7 @@ corpus/logs/download/download_*.jsonl      # Per-document run events
 
 The CLI prints a structured report to the terminal; a summary JSON file is not automatically saved. Redirect stdout to a file if you want to retain that report. Raw PDFs, receipts and transient logs are ignored by Git. Catalog metadata remains trackable.
 
-The existing live smoke-test PDF is under `corpus/logs/download/smoke_20261009/raw/`, which is an isolated test store. It is not a production download. The production catalog currently contains eight URL-less pilots, so its download preview selects zero jobs.
+The historical live smoke-test PDF is under `corpus/logs/download/smoke_20261009/raw/`, an isolated test store. Current eligibility depends on the selected catalog: URL-less pilots are skipped, while discovered records with approved source URLs can be selected. Use the dry-run report for the actual queue rather than assuming a fixed eligible count.
 
 ## Default production limits
 
@@ -73,7 +73,9 @@ Events are written to `<log_root>/download_*.jsonl`; the CLI also prints its str
 
 Use one downloader and one catalog on a local POSIX filesystem. A separate worker lock serializes download runs; the existing CSV lock protects each catalog checkpoint while allowing discovery to operate between checkpoints. Raw/catalog files and receipt files are fsynced, with directory syncing for replacements. Google Drive/Colab deployment and filesystem durability semantics have not yet been demonstrated; do not claim cloud multi-writer support.
 
-Request retries cover transient opening/HTTP failures. Interrupted response bodies are cleaned up and retried from the beginning on a later run; HTTP Range/partial-byte resume is not implemented. Time budgets are checked between operations and reads, so a blocking socket read can overrun by its timeout. Other resource formats, authenticated downloads, external resource hosts, extraction and OCR remain planned.
+Request retries cover transient opening/HTTP failures. Interrupted bodies restart on a later run; HTTP Range resume is not implemented. Blocking reads can overrun the budget by their timeout. Authenticated downloads, external resource hosts and other media formats remain unsupported. Native extraction, configurable OCR and reviewed releases are described in [the production guide](../../docs/CORPUS_PRODUCTION_GUIDE.md).
+
+Static HTML is supported when `download.accepted_formats` includes `html` (repository default: `[pdf]`). It uses explicit HTML MIME/document-signature checks, a 2 MiB cap, original bytes under `corpus/raw/html/<doc_id>/<sha256>.html`, and format/charset receipts. Restart verifies PDF and HTML artifacts. Saving HTML does not establish educational suitability; extraction/review must reject unsuitable or ambiguous content.
 
 Run all offline tests with `python3 -B scripts/check_offline.py`. See [download validation](../../docs/DOWNLOAD_VALIDATION_RESULTS.md) for verification and the isolated live smoke test. Raw files and logs remain ignored by Git; keep catalog/config/code/docs and move accepted corpus data to persistent storage under the project's storage policy.
 

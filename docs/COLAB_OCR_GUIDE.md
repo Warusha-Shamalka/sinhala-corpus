@@ -1,5 +1,7 @@
 # Run OCR on Google Colab
 
+This notebook guide covers the frozen OCR comparison packet. For collecting and processing corpus documents with Surya, use [CORPUS_PRODUCTION_GUIDE.md](CORPUS_PRODUCTION_GUIDE.md) and [corpus_pipeline_colab.ipynb](../notebooks/corpus_pipeline_colab.ipynb).
+
 Colab runs Python on a remote machine. Your laptop needs a browser and an internet connection; it does not need to load the model. Google Drive holds persistent inputs and results. `/content` is temporary compute storage and may disappear when the runtime ends.
 
 ## Current trial: Surya

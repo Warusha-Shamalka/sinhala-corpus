@@ -5,6 +5,10 @@ exports only explicitly approved text into derived JSONL releases. OCR predictio
 remain separate. Other dataset formats are planned.
 See [the native dataset guide](../../docs/NATIVE_TEXT_DATASET_GUIDE.md).
 
+`reviewed.py` adds source-image/static-HTML review, human corrections, two-reviewer
+approval and split-safe deduplicated export for production OCR/native pages.
+See [the production guide](../../docs/CORPUS_PRODUCTION_GUIDE.md).
+
 # Contents
 
 - dataset creation scripts
