@@ -128,9 +128,9 @@ See [PROGRESS_GUIDE.md](PROGRESS_GUIDE.md) for usage and limitations.
 
 ## Current data reality
 
-Verified on 11 October 2026: the production catalog contains 489 records: 483 `DISCOVERED` and six `DOWNLOADED`. All six production PDFs (IDs 9–14) match their stored receipt sizes and SHA256 hashes. The eight original pilots still have blank URLs and remain excluded from downloading. The earlier 2.1 MB smoke PDF is separate from these production files. The implemented code previously passed all 109 tests; see [download validation](DOWNLOAD_VALIDATION_RESULTS.md).
+Verified on 11 October 2026: the production catalog contains 489 records: 482 `DISCOVERED` and seven `DOWNLOADED`. All seven production PDFs (IDs 9–15) match their stored receipt sizes and SHA256 hashes. The eight original pilots still have blank URLs and remain excluded from downloading. The earlier 2.1 MB smoke PDF is separate from these production files. The implemented code previously passed all 109 tests; see [download validation](DOWNLOAD_VALIDATION_RESULTS.md).
 
-Extraction/OCR and derived-dataset stages remain planned. Model training and competition submission belong in the separate training repository. Candidate URLs are not verified documents or training examples.
+Native PDF extraction and selective OCR are implemented; cleaning and derived-dataset stages remain planned. Model training and competition submission belong in the separate training repository. Candidate URLs are not verified documents or training examples.
 
 ## PDF extraction checkpoint — 11 October 2026
 
@@ -138,4 +138,30 @@ Extraction/OCR and derived-dataset stages remain planned. Model training and com
 - [x] Trial native extraction on a copied catalog: 132 pages, zero native text, seven OCR-routed documents, zero failed jobs; production catalog unchanged.
 - [x] Document extraction commands, output contracts, limits and observed pilot results.
 - [ ] Manually review representative scanned/handwritten pages and review the extraction PR into `dev`.
-- [ ] Implement selective OCR separately, including handwriting/equation accuracy checks; do not promote these empty-native-text bundles into datasets.
+- [x] Implement selective OCR separately; handwriting/equation accuracy checks remain pending, and empty-native-text bundles are not promoted into datasets.
+
+## Selective OCR baseline checkpoint — 11 October 2026
+
+- [x] Add local Tesseract Sinhala/English backend, bounded rendering/recognition and selective page CLI.
+- [x] Preserve native artifacts/catalog; write immutable per-page PNG/TSV/text/provenance with pending review.
+- [x] Add model hashes, restart/corruption checks, progress, tests and setup/validation guides.
+- [x] Trial two handwritten pages from LK-EDU-000011; recognition is poor and remains unapproved.
+- [ ] Prepare reviewed references and measure Sinhala handwriting/equation errors before choosing a stronger backend.
+- [ ] Add explicit review outcomes/quality-stage catalog transitions and accepted merged document text.
+- [ ] Defer bulk processing of 132 scanned pages until recognition quality is established.
+
+## Accuracy-first OCR / Colab checkpoint — 11 October 2026
+
+- [x] Prepare ten immutable source-image samples across seven downloaded documents, with raw-hash grouped calibration/holdout and empty human-reference files.
+- [x] Add independent-reference verification, hash checks and offline CER/WER reporting with honest missing coverage.
+- [x] Add optional Gemma/DeepSeek snapshot adapters and a beginner Colab notebook; keep heavyweight dependencies outside core requirements.
+- [x] Mark every raw neural result as pending review and unapproved for training; preserve production catalog/native bundles.
+- [ ] Have two Sinhala readers transcribe/verify the ten samples; currently zero verified references.
+- [ ] Run Gemma on an available Colab GPU and freeze its successful dependency environment.
+- [ ] Validate DeepSeek upstream environment on a BF16-capable GPU and implement completion detection; completion-unverified output is currently excluded from accuracy scoring.
+- [ ] Expand evaluation beyond the current source pilot to printed Sinhala, MCQs, tables, diagrams and subject diversity.
+- [ ] Review holdout CER/WER plus missing-line, option, number and equation errors before selecting an OCR backend.
+- [ ] Implement reviewed-page acceptance and an exporter that rejects pending/reserved evaluation documents.
+- [ ] Keep bulk OCR/training export deferred until these accuracy and acceptance checks pass.
+
+See [Colab guide](COLAB_OCR_GUIDE.md) and [accuracy guide](OCR_ACCURACY_GUIDE.md). Preparing a workflow is not a completed neural model comparison.

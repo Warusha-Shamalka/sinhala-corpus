@@ -26,3 +26,21 @@ extraction:
   command_timeout_seconds: 20
   min_text_chars: 20
   max_replacement_ratio: 0.02
+ocr:
+  catalog_path: corpus/catalog/documents.csv
+  raw_root: corpus/raw
+  extraction_root: corpus/extracted/pages
+  output_root: corpus/extracted/ocr
+  log_root: corpus/logs/ocr
+  tesseract_command: tesseract
+  tessdata_dir: ''
+  languages: sin+eng
+  dpi: 300
+  max_image_side: 3000
+  psm: 3
+  max_pages: 3
+  max_seconds: 300
+  command_timeout_seconds: 60
+  max_command_bytes: 52428800
+  min_text_chars: 20
+  min_mean_confidence: 60

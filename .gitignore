@@ -103,3 +103,7 @@ local_cache/
 !pipeline/**/*.md
 !tests/
 !tests/**/*.py
+
+# OCR review source images and neural experiment outputs live in persistent storage
+reviews/ocr/**/images/
+ocr-comparison/

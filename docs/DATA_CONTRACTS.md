@@ -90,3 +90,7 @@ Group by source document family, paper/year/version, duplicate cluster, parent p
 Store release ID, dataset role, source/record counts, accepted/rejected counts, file hashes, code/config versions, split assignments, random seed, grouping algorithm, contamination checks performed and their limits, rights decisions, generator disclosures and quality-audit results. Hash a canonical representation while preserving original content. Unknown rights or missing label evidence must be visible in release eligibility, not erased.
 
 Authorised competition development data remains a separately identified dataset; hidden tests are never part of a corpus/dataset release or contamination-development process.
+
+## OCR page record
+
+Implemented `ocr-page-1` records preserve one-based source PDF page numbers, raw/native manifest/config hashes, engine/renderer versions, traineddata hashes, untouched native text, rendered image dimensions, recognized words/lines and pixel boxes, tool confidence, flags and `quality_review=pending`. Raw PNG/TSV/text hashes support recovery. The catalog is not promoted by this stage. See [OCR_GUIDE.md](OCR_GUIDE.md) for exact paths and limitations.

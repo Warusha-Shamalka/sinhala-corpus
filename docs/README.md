@@ -56,3 +56,5 @@ The immediate priority remains discovery filtering and validation. Several hando
 - [PDF download validation](DOWNLOAD_VALIDATION_RESULTS.md): offline tests, isolated live transfer, recovery and current limits.
 
 - [Detailed pipeline architecture](PIPELINE_ARCHITECTURE.md): diagrams of collection, download recovery, document states, planned processing and storage.
+
+- [OCR baseline results](OCR_VALIDATION_RESULTS.md), [accuracy and human references](OCR_ACCURACY_GUIDE.md), and [Colab setup](COLAB_OCR_GUIDE.md): current extraction quality work and GPU experiments awaiting execution.

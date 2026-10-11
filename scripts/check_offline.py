@@ -38,6 +38,19 @@ def main() -> int:
         except (ValueError, OSError, KeyError, TypeError) as error:
             failures.append(folder)
             print(f"Invalid review bundle {folder.relative_to(ROOT)}: {error}", file=sys.stderr)
+    from pipeline.quality.ocr_benchmark import load_packet, read_reviews
+
+    for manifest_path in sorted((ROOT / 'reviews' / 'ocr').rglob('manifest.json')):
+        folder = manifest_path.parent
+        try:
+            manifest = load_packet(folder, images=False)
+            rows = read_reviews(folder, manifest)
+            verified = sum(row['status'] == 'verified' for row in rows.values())
+            print(f'{folder.relative_to(ROOT)}: {verified}/{len(rows)} verified OCR references')
+        except (ValueError, OSError, KeyError, TypeError) as error:
+            failures.append(folder)
+            print(f'Invalid OCR review bundle {folder.relative_to(ROOT)}: {error}', file=sys.stderr)
+
     if blocked:
         print(f"Offline checks attempted network access: {blocked}", file=sys.stderr)
     return int(bool(failures or blocked))

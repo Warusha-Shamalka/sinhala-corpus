@@ -1,0 +1,1 @@
+Reference pages for OCR evaluation only. See docs/OCR_ACCURACY_GUIDE.md in the repository. Reference files start empty; no human transcription or verification has occurred. Images are generated local artifacts; transfer this whole packet to Drive for Colab.

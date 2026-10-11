@@ -314,3 +314,7 @@ Discovery and downloads now support `--progress auto|plain|off` and `--quiet`, w
 ## Implemented PDF extraction
 
 Local PDF extraction now verifies raw receipts/hashes, preserves emitted text and page/block/word coordinates in immutable bundles, flags pages needing OCR review, and uses catalog checkpoints plus shared progress. Native extraction pending OCR remains `DOWNLOADED`; a complete native-text document advances to `EXTRACTED`. OCR, HTML extraction, asset exports and cleaning remain planned. See the [extraction guide](EXTRACTION_GUIDE.md) and its linked seven-document validation report.
+
+## Implemented selective OCR baseline
+
+Flagged PDF pages can now be rendered and recognized locally with Sinhala/English Tesseract models, using separate immutable image/TSV/text/page outputs and shared progress. All OCR text stays pending review and the catalog is not promoted. The handwritten pilot is poorly recognized. See the [OCR guide](OCR_GUIDE.md) for setup, safe page sampling and validation.
