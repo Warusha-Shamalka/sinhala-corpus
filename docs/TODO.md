@@ -166,3 +166,26 @@ Native PDF extraction and selective OCR are implemented; cleaning and derived-da
 - [ ] Keep bulk OCR/training export deferred until these accuracy and acceptance checks pass.
 
 See [Colab guide](COLAB_OCR_GUIDE.md) and [accuracy guide](OCR_ACCURACY_GUIDE.md). Preparing a workflow is not a completed neural model comparison.
+
+## Guarded Gemma pilot evidence — 11 October 2026
+
+- [x] Review ten maintainer-supplied page artifacts: six normal completions, four repetition-loop stops; compare two completed outputs with their source images and identify substantial text/formula errors.
+- [ ] Archive the final `finished` run manifest; supplied snapshot still shows nine completed pages and the last page running.
+- [ ] Create independently verified calibration references before further full-page batches; no training acceptance or measured accuracy is available.
+- [ ] Design a bounded calibration-only region/crop experiment, preserving source coordinates and original images; evaluate printed Sinhala separately.
+
+See [Gemma pilot review](GEMMA_PILOT_REVIEW.md). Generation stopping works on the observed loops, but the present full-page configuration is not suitable for automatic training-data extraction.
+
+## Broader OCR diagnostic pilot
+
+- [x] Prepare 14 public-source pages across six subject groups, with printed/handwritten examples, diagrams, equations, columns and a table.
+- [x] Add frozen explicit page selection, isolated source acquisition/configuration and provenance receipts; keep production catalog unchanged.
+- [x] Add Qwen2.5-VL-3B adapter and a one-page Colab compatibility trial default.
+- [x] Report prediction outcomes before references and subject/style metrics after reference verification.
+- [ ] Run Qwen on T4: one page first, then all 14 in a new run folder.
+- [ ] Run Gemma on the identical broad packet in a fresh runtime.
+- [ ] Transcribe/verify independent references and compare complete runs; do not promote raw predictions into training data.
+- [ ] Fill missing handwritten Language/History/Business, printed Physics, Economics and MCQ coverage with inspected public sources.
+- [ ] Fix discovery subject detection: “Sinhala medium” indicates language, not Sinhala as the subject; distinguish biological history terminology from History resources.
+
+See [OCR_BROAD_PILOT.md](OCR_BROAD_PILOT.md) for prepared pages, storage, limitations and Colab steps.

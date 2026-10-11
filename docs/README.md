@@ -58,3 +58,7 @@ The immediate priority remains discovery filtering and validation. Several hando
 - [Detailed pipeline architecture](PIPELINE_ARCHITECTURE.md): diagrams of collection, download recovery, document states, planned processing and storage.
 
 - [OCR baseline results](OCR_VALIDATION_RESULTS.md), [accuracy and human references](OCR_ACCURACY_GUIDE.md), and [Colab setup](COLAB_OCR_GUIDE.md): current extraction quality work and GPU experiments awaiting execution.
+
+- [Guarded Gemma pilot review](GEMMA_PILOT_REVIEW.md): supplied ten-page outcomes, source-image spot checks and the reference-first next step.
+
+- [OCR_BROAD_PILOT.md](OCR_BROAD_PILOT.md): 14-page subject/style pilot, isolated acquisition, frozen source provenance and paired Qwen/Gemma Colab instructions.

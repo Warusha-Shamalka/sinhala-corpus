@@ -37,7 +37,7 @@ The tool refuses empty text, identical reviewer names, unknown content classific
 
 ## Compare model predictions
 
-Run the notebook in [COLAB_OCR_GUIDE.md](COLAB_OCR_GUIDE.md). Transcription never reads reference text. The fixed prompt prohibits solving, translation, summarization, source correction and invented content. The same ten image hashes are used for each model; record any future prompt/configuration change as a separate experiment and use calibration pages only for choosing settings.
+Run the notebook in [COLAB_OCR_GUIDE.md](COLAB_OCR_GUIDE.md). Transcription never reads reference text. The fixed prompt prohibits solving, translation, summarization, source correction and invented content. The same frozen packet image hashes must be used for each model; record any future prompt/configuration change as a separate experiment and use calibration pages only for choosing settings.
 
 The evaluator accepts the actual prediction directory containing `run.json`. In Python/Colab, use concrete paths:
 
@@ -70,3 +70,7 @@ Required before adding an exporter:
 - Group duplicate/related documents before dataset splits and document permitted source usage.
 
 Next implementation gate is a reviewed-page acceptance stage and a tested exporter that rejects pending/reserved pages. Do not bulk-process the 132 scanned pages into training files before selecting an OCR configuration using independently verified, representative source samples.
+
+## Broader diagnostic packet
+
+The second packet, `reviews/ocr/broad_20261011`, has 14 pages across six subject groups. See [OCR_BROAD_PILOT.md](OCR_BROAD_PILOT.md) for source/style coverage, gaps, explicit selection and paired Qwen/Gemma trials. Use the same approval/evaluation commands above with this packet path. Model predictions may be generated before references are ready. Reports count all-page prediction outcomes but score only independently verified pages. Subject/style breakdowns describe scored pages only; always inspect sample counts, failed/missing/truncated outcomes and holdout coverage. A run checkpoint marked `running` does not constitute a complete comparison.

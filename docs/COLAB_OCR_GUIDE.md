@@ -2,19 +2,19 @@
 
 Colab runs Python on a remote machine. Your laptop needs a browser and an internet connection; it does not need to load the model. Google Drive holds persistent inputs and results. `/content` is temporary compute storage and may disappear when the runtime ends.
 
-## First run: Gemma
+## First run: Qwen on the broader packet
 
 1. Commit and push the notebook and its Python modules on your current branch. This notebook currently clones `feat/pdf-extraction`; update its `BRANCH` value if the work is subsequently merged elsewhere.
-2. Open Google Drive in your browser. Create `sinhala-corpus/reviews/ocr`. Upload the entire local folder `reviews/ocr/pilot_20261011` inside `ocr`. Include `images`, `references`, `manifest.json`, `review.csv`, and `README.md`. The ten images occupy approximately 30 MB; Git deliberately excludes these generated images. Uploading code to GitHub alone does not upload the images.
+2. Open Google Drive in your browser. Create `sinhala-corpus/reviews/ocr`. Upload the entire local folder `reviews/ocr/broad_20261011` inside `ocr`. Include `images`, `references`, `manifest.json`, `review.csv`, and `README.md`. The 14 images occupy approximately 27 MiB; Git deliberately excludes these generated images. Uploading code to GitHub alone does not upload the images.
 3. Open [Google Colab](https://colab.research.google.com/). Choose **File → Upload notebook**, then select `notebooks/ocr_accuracy_colab.ipynb` from this repository. Save a copy in Drive if prompted.
-4. Choose **Runtime → Change runtime type**, then choose a GPU accelerator. A T4 is a candidate for the smaller Gemma run; memory and compatibility still need checking on the actual runtime. GPU availability is not guaranteed, including on paid plans.
-5. Leave `BACKEND = 'gemma'`. Click the triangle beside each code cell, starting at the top. Wait for one cell to finish before running the next. The first cell asks permission to mount your Drive.
+4. Choose **Runtime → Change runtime type**, then choose a GPU accelerator. A T4 is the target for the Qwen compatibility trial; memory and compatibility still need checking on the actual runtime. GPU availability is not guaranteed, including on paid plans.
+5. Leave `BACKEND = 'qwen'` and `PACKET_NAME = 'broad_20261011'`. Click the triangle beside each code cell, starting at the top. Wait for one cell to finish before running the next. The first cell asks permission to mount your Drive.
 6. Follow the notebook's Hugging Face access instructions if the model requires authentication. Store a read token using the Colab Secrets panel, never in code or notebook output.
-7. Packages and weights may take several minutes to download. The transcription cell reports weight verification, model loading, and `[1/10] ... starting transcription`, then saves each completed page's JSON immediately to Drive. Start with `MAX_PAGES = 1` for a small compatibility trial; use a new run folder for the full ten-page run.
-8. Inspect the results in `My Drive/sinhala-corpus/ocr-comparison/gemma_<timestamp>/`. Keep `predictions`, `model_selection.json`, `repository_commit.txt`, `requirements.lock.txt`, and `accuracy_report.json` together.
+7. Packages and weights may take several minutes to download. The transcription cell reports weight verification, model loading, and `[1/1] ... starting transcription` for the initial one-page trial, then saves each completed page's JSON immediately to Drive. Start with `MAX_PAGES = 1` for a small compatibility trial; use a new run folder for the full 14-page run (`MAX_PAGES = 14`).
+8. Inspect the results in `My Drive/sinhala-corpus/ocr-comparison/qwen_<timestamp>/`. Keep `predictions`, `model_selection.json`, `repository_commit.txt`, `requirements.lock.txt`, and `accuracy_report.json` together.
 9. When finished, choose **Runtime → Disconnect and delete runtime**. Saved Drive outputs persist. Cached model weights in `/content` will need downloading again in a new runtime.
 
-**Current validation:** notebook JSON/code syntax and orchestration are checked locally with fixtures. The maintainer has now supplied Gemma T4 execution artifacts (see the trial below); DeepSeek execution remains pending. The newly added generation safeguards have only been tested with local fixtures, and no Sinhala accuracy claim is available. First-run dependency installation resolves packages; the resulting lock file records exact installed versions for reproduction, rather than claiming an already validated fixed neural environment.
+**Current validation:** notebook JSON/code syntax and orchestration are checked locally with fixtures. The maintainer has now supplied Gemma T4 execution artifacts (see the trial below); DeepSeek execution remains pending. The supplied guarded Gemma maths pilot shows generation safeguards stopping loops, but completed output also contains transcription errors. Qwen GPU execution remains pending; no model has verified-reference Sinhala accuracy measurements. First-run dependency installation resolves packages; the resulting lock file records exact installed versions for reproduction, rather than claiming an already validated fixed neural environment.
 
 ## What the notebook does
 
@@ -39,7 +39,7 @@ Do not spend GPU time typing reference transcriptions: human review can happen o
 | Observation | Action |
 | --- | --- |
 | Missing manifest/image | Upload the entire review folder, including ignored `images`, to the exact Drive path. |
-| `nvidia-smi` or CUDA unavailable | Change runtime type to GPU; wait for an available runtime. |
+| `nvidia-smi` missing or CUDA unavailable | Select Runtime → Change runtime type → T4 GPU, save, reconnect and rerun from the Drive-mount cell. A CPU/TPU runtime cannot run the current CUDA notebook. If Colab cannot allocate a GPU, wait for availability; installing the utility alone will not allocate one. |
 | Environment creation fails | The setup cell prints the original venv error and tries virtualenv using the same runtime Python. Use the updated cell; if fallback fails too, share its full preceding output. This commonly indicates missing venv/ensurepip support, but the error output is needed to confirm. |
 | Download command reports an unterminated string | Update the download cell: `selection_code` must use a raw triple-quoted string (`r"""`). Retry the subprocess block using the existing `RUN` folder so earlier setup and artifacts are preserved. |
 | Model access denied | Check model-page access conditions and the read token in Secrets. |
@@ -58,4 +58,10 @@ The maintainer supplied Colab artifacts on 11 October 2026: Gemma E2B revision `
 
 Updated Gemma generation stops on a long, exactly repeated token tail or a default 120-second soft deadline. Raw/partial text is preserved with `completion_status` `repetition_loop` or `time_limit`, outcome `truncated`, and no training approval. The heuristic can flag legitimately repetitive material, which must be reviewed rather than silently repaired. It checks only generated tokens, not source prompt tokens. The deadline is checked between generation steps, excludes loading/preprocessing, and is not a hard process timeout. DeepSeek's upstream text-returning API has neither guard in this adapter.
 
-Push the changed Python module before cloning a fresh Colab checkout. Changes in your laptop repository do not change an already running Colab process. Keep previous run outputs as evidence and choose a new prediction folder for any retry. Use one page for a compatibility trial before all ten.
+Push the changed Python module before cloning a fresh Colab checkout. Changes in your laptop repository do not change an already running Colab process. Keep previous run outputs as evidence and choose a new prediction folder for any retry. Use one page for a compatibility trial before all 14 broad-pilot pages.
+
+## Paired Qwen/Gemma broader trial
+
+See [OCR_BROAD_PILOT.md](OCR_BROAD_PILOT.md) for the prepared 14-page packet and coverage gaps. After Qwen's one-page compatibility trial, rerun the model-selection cell to create a fresh run folder, set `MAX_PAGES = 14`, and run the full packet. Then use a fresh T4 runtime with `BACKEND = 'gemma'` on exactly the same images. The earlier maths-only run cannot replace this paired run.
+
+Qwen's local-weight adapter uses float16/eager attention, bounded image pixels and the same repetition/soft deadline protections. This is an engineering trial; actual T4 performance and Sinhala accuracy remain unmeasured. [Official Qwen model card](https://huggingface.co/Qwen/Qwen2.5-VL-3B-Instruct). Predictions can be generated before human references are ready; measured CER/WER requires independent verified references.
