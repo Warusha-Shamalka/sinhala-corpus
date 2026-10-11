@@ -1,6 +1,8 @@
 # Purpose
 
-This directory is reserved for data-cleaning operations after extraction.
+This directory contains conservative native-text normalization after extraction.
+`native.py` preserves source meaning and flags unsuitable pages for quarantine.
+See [the native dataset guide](../../docs/NATIVE_TEXT_DATASET_GUIDE.md).
 
 # Contents
 

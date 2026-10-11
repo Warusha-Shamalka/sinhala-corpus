@@ -1,6 +1,9 @@
 # Purpose
 
-This directory is reserved for dataset assembly and packaging logic.
+`native.py` prepares verified native PDF extraction pages for human review and
+exports only explicitly approved text into derived JSONL releases. OCR predictions
+remain separate. Other dataset formats are planned.
+See [the native dataset guide](../../docs/NATIVE_TEXT_DATASET_GUIDE.md).
 
 # Contents
 

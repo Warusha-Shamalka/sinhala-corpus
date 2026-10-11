@@ -64,3 +64,5 @@ The immediate priority remains discovery filtering and validation. Several hando
 - [OCR_BROAD_PILOT.md](OCR_BROAD_PILOT.md): 14-page subject/style pilot, isolated acquisition, frozen source provenance and paired Qwen/Gemma Colab instructions.
 
 - [Surya OCR trial](SURYA_OCR_TRIAL.md): pinned local detector/recognizer, T4 Colab steps, completion checks and limits following the Qwen handwriting failure.
+
+- [Native text datasets](NATIVE_TEXT_DATASET_GUIDE.md): conservative cleaning, page review, approved JSONL export and the 95-page printed-PDF pilot findings.

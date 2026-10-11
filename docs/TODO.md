@@ -195,7 +195,21 @@ See [OCR_BROAD_PILOT.md](OCR_BROAD_PILOT.md) for prepared pages, storage, limita
 - [x] Record supplied Qwen first-page failure: Hindi/Devanagari output from a Sinhala physics image; no training approval.
 - [x] Add pinned Surya 0.17.1 adapter with local recognition/detection checkpoint hashes, offline inference, regional termination checks and preserved boxes/confidences.
 - [x] Update Colab to default to Surya, one page, a fresh T4 runtime and isolated pinned Python/dependencies.
-- [ ] Execute the one-page Surya T4 trial and inspect its source/transcription pair.
+- [x] Inspect the shared Surya T4 run: 10 selected pages finished, 7 predicted and 3 truncated; spot-check native Sinhala, handwritten Physics and History source pairs. Formal accuracy remains pending references.
 - [ ] If compatible, run all 14 frozen pages in a new run directory; verify references before numerical comparison or training acceptance.
 
-See [SURYA_OCR_TRIAL.md](SURYA_OCR_TRIAL.md). Surya GPU execution remains pending.
+See [SURYA_OCR_TRIAL.md](SURYA_OCR_TRIAL.md). Shared run `surya_20261011T174018Z` executed successfully; its output is not training-approved.
+
+## Native text acquisition while OCR is evaluated
+
+- [x] Implement conservative NFC/line-ending normalization and Sinhala/native extraction rejection reasons.
+- [x] Prepare review packets with immutable extraction/text identities and source provenance, without catalog changes.
+- [x] Export approved text into JSONL with review evidence, exact deduplication and source-PDF split boundaries.
+- [x] Extract 95 pages from four local printed pilot PDFs: 2 review candidates, 93 quarantined at the default 80% Sinhala-letter threshold; no real pages approved or training dataset exported.
+- [ ] Acquire better sources with correctly encoded copyable Sinhala; current worksheet candidate has mapping errors and History candidate is a title page.
+- [ ] Implement HTML main-content extraction to collect public educational prose.
+- [ ] Investigate legacy PDF font decoding and validate mapping accuracy against source images.
+- [ ] Review usable native pages, record source-use evidence and deliver the first small pretraining release to the training repository.
+- [ ] Add near-duplicate/document-version grouping before scaling train/evaluation releases.
+
+See [NATIVE_TEXT_DATASET_GUIDE.md](NATIVE_TEXT_DATASET_GUIDE.md).
