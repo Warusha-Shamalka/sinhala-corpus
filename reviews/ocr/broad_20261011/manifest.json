@@ -1,0 +1,284 @@
+{
+  "schema_version": "ocr-reference-packet-1",
+  "purpose": "ocr_evaluation",
+  "created_at_utc": "2026-10-11T16:43:19.098044+00:00",
+  "sampling": "explicit frozen source page selection",
+  "coverage_note": "Small diagnostic public-source pilot, not representative curriculum coverage. Style/subject hints are engineering image inspections, not human reference verification. Handwritten language/history/business and printed physics are missing. Documents are kept within one split; some subject/style cells lack holdout coverage.",
+  "catalog_sha256": "c42e5a58d510200b57c276c7a43578815d49a063d876ff274cfec0b7cbdedf65",
+  "rendering": {
+    "dpi": 300,
+    "max_image_side": 3000
+  },
+  "samples": [
+    {
+      "sample_id": "LK-EDU-000104_p000001",
+      "doc_id": "LK-EDU-000104",
+      "raw_sha256": "08e36d57acb36fabccac55027230c0714edbfd6fff31ab76713f99d33625d85f",
+      "page_number": 1,
+      "source_url": "https://www.alapiedu.com/uploads/%E0%B6%BA%E0%B7%8F%E0%B6%B1%E0%B7%8A%E0%B6%AD%E0%B7%8A%E2%80%8D%E0%B6%BB_%E0%B7%80%E0%B7%92%E0%B6%AF%E0%B7%8A%E2%80%8D%E0%B6%BA%E0%B7%8F%E0%B7%80_Practical_notes%202.pdf",
+      "title": "යාන්ත්‍ර විද්‍යාව Practical notes 2",
+      "split": "calibration",
+      "subject_group": "Physics",
+      "content_type_hint": "handwritten",
+      "layout_tags": [
+        "equations",
+        "diagrams"
+      ],
+      "metadata_evidence": "Page images show handwritten Sinhala mechanics practical notes, apparatus, force diagrams and equations.",
+      "image_path": "images/LK-EDU-000104_p000001.png",
+      "image_sha256": "3a731309210509d5865eeb6518f4261116ddec44025d31f35ba535d91e738e05",
+      "reference_path": "references/LK-EDU-000104_p000001.txt"
+    },
+    {
+      "sample_id": "LK-EDU-000104_p000002",
+      "doc_id": "LK-EDU-000104",
+      "raw_sha256": "08e36d57acb36fabccac55027230c0714edbfd6fff31ab76713f99d33625d85f",
+      "page_number": 2,
+      "source_url": "https://www.alapiedu.com/uploads/%E0%B6%BA%E0%B7%8F%E0%B6%B1%E0%B7%8A%E0%B6%AD%E0%B7%8A%E2%80%8D%E0%B6%BB_%E0%B7%80%E0%B7%92%E0%B6%AF%E0%B7%8A%E2%80%8D%E0%B6%BA%E0%B7%8F%E0%B7%80_Practical_notes%202.pdf",
+      "title": "යාන්ත්‍ර විද්‍යාව Practical notes 2",
+      "split": "calibration",
+      "subject_group": "Physics",
+      "content_type_hint": "handwritten",
+      "layout_tags": [
+        "equations",
+        "diagrams"
+      ],
+      "metadata_evidence": "Page images show handwritten Sinhala mechanics practical notes, apparatus, force diagrams and equations.",
+      "image_path": "images/LK-EDU-000104_p000002.png",
+      "image_sha256": "6532ab960b35e770259d5d8535cb16d9d7435ad8280ca291cbe56703f828c1b0",
+      "reference_path": "references/LK-EDU-000104_p000002.txt"
+    },
+    {
+      "sample_id": "LK-EDU-000231_p000001",
+      "doc_id": "LK-EDU-000231",
+      "raw_sha256": "29b8c8f6e8e1818f6d004f75f4b31734e25b8622d9952eb6732147360b0a7fbf",
+      "page_number": 1,
+      "source_url": "https://www.alapiedu.com/uploads/Applied%20biology_241118_055211.pdf",
+      "title": "Applied biology 241118 055211",
+      "split": "calibration",
+      "subject_group": "Biology",
+      "content_type_hint": "handwritten",
+      "layout_tags": [
+        "columns",
+        "colored_background"
+      ],
+      "metadata_evidence": "Page images show handwritten Sinhala applied biology notes on aquatic organisms and fishing.",
+      "image_path": "images/LK-EDU-000231_p000001.png",
+      "image_sha256": "56a138b2eba2189b14cd81b3d517693709d4c66a8410d76fd168770de6d50297",
+      "reference_path": "references/LK-EDU-000231_p000001.txt"
+    },
+    {
+      "sample_id": "LK-EDU-000231_p000002",
+      "doc_id": "LK-EDU-000231",
+      "raw_sha256": "29b8c8f6e8e1818f6d004f75f4b31734e25b8622d9952eb6732147360b0a7fbf",
+      "page_number": 2,
+      "source_url": "https://www.alapiedu.com/uploads/Applied%20biology_241118_055211.pdf",
+      "title": "Applied biology 241118 055211",
+      "split": "calibration",
+      "subject_group": "Biology",
+      "content_type_hint": "handwritten",
+      "layout_tags": [
+        "columns",
+        "colored_background"
+      ],
+      "metadata_evidence": "Page images show handwritten Sinhala applied biology notes on aquatic organisms and fishing.",
+      "image_path": "images/LK-EDU-000231_p000002.png",
+      "image_sha256": "b202bd2b57cf3eecb61806eed19ea600db465d612145069a2fee2c43e8caae19",
+      "reference_path": "references/LK-EDU-000231_p000002.txt"
+    },
+    {
+      "sample_id": "LK-EDU-000264_p000012",
+      "doc_id": "LK-EDU-000264",
+      "raw_sha256": "ec7a0d3fe79bfbcbf83212272ff5a7696436a225386775a3c82857ac73deb018",
+      "page_number": 12,
+      "source_url": "https://www.alapiedu.com/Category/guide_hub/uploads/1786557881_grade-13-biology-teacher-guide-619dd2ec42815.pdf",
+      "title": "1786557881 grade 13 biology teacher guide 619dd2ec42815",
+      "split": "holdout",
+      "subject_group": "Biology",
+      "content_type_hint": "printed",
+      "layout_tags": [
+        "bullets",
+        "dense_prose"
+      ],
+      "metadata_evidence": "Page images show printed Sinhala biology teacher guide on the human nervous system; PDF page numbers differ from printed numbers.",
+      "image_path": "images/LK-EDU-000264_p000012.png",
+      "image_sha256": "84f170c9c75674b7fa5dd3fe89ed50105a590081c92a35d2882de2dd29a514c9",
+      "reference_path": "references/LK-EDU-000264_p000012.txt"
+    },
+    {
+      "sample_id": "LK-EDU-000264_p000013",
+      "doc_id": "LK-EDU-000264",
+      "raw_sha256": "ec7a0d3fe79bfbcbf83212272ff5a7696436a225386775a3c82857ac73deb018",
+      "page_number": 13,
+      "source_url": "https://www.alapiedu.com/Category/guide_hub/uploads/1786557881_grade-13-biology-teacher-guide-619dd2ec42815.pdf",
+      "title": "1786557881 grade 13 biology teacher guide 619dd2ec42815",
+      "split": "holdout",
+      "subject_group": "Biology",
+      "content_type_hint": "printed",
+      "layout_tags": [
+        "bullets",
+        "dense_prose"
+      ],
+      "metadata_evidence": "Page images show printed Sinhala biology teacher guide on the human nervous system; PDF page numbers differ from printed numbers.",
+      "image_path": "images/LK-EDU-000264_p000013.png",
+      "image_sha256": "cfd655db4d5ebd2cb69cf0b1d4346d0732ffb9139aa4e91d57acd476bec2438b",
+      "reference_path": "references/LK-EDU-000264_p000013.txt"
+    },
+    {
+      "sample_id": "LK-EDU-000285_p000002",
+      "doc_id": "LK-EDU-000285",
+      "raw_sha256": "fdb72cbc663ddb8edc67d420b25c6c33ed149945408709ec2fbe09639441b338",
+      "page_number": 2,
+      "source_url": "https://www.alapiedu.com/Category/paper_hub/uploads/1753587205_2020_AL_COMBINED_MATHS_PART_I_NEW_SYLLABUS_SINHALA_MEDIUM_AlevelApi.pdf",
+      "title": "1753587205 2020 AL COMBINED MATHS PART I NEW SYLLABUS SINHALA MEDIUM AlevelApi",
+      "split": "holdout",
+      "subject_group": "Maths",
+      "content_type_hint": "printed",
+      "layout_tags": [
+        "equations",
+        "watermark",
+        "answer_space"
+      ],
+      "metadata_evidence": "Page images show printed Sinhala combined mathematics structured questions. Catalog title incorrectly suggests Part I; inspected pages are structured, not MCQ.",
+      "image_path": "images/LK-EDU-000285_p000002.png",
+      "image_sha256": "5d4277b04fbeda0e14fe4ef5c206e4fbe928a8c462c1d1e658cc760dbdd06358",
+      "reference_path": "references/LK-EDU-000285_p000002.txt"
+    },
+    {
+      "sample_id": "LK-EDU-000285_p000003",
+      "doc_id": "LK-EDU-000285",
+      "raw_sha256": "fdb72cbc663ddb8edc67d420b25c6c33ed149945408709ec2fbe09639441b338",
+      "page_number": 3,
+      "source_url": "https://www.alapiedu.com/Category/paper_hub/uploads/1753587205_2020_AL_COMBINED_MATHS_PART_I_NEW_SYLLABUS_SINHALA_MEDIUM_AlevelApi.pdf",
+      "title": "1753587205 2020 AL COMBINED MATHS PART I NEW SYLLABUS SINHALA MEDIUM AlevelApi",
+      "split": "holdout",
+      "subject_group": "Maths",
+      "content_type_hint": "printed",
+      "layout_tags": [
+        "equations",
+        "watermark",
+        "answer_space"
+      ],
+      "metadata_evidence": "Page images show printed Sinhala combined mathematics structured questions. Catalog title incorrectly suggests Part I; inspected pages are structured, not MCQ.",
+      "image_path": "images/LK-EDU-000285_p000003.png",
+      "image_sha256": "117025baace39a8876186a40635b1fdfe73bafe3f6dfd4f8d5cf77d391e5369e",
+      "reference_path": "references/LK-EDU-000285_p000003.txt"
+    },
+    {
+      "sample_id": "LK-EDU-000490_p000001",
+      "doc_id": "LK-EDU-000490",
+      "raw_sha256": "31a0e25acca710fcc29ba062c6dfad1fef5b74d38c4d6e6c8283e57ba07cb271",
+      "page_number": 1,
+      "source_url": "https://e-thaksalawa.moe.gov.lk/lcms/pluginfile.php/19425/mod_resource/content/1/Grade%206%20%20Sinhala.pdf",
+      "title": "Grade 6 Sinhala language worksheet",
+      "split": "calibration",
+      "subject_group": "Sinhala Language",
+      "content_type_hint": "printed",
+      "layout_tags": [
+        "worksheet",
+        "prose"
+      ],
+      "metadata_evidence": "Page image identifies Grade 6 Sinhala and contains spelling and word exercises.",
+      "image_path": "images/LK-EDU-000490_p000001.png",
+      "image_sha256": "b9ae96c2fe3151abc5888cc1e2c2f25a9305af3e02c1f58cc693e4ef4d8c04c2",
+      "reference_path": "references/LK-EDU-000490_p000001.txt"
+    },
+    {
+      "sample_id": "LK-EDU-000491_p000002",
+      "doc_id": "LK-EDU-000491",
+      "raw_sha256": "52b88645e0189639588d818a7053e93190c5831f08b29ace5eea1df5d3f2794c",
+      "page_number": 2,
+      "source_url": "https://e-thaksalawa.moe.gov.lk/lcms/pluginfile.php/41407/mod_resource/content/2/11%20%E0%B6%93%E0%B6%AD%E0%B7%92%E0%B7%84%E0%B7%8F%E0%B7%83%E0%B7%92%E0%B6%9A%20%E0%B6%AF%E0%B7%90%E0%B6%B1%E0%B7%94%E0%B6%B8%20%E0%B7%84%E0%B7%8F%20%E0%B6%91%E0%B7%84%E0%B7%92%20%E0%B6%B4%E0%B7%8A_%E0%B6%BB%E0%B7%8F%E0%B6%BA%E0%B7%9D%E0%B6%9C%E0%B7%92%E0%B6%9A%20%E0%B6%86%E0%B6%AF%E0%B7%9A%E0%B7%81%E0%B6%B1%E0%B6%BA%E0%B6%9A%E0%B7%92%E0%B6%BA%E0%B7%80%E0%B7%93%E0%B6%B8%E0%B7%8A%20%E0%B6%B4%E0%B6%AD%E0%B7%8A_%E0%B6%BB%E0%B7%92%E0%B6%9A%E0%B7%8F%E0%B7%80.pdf",
+      "title": "Grade 10 History historical knowledge reading handout",
+      "split": "holdout",
+      "subject_group": "History",
+      "content_type_hint": "printed",
+      "layout_tags": [
+        "diagrams",
+        "prose"
+      ],
+      "metadata_evidence": "Page images identify Grade 10 History and contain historical society reading material with diagrams.",
+      "image_path": "images/LK-EDU-000491_p000002.png",
+      "image_sha256": "d4aec34512b46fa91a45ae0305b9f1689385b6a5e4a1c729d7b040ee25f9aa11",
+      "reference_path": "references/LK-EDU-000491_p000002.txt"
+    },
+    {
+      "sample_id": "LK-EDU-000491_p000003",
+      "doc_id": "LK-EDU-000491",
+      "raw_sha256": "52b88645e0189639588d818a7053e93190c5831f08b29ace5eea1df5d3f2794c",
+      "page_number": 3,
+      "source_url": "https://e-thaksalawa.moe.gov.lk/lcms/pluginfile.php/41407/mod_resource/content/2/11%20%E0%B6%93%E0%B6%AD%E0%B7%92%E0%B7%84%E0%B7%8F%E0%B7%83%E0%B7%92%E0%B6%9A%20%E0%B6%AF%E0%B7%90%E0%B6%B1%E0%B7%94%E0%B6%B8%20%E0%B7%84%E0%B7%8F%20%E0%B6%91%E0%B7%84%E0%B7%92%20%E0%B6%B4%E0%B7%8A_%E0%B6%BB%E0%B7%8F%E0%B6%BA%E0%B7%9D%E0%B6%9C%E0%B7%92%E0%B6%9A%20%E0%B6%86%E0%B6%AF%E0%B7%9A%E0%B7%81%E0%B6%B1%E0%B6%BA%E0%B6%9A%E0%B7%92%E0%B6%BA%E0%B7%80%E0%B7%93%E0%B6%B8%E0%B7%8A%20%E0%B6%B4%E0%B6%AD%E0%B7%8A_%E0%B6%BB%E0%B7%92%E0%B6%9A%E0%B7%8F%E0%B7%80.pdf",
+      "title": "Grade 10 History historical knowledge reading handout",
+      "split": "holdout",
+      "subject_group": "History",
+      "content_type_hint": "printed",
+      "layout_tags": [
+        "diagrams",
+        "prose"
+      ],
+      "metadata_evidence": "Page images identify Grade 10 History and contain historical society reading material with diagrams.",
+      "image_path": "images/LK-EDU-000491_p000003.png",
+      "image_sha256": "5dd6292ed0f4ec0420702e68f550545252fb68ed44ec2466fd665500591da06d",
+      "reference_path": "references/LK-EDU-000491_p000003.txt"
+    },
+    {
+      "sample_id": "LK-EDU-000492_p000002",
+      "doc_id": "LK-EDU-000492",
+      "raw_sha256": "4eb84460897e782cef0d558b8b8455018346868bb99a3c3f3811c68072ec1a0f",
+      "page_number": 2,
+      "source_url": "https://e-thaksalawa.moe.gov.lk/lcms/pluginfile.php/29008/mod_resource/content/2/Chapter%2004.pdf",
+      "title": "Grade 10 Business and Accounting Studies chapter 4",
+      "split": "calibration",
+      "subject_group": "Business and Accounting",
+      "content_type_hint": "printed",
+      "layout_tags": [
+        "prose",
+        "table"
+      ],
+      "metadata_evidence": "Page images show Sinhala accounting chapter prose and an asset/liability classification exercise table.",
+      "image_path": "images/LK-EDU-000492_p000002.png",
+      "image_sha256": "43f96ca87268794e92340eb88aad1055149b673b22711dfde19526106f1d94be",
+      "reference_path": "references/LK-EDU-000492_p000002.txt"
+    },
+    {
+      "sample_id": "LK-EDU-000492_p000010",
+      "doc_id": "LK-EDU-000492",
+      "raw_sha256": "4eb84460897e782cef0d558b8b8455018346868bb99a3c3f3811c68072ec1a0f",
+      "page_number": 10,
+      "source_url": "https://e-thaksalawa.moe.gov.lk/lcms/pluginfile.php/29008/mod_resource/content/2/Chapter%2004.pdf",
+      "title": "Grade 10 Business and Accounting Studies chapter 4",
+      "split": "calibration",
+      "subject_group": "Business and Accounting",
+      "content_type_hint": "printed",
+      "layout_tags": [
+        "prose",
+        "table"
+      ],
+      "metadata_evidence": "Page images show Sinhala accounting chapter prose and an asset/liability classification exercise table.",
+      "image_path": "images/LK-EDU-000492_p000010.png",
+      "image_sha256": "08b359b17a8999e632e4769a2ef3ef13934edf1e677f8c6c218d46a120080159",
+      "reference_path": "references/LK-EDU-000492_p000010.txt"
+    },
+    {
+      "sample_id": "LK-EDU-000012_p000001",
+      "doc_id": "LK-EDU-000012",
+      "raw_sha256": "3451d07f06476f962a745d22a84269c93a3cbff8ae0daa0ce9a25033db8545ba",
+      "page_number": 1,
+      "source_url": "https://www.alapiedu.com/uploads/%E0%B6%AF%E0%B7%9B%E0%B7%81%E0%B7%92%E0%B6%9A.pdf",
+      "title": "දෛශික",
+      "split": "calibration",
+      "subject_group": "Maths",
+      "content_type_hint": "handwritten",
+      "layout_tags": [
+        "equations",
+        "diagrams"
+      ],
+      "metadata_evidence": "Reuses the existing calibration page of handwritten vector mathematics notes; preserves its prior split.",
+      "image_path": "images/LK-EDU-000012_p000001.png",
+      "image_sha256": "1af209b6c76636a77a02e6e6831274d492b70b90d4d3adab2674421cff421705",
+      "reference_path": "references/LK-EDU-000012_p000001.txt"
+    }
+  ],
+  "catalog_namespace": "isolated experiment ocr_broad_20261011; IDs 000490–000492 are not production catalog registrations",
+  "source_seed": "configs/ocr_broad_sources.csv"
+}

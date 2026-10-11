@@ -107,3 +107,7 @@ local_cache/
 # OCR review source images and neural experiment outputs live in persistent storage
 reviews/ocr/**/images/
 ocr-comparison/
+
+# Isolated OCR experiment downloads; frozen source metadata lives in configs/reviews
+corpus/experiments/**
+!corpus/experiments/**/README.md
