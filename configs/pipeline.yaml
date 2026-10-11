@@ -12,3 +12,17 @@ download:
   max_requests: 50
   max_retries: 2
   max_retry_wait: 30
+extraction:
+  catalog_path: corpus/catalog/documents.csv
+  raw_root: corpus/raw
+  output_root: corpus/extracted/pages
+  log_root: corpus/logs/extraction
+  max_documents: 5
+  max_pages: 500
+  max_raw_bytes: 52428800
+  max_page_bytes: 10485760
+  max_output_bytes: 104857600
+  max_seconds: 300
+  command_timeout_seconds: 20
+  min_text_chars: 20
+  max_replacement_ratio: 0.02

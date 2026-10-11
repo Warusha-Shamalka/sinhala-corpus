@@ -1,6 +1,6 @@
 # Proposed data contracts
 
-Status: mixed implementation/design specification. Catalog validation and PDF download receipts/checkpoints are implemented; richer metadata, extraction and dataset contracts remain proposed. See [download validation](DOWNLOAD_VALIDATION_RESULTS.md). Preserve the existing 23-column CSV until a reviewed migration is needed; use versioned sidecars for richer provenance and stage outcomes.
+Status: mixed implementation/design specification. Catalog validation, PDF download receipts/checkpoints and native PDF page extraction contracts are implemented; richer metadata and dataset contracts remain proposed. See [download validation](DOWNLOAD_VALIDATION_RESULTS.md). Preserve the existing 23-column CSV until a reviewed migration is needed; use versioned sidecars for richer provenance and stage outcomes.
 
 ## Catalog contract
 
@@ -42,6 +42,8 @@ Use UTF-8 JSONL or another explicitly versioned format. Names below are proposed
 Records reference stable IDs and hashes rather than trusting mutable file paths. Unknown, inferred, source-declared, machine-verified, and human-reviewed metadata need distinct evidence states.
 
 ## Extracted page record
+
+Implemented schema: `pdf-pages-1`, one-based page numbers and zero-based block indices, with versioned `pdf-extraction-1` bundle manifests. See [EXTRACTION_GUIDE.md](EXTRACTION_GUIDE.md) for the actual paths, fields and lifecycle behavior. Figures/table assets are explicitly not exported yet; reading order remains the backend estimate.
 
 Required: schema version, doc ID, raw SHA256, zero/one-based page convention (choose one and document it), page index, extraction method/version/config hash, text blocks with reading order and optional bounding boxes, figure/table asset references, OCR requirement/outcome/confidence, quality measurements and errors.
 

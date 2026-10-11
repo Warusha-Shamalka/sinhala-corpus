@@ -1,2 +1,3 @@
-# Only third-party dependency used by the implemented stages and tests.
+# Python dependency used by the pipeline and tests.
+# PDF extraction additionally requires system package poppler-utils; see docs/EXTRACTION_GUIDE.md.
 PyYAML==6.0.3

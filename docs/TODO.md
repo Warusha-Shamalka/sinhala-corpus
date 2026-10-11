@@ -96,7 +96,8 @@ See [PROGRESS_GUIDE.md](PROGRESS_GUIDE.md) for usage and limitations.
 
 ## Extraction, OCR and cleaning
 
-- [ ] Extract born-digital PDF/HTML content with page/block provenance and reading order.
+- [x] Extract native PDF text with page/block/word coordinates, raw provenance, versioned immutable outputs, OCR routing, recovery and progress.
+- [ ] Add HTML extraction and validate native Sinhala PDF fonts/layouts using reviewed source pages.
 - [ ] Preserve equations, tables, option labels and figure references.
 - [ ] Measure Sinhala OCR quality on reviewed scans and select a reproducible tool/configuration.
 - [ ] Route only failed/scan pages to OCR; retain page-level outcomes for mixed PDFs.
@@ -130,3 +131,11 @@ See [PROGRESS_GUIDE.md](PROGRESS_GUIDE.md) for usage and limitations.
 Verified on 11 October 2026: the production catalog contains 489 records: 483 `DISCOVERED` and six `DOWNLOADED`. All six production PDFs (IDs 9–14) match their stored receipt sizes and SHA256 hashes. The eight original pilots still have blank URLs and remain excluded from downloading. The earlier 2.1 MB smoke PDF is separate from these production files. The implemented code previously passed all 109 tests; see [download validation](DOWNLOAD_VALIDATION_RESULTS.md).
 
 Extraction/OCR and derived-dataset stages remain planned. Model training and competition submission belong in the separate training repository. Candidate URLs are not verified documents or training examples.
+
+## PDF extraction checkpoint — 11 October 2026
+
+- [x] Inspect seven downloaded PDFs and verify raw hashes/receipts.
+- [x] Trial native extraction on a copied catalog: 132 pages, zero native text, seven OCR-routed documents, zero failed jobs; production catalog unchanged.
+- [x] Document extraction commands, output contracts, limits and observed pilot results.
+- [ ] Manually review representative scanned/handwritten pages and review the extraction PR into `dev`.
+- [ ] Implement selective OCR separately, including handwriting/equation accuracy checks; do not promote these empty-native-text bundles into datasets.

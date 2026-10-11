@@ -190,3 +190,7 @@ Defaults are five jobs per run, 50 MiB per PDF, 300 seconds and 50 requests per 
 ## Live progress and background status
 
 Discovery and downloads now support `--progress auto|plain|off` and `--quiet`, with atomic per-run snapshots and a read-only `python3 -B -m pipeline.progress <snapshot-path>` checker. Download reports remain JSON on stdout; discovery offers `--json`. See the [progress guide](docs/PROGRESS_GUIDE.md) for commands, counters, snapshot paths and interruption/staleness behavior. Downloader dry-runs still make no requests or writes.
+
+## Implemented PDF extraction
+
+Local PDF extraction now verifies raw receipts/hashes, preserves emitted text and page/block/word coordinates in immutable bundles, flags pages needing OCR review, and uses catalog checkpoints plus shared progress. Native extraction pending OCR remains `DOWNLOADED`; a complete native-text document advances to `EXTRACTED`. OCR, HTML extraction, asset exports and cleaning remain planned. See the [extraction guide](docs/EXTRACTION_GUIDE.md) and its linked seven-document validation report.
