@@ -1,6 +1,6 @@
 # Project progress and TODO
 
-Updated: 9 October 2026. This checklist tracks implemented work separately from planned stages. Detailed acceptance criteria remain in [IMPLEMENTATION_BACKLOG.md](IMPLEMENTATION_BACKLOG.md).
+Updated: 11 October 2026. This checklist tracks implemented work separately from planned stages. Detailed acceptance criteria remain in [IMPLEMENTATION_BACKLOG.md](IMPLEMENTATION_BACKLOG.md).
 
 ## Completed
 
@@ -75,8 +75,22 @@ Verification details: [discovery results](DISCOVERY_VALIDATION_RESULTS.md) and [
 - [x] Add `configs/pipeline.yaml` with download paths and bounded transfer settings.
 
 - [ ] Commit/push `feat/pilot-downloader`, verify CI and merge into `dev`.
-- [ ] Add real approved resource URLs to the master catalog, preserving the eight pilot IDs.
+- [x] Add 481 production discovery candidates with real URLs, preserving the eight initial pilot IDs.
+- [x] Complete the first production download plus a five-document batch; verify all six saved PDFs against receipts on 11 October 2026.
+- [ ] Commit the production catalog checkpoint and progress-reporting TODO updates after the batch is complete.
 - [ ] Extend downloading to HTML/scans/other formats only with format-specific validation.
+
+## Progress reporting across pipeline stages
+
+- [ ] Add shared progress reporting for discovery, downloading and future extraction/OCR/cleaning stages.
+- [ ] Discovery: show current source/page, pages visited, queued URLs, candidates accepted/rejected, request count, elapsed time and the reason for stopping. The crawl's total is unknown; do not present the page cap as percent completion of the website.
+- [ ] Downloading: show current document ID/title, job number out of selected jobs, bytes transferred, known file size, transfer speed and estimated remaining time when enough information exists. Show bytes without a percentage when Content-Length is unknown.
+- [ ] Show active phases such as robots lookup, connecting, transferring, retry wait, stored-file verification and catalog checkpoint so users can distinguish work from waiting.
+- [ ] Count downloaded, verified-existing, recovered, failed and conflicted jobs separately; explain batch-limited exclusions as deferred jobs rather than errors. Report missing robots.txt as an absent policy while retaining its HTTP observation.
+- [ ] Write human-readable progress to stderr and keep the final JSON report on stdout; support quiet/noninteractive modes and throttle updates so redirected logs and Colab remain readable.
+- [ ] Persist a lightweight per-run progress snapshot with run ID, stage, current item, counts and last-update time, allowing a read-only status command to inspect background runs. Distinguish running, completed, failed, interrupted and potentially stale snapshots without claiming a stale heartbeat proves failure.
+- [ ] Future page-processing stages: report documents/pages completed, OCR-required pages, failures and rejected records; estimate completion only when the task total is known.
+- [ ] Add offline tests for known/unknown file sizes, retries, silent/redirected output, interrupted runs and final progress totals matching actual outcomes. Document the progress and background-status commands before marking this feature complete.
 
 ## Extraction, OCR and cleaning
 
@@ -111,6 +125,6 @@ Verification details: [discovery results](DISCOVERY_VALIDATION_RESULTS.md) and [
 
 ## Current data reality
 
-The catalog still contains eight `DISCOVERED` pilot rows without source URLs. A PDF download stage is implemented and one 2.1 MB real PDF was verified in an isolated smoke catalog; the production catalog still has zero downloadable jobs. All 109 tests pass. See [download validation](DOWNLOAD_VALIDATION_RESULTS.md).
+Verified on 11 October 2026: the production catalog contains 489 records: 483 `DISCOVERED` and six `DOWNLOADED`. All six production PDFs (IDs 9–14) match their stored receipt sizes and SHA256 hashes. The eight original pilots still have blank URLs and remain excluded from downloading. The earlier 2.1 MB smoke PDF is separate from these production files. The implemented code previously passed all 109 tests; see [download validation](DOWNLOAD_VALIDATION_RESULTS.md).
 
 Extraction/OCR and derived-dataset stages remain planned. Model training and competition submission belong in the separate training repository. Candidate URLs are not verified documents or training examples.
