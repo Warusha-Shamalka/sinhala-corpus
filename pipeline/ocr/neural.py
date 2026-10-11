@@ -19,7 +19,8 @@ PROMPT = ('Transcribe all visible text from this Sinhala educational page in rea
           'Represent mathematical expressions using LaTeX. Do not solve questions, summarize, '
           'translate, correct the source, or invent missing text. Use [UNREADABLE] for illegible text. '
           'Output only the transcription.')
-MODELS = {'gemma': 'google/gemma-4-E2B-it', 'deepseek': 'deepseek-ai/DeepSeek-OCR-2'}
+MODELS = {'gemma': 'google/gemma-4-E2B-it', 'deepseek': 'deepseek-ai/DeepSeek-OCR-2',
+          'qwen': 'Qwen/Qwen2.5-VL-3B-Instruct'}
 
 
 def repetition_loop(tokens):
@@ -37,7 +38,7 @@ def repetition_loop(tokens):
 
 
 class GenerationGuard:
-    """Single-image soft deadline/repetition stopping criterion for Gemma."""
+    """Single-image soft deadline/repetition stopping criterion for Gemma/Qwen."""
     def __init__(self, prompt_length, max_seconds, *, clock=time.monotonic):
         self.prompt_length, self.max_seconds, self.clock = prompt_length, max_seconds, clock
         self.started = clock()
@@ -86,13 +87,14 @@ class GPUBackend:
             try: versions[package] = importlib.metadata.version(package)
             except importlib.metadata.PackageNotFoundError: pass
         self.identity = {'gpu': torch.cuda.get_device_name(0), 'python': platform.python_version(), 'packages': versions}
-        if backend == 'gemma':
+        if backend in {'gemma', 'qwen'}:
             from transformers import AutoProcessor, AutoModelForMultimodalLM
-            self.processor = AutoProcessor.from_pretrained(model_path, local_files_only=True)
+            processor_settings = {'min_pixels':256*28*28, 'max_pixels':1280*28*28} if backend == 'qwen' else {}
+            self.processor = AutoProcessor.from_pretrained(model_path, local_files_only=True, **processor_settings)
             self.model = AutoModelForMultimodalLM.from_pretrained(model_path, local_files_only=True,
                 dtype=torch.float16, device_map={'': 0}, attn_implementation='eager').eval()
             self.identity.update(dtype='float16', attention='eager', repetition_guard='exact_token_tail_v1',
-                                 max_generation_seconds=max_generation_seconds)
+                                 max_generation_seconds=max_generation_seconds, processor_settings=processor_settings)
         else:
             if torch.cuda.get_device_capability(0)[0] < 8 or not torch.cuda.is_bf16_supported(including_emulation=False):
                 raise ValueError('Upstream DeepSeek-OCR-2 uses BF16: select an L4/A100-class GPU; this adapter cannot run on T4')
@@ -119,7 +121,8 @@ class GPUBackend:
                 picture = source.convert('RGB')
             messages = [{'role':'user','content':[{'type':'image','image':picture},{'type':'text','text':PROMPT}]}]
             inputs = self.processor.apply_chat_template(messages, tokenize=True, return_dict=True,
-                return_tensors='pt', add_generation_prompt=True, enable_thinking=False).to(self.model.device)
+                return_tensors='pt', add_generation_prompt=True,
+                **({'enable_thinking':False} if self.backend == 'gemma' else {})).to(self.model.device)
             size = inputs['input_ids'].shape[-1]
             from transformers import StoppingCriteriaList
             guard = GenerationGuard(size, self.max_generation_seconds)
@@ -127,7 +130,8 @@ class GPUBackend:
                 stopping_criteria=StoppingCriteriaList([guard]))
             tokens = output[0][size:]
             raw = self.processor.decode(tokens, skip_special_tokens=False)
-            text = response_text(self.processor.parse_response(raw, prefix=inputs['input_ids']))
+            text = (response_text(self.processor.parse_response(raw, prefix=inputs['input_ids']))
+                    if self.backend == 'gemma' else self.processor.decode(tokens, skip_special_tokens=True))
             limited = len(tokens) >= self.maximum
             reason = guard.reason or ('token_limit' if limited else 'complete')
             return {'text':text, 'raw_response':raw, 'generated_tokens':len(tokens),
@@ -157,6 +161,7 @@ def run(packet, output, backend, model_path, revision, *, max_pages=10, max_new_
     metadata = {'schema_version':'neural-ocr-run-1','backend':backend,'model_id':MODELS[backend], 'model_revision':revision,
                 'weights_sha256':weights, 'packet_manifest_sha256':file_hash(packet/'manifest.json'), 'prompt':PROMPT,
                 'max_new_tokens':max_new_tokens,'max_pages':max_pages,'selected_samples':[s['sample_id'] for s in selected],
+                'generation_guard':{'max_seconds':max_generation_seconds,'repetition':'exact_token_tail_v1'} if backend in {'gemma','qwen'} else None,
                 'gemma_generation_guard':{'max_seconds':max_generation_seconds,'repetition':'exact_token_tail_v1'} if backend == 'gemma' else None,
                 'created_at_utc':utc_now(),'review_required':True,'training_approved':False}
     identity = hashlib.sha256(json.dumps(metadata,sort_keys=True).encode()).hexdigest()
@@ -206,7 +211,7 @@ def main():
     parser.add_argument('--backend',choices=MODELS,required=True);parser.add_argument('--model-path',type=Path,required=True)
     parser.add_argument('--revision',required=True);parser.add_argument('--max-pages',type=int,default=10)
     parser.add_argument('--max-new-tokens',type=int,default=8192)
-    parser.add_argument('--max-generation-seconds',type=int,default=120,help='Gemma soft generation deadline; excludes model loading/image preprocessing; not applied to DeepSeek upstream infer')
+    parser.add_argument('--max-generation-seconds',type=int,default=120,help='Gemma/Qwen soft generation deadline; excludes model loading/image preprocessing; not applied to DeepSeek upstream infer')
     args=parser.parse_args()
     try:run(args.packet,args.output,args.backend,args.model_path,args.revision,max_pages=args.max_pages,max_new_tokens=args.max_new_tokens,max_generation_seconds=args.max_generation_seconds)
     except Exception as exc:parser.exit(2,f'Neural OCR comparison error: {exc}\n')

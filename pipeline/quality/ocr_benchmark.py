@@ -103,6 +103,16 @@ def prepare(settings, destination, count=10):
     if len(selected) != count:
         raise ValueError(f'Only {len(selected)} unique pages available; requested {count}')
     holdout_docs = {row['sha256'] for row, _ in documents[-max(1, math.ceil(len(documents)*0.3)):]} if len(documents) > 1 else set()
+    selected = [(row, page, {'split':'holdout' if row['sha256'] in holdout_docs else 'calibration'}) for row, page in selected]
+    return render_packet(settings, destination, selected,
+        sampling='document round-robin, first/middle/last pages',
+        coverage_note='Current downloaded source sample; not representative of all subjects or printed/handwritten styles.')
+
+
+def render_packet(settings, destination, selected, *, sampling, coverage_note):
+    destination = Path(destination)
+    if destination.exists():
+        raise ValueError('Refusing to overwrite an existing review packet')
     renderer = shutil.which('pdftoppm')
     if not renderer:
         raise ValueError('pdftoppm is required to prepare review images')
@@ -112,7 +122,7 @@ def prepare(settings, destination, count=10):
     try:
         (temporary/'images').mkdir()
         (temporary/'references').mkdir()
-        for row, number in selected:
+        for row, number, metadata in selected:
             sid = f"{row['doc_id']}_p{number:06d}"
             pdf = settings['raw_root']/'pdf'/row['doc_id']/f"{row['sha256']}.pdf"
             content = command([renderer,'-f',str(number),'-l',str(number),'-singlefile','-r',str(settings['dpi']),'-scale-to',str(settings['max_image_side']),'-png',str(pdf)], timeout=settings['command_timeout_seconds'], maximum=settings['max_command_bytes'])
@@ -123,10 +133,11 @@ def prepare(settings, destination, count=10):
             image.write_bytes(content)
             (temporary/'references'/f'{sid}.txt').write_text('', encoding='utf-8')
             samples.append({'sample_id':sid,'doc_id':row['doc_id'],'raw_sha256':row['sha256'],'page_number':number,
-                            'source_url':row['source_url'],'title':row['title'],'split':'holdout' if row['sha256'] in holdout_docs else 'calibration',
+                            'source_url':row['source_url'],'title':row['title'],**metadata,
                             'image_path':f'images/{sid}.png','image_sha256':file_hash(image),'reference_path':f'references/{sid}.txt'})
         manifest = {'schema_version':'ocr-reference-packet-1','purpose':'ocr_evaluation','created_at_utc':utc_now(),
-                    'sampling':'document round-robin, first/middle/last pages','coverage_note':'Current downloaded source sample; not representative of all subjects or printed/handwritten styles.',
+                    'sampling':sampling,'coverage_note':coverage_note,
+                    'catalog_sha256':file_hash(settings['catalog_path']),
                     'rendering':{'dpi':settings['dpi'],'max_image_side':settings['max_image_side']},'samples':samples}
         (temporary/'manifest.json').write_text(json.dumps(manifest,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
         with (temporary/'review.csv').open('w',newline='',encoding='utf-8') as stream:
@@ -138,6 +149,45 @@ def prepare(settings, destination, count=10):
     finally:
         if temporary.exists(): shutil.rmtree(temporary)
     return {'packet_path':str(destination),'sample_count':len(samples),'verified_references':0}
+
+
+def prepare_selection(settings, destination, selection_path):
+    """Explicit public-source page selection, including PDFs with native text."""
+    import yaml
+    plan = yaml.safe_load(Path(selection_path).read_text(encoding='utf-8'))
+    if not isinstance(plan, dict) or plan.get('schema_version') != 'ocr-selection-1':
+        raise ValueError('Expected ocr-selection-1 plan')
+    entries = plan.get('samples')
+    if not isinstance(entries, list) or not 1 <= len(entries) <= 32:
+        raise ValueError('Select 1–32 source pages')
+    catalog = {row['doc_id']:row for row in read_catalog(settings['catalog_path'])}
+    selected, used, groups = [], set(), {}
+    for entry in entries:
+        if not isinstance(entry, dict) or entry.get('doc_id') not in catalog:
+            raise ValueError('Unknown selected document')
+        row = catalog[entry['doc_id']]
+        page, split = entry.get('page_number'), entry.get('split')
+        if type(page) is not int or not 1 <= page <= 500 or split not in {'calibration','holdout'}:
+            raise ValueError('Invalid selected page/split')
+        if row['status'] not in {'DOWNLOADED','EXTRACTED'} or not row['sha256']:
+            raise ValueError('Selected source has not been downloaded')
+        key = (row['sha256'], page)
+        if key in used or groups.setdefault(row['sha256'],split) != split:
+            raise ValueError('Duplicate source page or document crossing splits')
+        used.add(key)
+        metadata = {'split':split, 'subject_group':entry.get('subject_group','unknown'),
+                    'content_type_hint':entry.get('content_type_hint','unknown'),
+                    'layout_tags':entry.get('layout_tags',[]), 'metadata_evidence':entry.get('metadata_evidence','pending source inspection')}
+        if metadata['content_type_hint'] not in {'printed','handwritten','mixed','unknown'}:
+            raise ValueError('Invalid content type hint')
+        if any(not isinstance(metadata[k],str) or not metadata[k].strip() or len(metadata[k])>1000 for k in ('subject_group','metadata_evidence')):
+            raise ValueError('Invalid source metadata')
+        if not isinstance(metadata['layout_tags'],list) or len(metadata['layout_tags'])>10 or any(not isinstance(tag,str) or not tag.strip() or len(tag)>64 for tag in metadata['layout_tags']):
+            raise ValueError('Invalid layout tags')
+        recover({**row,'status':'DOWNLOADED'}, settings['raw_root'])
+        selected.append((row,page,metadata))
+    return render_packet(settings, destination, selected, sampling='explicit frozen source page selection',
+        coverage_note=plan.get('coverage_note','Subject/style hints require human verification; missing strata must be reported.'))
 
 
 def read_reviews(root, manifest):
@@ -226,18 +276,30 @@ def evaluate(root,prediction_dirs):
             raise ValueError('Duplicate prediction run')
         seen_runs.add(run['run_id'])
         pages=[]
-        for sample in verified:
+        outcomes={}
+        predictions={}
+        for sample in manifest['samples']:
             path=directory/f"{sample['sample_id']}.json"
-            if not path.exists():continue
+            if not path.exists():
+                outcomes['missing']=outcomes.get('missing',0)+1
+                continue
             prediction=json.loads(path.read_text(encoding='utf-8'))
             if any(prediction.get(k)!=v for k,v in {'schema_version':'neural-ocr-prediction-1','sample_id':sample['sample_id'],'image_sha256':sample['image_sha256'],'run_id':run['run_id']}.items()):
                 raise ValueError('Prediction/image/run identity mismatch')
+            outcome=prediction.get('outcome','unknown')
+            if not isinstance(outcome,str): raise ValueError('Invalid prediction outcome')
+            outcomes[outcome]=outcomes.get(outcome,0)+1
+            predictions[sample['sample_id']]=prediction
+        for sample in verified:
+            prediction=predictions.get(sample['sample_id'])
+            if prediction is None:continue
             if prediction.get('outcome')!='predicted':continue
             text=prediction['text']
             if not isinstance(text,str) or len(text)>50000: raise ValueError('Invalid/oversized prediction text')
             reference=normalize(relative_file(root,sample['reference_path']).read_text(encoding='utf-8'))
             pred=normalize(text)
             pages.append({'sample_id':sample['sample_id'],'split':sample['split'],'content_type':reviews[sample['sample_id']]['content_type'],
+                          'subject_group':sample.get('subject_group','unknown'),
                           'character_errors':edit_distance(reference,pred),'reference_characters':len(reference),
                           'word_errors':edit_distance(reference.split(),pred.split()),'reference_words':len(reference.split()),
                           'exact_match':reference==pred,'equations_present':reviews[sample['sample_id']]['equations_present']})
@@ -249,20 +311,34 @@ def evaluate(root,prediction_dirs):
             metrics[split]={'scored_pages':len(subset),'expected_verified_pages':expected,'coverage_complete':len(subset)==expected and expected>0,
                             'cer':sum(p['character_errors'] for p in subset)/chars if chars else None,
                             'wer':sum(p['word_errors'] for p in subset)/words if words else None}
-        result['models'].append({'backend':run['backend'],'run_id':run['run_id'],'metrics':metrics,'pages':pages})
-    result['comparison_complete']=len(verified)==len(manifest['samples']) and len({m['backend'] for m in result['models']})>=2 and {s['split'] for s in verified} == {'calibration','holdout'} and all(len(m['pages'])==len(verified) for m in result['models'])
+        breakdowns={}
+        for field in ('subject_group','content_type'):
+            breakdowns[field]={}
+            for label in sorted({p[field] for p in pages}):
+                subset=[p for p in pages if p[field]==label]
+                chars=sum(p['reference_characters'] for p in subset)
+                words=sum(p['reference_words'] for p in subset)
+                breakdowns[field][label]={'scored_pages':len(subset),
+                    'cer':sum(p['character_errors'] for p in subset)/chars if chars else None,
+                    'wer':sum(p['word_errors'] for p in subset)/words if words else None}
+        result['models'].append({'backend':run['backend'],'run_id':run['run_id'],
+            'run_status':run.get('status','unknown'),'outcomes':outcomes,
+            'metrics':metrics,'breakdowns':breakdowns,'pages':pages})
+    result['comparison_complete']=len(verified)==len(manifest['samples']) and len({m['backend'] for m in result['models']})>=2 and {s['split'] for s in verified} == {'calibration','holdout'} and all(m['run_status']=='finished' and len(m['pages'])==len(verified) for m in result['models'])
     return result
 
 
 def main():
     parser=argparse.ArgumentParser(description=__doc__);sub=parser.add_subparsers(dest='action',required=True)
-    p=sub.add_parser('prepare');p.add_argument('--config',type=Path,default=Path('configs/pipeline.yaml'));p.add_argument('--output',type=Path,required=True);p.add_argument('--count',type=int,default=10)
+    p=sub.add_parser('prepare');p.add_argument('--config',type=Path,default=Path('configs/pipeline.yaml'));p.add_argument('--output',type=Path,required=True);p.add_argument('--count',type=int,default=10);p.add_argument('--selection',type=Path,help='Explicit page selection YAML; includes native-text PDFs')
     p=sub.add_parser('status');p.add_argument('packet',type=Path);p.add_argument('--metadata-only',action='store_true')
     p=sub.add_parser('approve');p.add_argument('packet',type=Path);p.add_argument('--sample-id',required=True);p.add_argument('--transcriber',required=True);p.add_argument('--verifier',required=True);p.add_argument('--content-type',choices=('printed','handwritten','mixed'),required=True);p.add_argument('--equations',choices=('yes','no'),required=True)
     p=sub.add_parser('evaluate');p.add_argument('packet',type=Path);p.add_argument('--predictions',type=Path,action='append',required=True)
     args=parser.parse_args()
     try:
-        if args.action=='prepare':result=prepare(load_settings(args.config),args.output,args.count)
+        if args.action=='prepare':
+            settings = load_settings(args.config)
+            result = prepare_selection(settings,args.output,args.selection) if args.selection else prepare(settings,args.output,args.count)
         elif args.action=='approve':result=approve(args.packet,args.sample_id,args.transcriber,args.verifier,args.content_type,args.equations)
         elif args.action=='evaluate':result=evaluate(args.packet,args.predictions)
         else:

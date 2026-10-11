@@ -5,6 +5,9 @@ import json
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import patch
+import struct
+import yaml
 
 from pipeline.quality import ocr_benchmark as benchmark
 from pipeline.ocr import neural
@@ -174,6 +177,34 @@ class AccuracyTests(unittest.TestCase):
         self.assertEqual(neural.response_text({'content':[{'type':'text','text':'සිංහල'}]}),'සිංහල')
         with self.assertRaises(ValueError):neural.response_text({'content':[{'type':'thinking','text':'invented'}]})
 
+    def test_qwen_uses_same_packet_guard_and_verified_comparison(self):
+        self.verify(0);self.verify(1)
+        first=self.predict()
+        second=self.predict('qwen','qwen')
+        run=json.loads((second/'run.json').read_text())
+        self.assertEqual(run['model_id'],'Qwen/Qwen2.5-VL-3B-Instruct')
+        self.assertEqual(run['generation_guard']['max_seconds'],120)
+        self.assertFalse(run['training_approved'])
+        report=benchmark.evaluate(self.packet,[first,second])
+        self.assertTrue(report['comparison_complete'])
+        self.assertEqual(report['models'][1]['outcomes'],{'predicted':2})
+        self.assertEqual(report['models'][1]['breakdowns']['content_type']['handwritten']['scored_pages'],2)
+
+    def test_running_checkpoint_does_not_make_comparison_complete(self):
+        self.verify(0);self.verify(1)
+        first=self.predict();second=self.predict('qwen','qwen')
+        path=second/'run.json';run=json.loads(path.read_text());run['status']='running'
+        path.write_text(json.dumps(run))
+        self.assertFalse(benchmark.evaluate(self.packet,[first,second])['comparison_complete'])
+
+    def test_pending_prediction_identity_is_checked_without_reference_accuracy(self):
+        run=self.predict('qwen','qwen')
+        path=run/(self.samples[0]['sample_id']+'.json')
+        record=json.loads(path.read_text());record['image_sha256']='f'*64
+        path.write_text(json.dumps(record))
+        with self.assertRaisesRegex(ValueError,'identity mismatch'):
+            benchmark.evaluate(self.packet,[run])
+
     def test_notebook_code_cells_parse_without_executing(self):
         path=Path(__file__).resolve().parents[1]/'notebooks/ocr_accuracy_colab.ipynb'
         notebook=json.loads(path.read_text())
@@ -188,6 +219,55 @@ class AccuracyTests(unittest.TestCase):
                     ):
                         ast.parse(ast.literal_eval(node.value))
                 self.assertEqual(cell['outputs'],[])
+
+
+class SelectionTests(unittest.TestCase):
+    def setUp(self):
+        self.tmp=tempfile.TemporaryDirectory();self.addCleanup(self.tmp.cleanup)
+        self.root=Path(self.tmp.name)
+        self.row={'doc_id':'LK-EDU-000001','status':'DOWNLOADED','sha256':'','title':'Printed Sinhala',
+                  'source_url':'https://example.org/worksheet.pdf'}
+        pdf=self.root/'pdf'/self.row['doc_id'];pdf.mkdir(parents=True)
+        content=b'fixture raw PDF';sha=hashlib.sha256(content).hexdigest()
+        self.row['sha256']=sha;(pdf/(sha+'.pdf')).write_bytes(content)
+        catalog=self.root/'catalog.csv';catalog.write_text('fixture catalog metadata')
+        self.settings={'raw_root':self.root,'catalog_path':catalog,'dpi':300,
+            'max_image_side':3000,'command_timeout_seconds':10,'max_command_bytes':100000}
+        self.plan=self.root/'selection.yaml'
+        self.entry={'doc_id':self.row['doc_id'],'page_number':1,'split':'calibration',
+                    'subject_group':'Sinhala','content_type_hint':'printed'}
+        self.png=b'\x89PNG\r\n\x1a\n'+b'\x00\x00\x00\x0dIHDR'+struct.pack('>II',600,800)
+
+    def prepare(self,entries):
+        self.plan.write_text(yaml.safe_dump({'schema_version':'ocr-selection-1','samples':entries}))
+        with patch.object(benchmark,'read_catalog',return_value=[self.row]), \
+             patch.object(benchmark,'recover',return_value={}), \
+             patch.object(benchmark.shutil,'which',return_value='/fixture/pdftoppm'), \
+             patch.object(benchmark,'command',return_value=self.png), \
+             patch.object(benchmark,'select_input',side_effect=AssertionError('native bundle must not be required')):
+            return benchmark.prepare_selection(self.settings,self.root/'output',self.plan)
+
+    def test_explicit_selection_accepts_native_pages_and_keeps_pending(self):
+        before=self.settings['catalog_path'].read_bytes()
+        result=self.prepare([self.entry]);self.assertEqual(result['sample_count'],1)
+        manifest=benchmark.load_packet(self.root/'output')
+        self.assertEqual(manifest['samples'][0]['content_type_hint'],'printed')
+        self.assertEqual(benchmark.read_reviews(self.root/'output',manifest)[self.row['doc_id']+'_p000001']['status'],'pending')
+        self.assertEqual(before,self.settings['catalog_path'].read_bytes())
+        with self.assertRaisesRegex(ValueError,'overwrite'):self.prepare([self.entry])
+
+    def test_duplicate_page_and_cross_split_rejected_before_output(self):
+        for second in (self.entry,{**self.entry,'page_number':2,'split':'holdout'}):
+            with self.assertRaisesRegex(ValueError,'Duplicate source page or document crossing splits'):
+                self.prepare([self.entry,second])
+            self.assertFalse((self.root/'output').exists())
+
+    def test_invalid_source_page_and_style_rejected(self):
+        for entry in ({**self.entry,'doc_id':'LK-EDU-999999'},
+                      {**self.entry,'page_number':True},
+                      {**self.entry,'content_type_hint':'guessed'}):
+            with self.assertRaises(ValueError):self.prepare([entry])
+            self.assertFalse((self.root/'output').exists())
 
 
 if __name__=='__main__':unittest.main()
