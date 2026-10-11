@@ -1,0 +1,123 @@
+"""Persistent corpus setup and stage commands; human review precedes every release."""
+import argparse
+from collections import Counter
+import csv
+import io
+import json
+from pathlib import Path
+
+import yaml
+
+from pipeline.discovery.crawler import ROOT, read_catalog
+from pipeline.download import downloader
+from pipeline.extraction import extractor
+from pipeline.processing import pages
+from pipeline.dataset import reviewed
+from pipeline.dataset.native import encode, digest, publish
+
+
+def initialize(store, seed):
+    store = store.resolve()
+    rows = read_catalog(seed)
+    # A new deployment has no downloaded artifacts. Preserve the original catalog
+    # verbatim as evidence; do not misrepresent old laptop paths as Drive downloads.
+    reset = []
+    for row in rows:
+        if row['status'] != 'DISCOVERED': reset.append(row['doc_id'])
+        row.update(status='DISCOVERED', **{k: '' for k in ('local_filename', 'sha256', 'extraction_method', 'ocr_required',
+                                                         'page_count', 'quality_score', 'pipeline_version', 'last_processed', 'error')})
+    stream = io.StringIO(newline='')
+    if not rows: raise ValueError('Empty seed catalog')
+    writer = csv.DictWriter(stream, fieldnames=list(rows[0]))
+    writer.writeheader(); writer.writerows(rows)
+    config = yaml.safe_load((ROOT / 'configs/pipeline.yaml').read_text())
+    for section in ('download', 'extraction', 'ocr', 'processing'):
+        data = config[section]
+        data['catalog_path'] = str(store / 'corpus/catalog/documents.csv')
+        data['raw_root'] = str(store / 'corpus/raw')
+        data['log_root'] = str(store / 'corpus/logs' / section)
+    config['download']['accepted_formats'] = ['pdf', 'html']
+    config['extraction']['output_root'] = str(store / 'corpus/extracted/pages')
+    config['ocr']['extraction_root'] = config['extraction']['output_root']
+    config['ocr']['output_root'] = str(store / 'corpus/extracted/tesseract')
+    config['processing']['output_root'] = str(store / 'corpus/extracted/processed')
+    files = {'corpus/catalog/documents.csv': stream.getvalue().encode(), 'corpus/catalog/seed.csv': seed.read_bytes(),
+             'configs/pipeline.yaml': yaml.safe_dump(config, sort_keys=False, allow_unicode=True).encode(),
+             'configs/sources.yaml': (ROOT / 'configs/sources.yaml').read_bytes(),
+             'configs/subjects.yaml': (ROOT / 'configs/subjects.yaml').read_bytes()}
+    files['initialization.json'] = encode({'schema_version': 'corpus-store-1', 'seed_sha256': digest(seed.read_bytes()),
+                                          'reset_for_new_store': reset, 'output_sha256': {k: digest(v) for k, v in files.items()}})
+    publish(store, files)
+    return {'store': str(store), 'config': str(store / 'configs/pipeline.yaml'), 'seed_rows': len(rows),
+            'reset_for_new_store': len(reset), 'raw_files_copied': 0}
+
+
+def status(config_path):
+    settings = pages.load_settings(config_path)
+    catalog = read_catalog(settings['catalog_path'])
+    processed, errors = [], []
+    for path in settings['output_root'].rglob('manifest.json'):
+        try:
+            manifest = json.loads(path.read_text(encoding='utf-8'))
+            processed.append(pages.verify_page(path.parent, manifest['identity']))
+        except Exception as exc:
+            errors.append({'path': str(path), 'error': str(exc)})
+    return {'catalog_states': dict(Counter(r['status'] for r in catalog)), 'processed_versions': len(processed),
+            'methods': dict(Counter(r['method'] for r in processed)),
+            'quality_flags': dict(Counter(f for r in processed for f in r['quality_flags'])),
+            'artifact_errors': errors, 'ocr_backend': settings['ocr']['backend'],
+            'model_setup_required': not bool(settings['ocr'].get('revision')),
+            'note': 'Page artifacts are pending review; catalog download status is not training approval.'}
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    commands = parser.add_subparsers(dest='command', required=True)
+    init = commands.add_parser('init')
+    init.add_argument('--store', type=Path, required=True)
+    init.add_argument('--seed', type=Path, default=ROOT / 'corpus/catalog/documents.csv')
+    for name in ('collect', 'process', 'status', 'prepare-review'):
+        stage = commands.add_parser(name)
+        stage.add_argument('--config', type=Path, default=ROOT / 'configs/pipeline.yaml')
+        if name in {'collect', 'process'}:
+            stage.add_argument('--doc-id', action='append', dest='doc_ids')
+            stage.add_argument('--dry-run', action='store_true')
+            stage.add_argument('--progress', choices=['auto', 'plain', 'off'], default='auto')
+        if name == 'collect':
+            stage.add_argument('--sources', type=Path, help='Defaults to sources.yaml beside the pipeline config')
+            stage.add_argument('--source')
+        if name == 'process':
+            stage.add_argument('--page-number', action='append', type=int, dest='page_numbers')
+        if name == 'prepare-review':
+            stage.add_argument('--output', type=Path, required=True)
+            stage.add_argument('--config-hash')
+    export = commands.add_parser('export')
+    export.add_argument('--packet', type=Path, required=True); export.add_argument('--output', type=Path, required=True)
+    verify = commands.add_parser('verify-release')
+    verify.add_argument('--root', type=Path, required=True)
+    args = parser.parse_args()
+    try:
+        if args.command == 'init': result = initialize(args.store, args.seed)
+        elif args.command == 'status': result = status(args.config)
+        elif args.command == 'collect':
+            result = downloader.run(downloader.load_settings(args.config), downloader.load_sources(args.sources or args.config.parent / 'sources.yaml'),
+                                    source_id=args.source, doc_ids=args.doc_ids, dry_run=args.dry_run, progress_mode=args.progress)
+        elif args.command == 'process':
+            result = pages.run(pages.load_settings(args.config), extractor.load_settings(args.config), doc_ids=args.doc_ids,
+                               page_numbers=args.page_numbers,
+                               dry_run=args.dry_run, progress_mode=args.progress)
+        elif args.command == 'prepare-review':
+            result = reviewed.prepare(pages.load_settings(args.config)['output_root'], args.output, args.config_hash)
+        elif args.command == 'verify-release': result = reviewed.verify_release(args.root)
+        else: result = reviewed.export(args.packet, args.output)
+        print(json.dumps(result, ensure_ascii=False, indent=2))
+        failed = bool(result.get('errors') or result.get('artifact_errors') or any(r.get('outcome') in {'failed', 'catalog_conflict'} for r in result.get('results', [])))
+        return int(failed)
+    except KeyboardInterrupt:
+        return 130
+    except Exception as exc:
+        parser.exit(2, f'Corpus workflow error: {exc}\n')
+
+
+if __name__ == '__main__':
+    raise SystemExit(main())

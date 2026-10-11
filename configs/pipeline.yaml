@@ -1,6 +1,28 @@
 schema_version: pipeline-1
+processing:
+  catalog_path: corpus/catalog/documents.csv
+  raw_root: corpus/raw
+  output_root: corpus/extracted/processed
+  log_root: corpus/logs/processing
+  max_documents: 5
+  max_pages: 10
+  dpi: 300
+  max_image_side: 3000
+  render_timeout_seconds: 60
+  max_image_bytes: 52428800
+  # Use all while native Sinhala font accuracy is unresolved; auto keeps usable native pages.
+  ocr_mode: all
+  ocr:
+    backend: surya
+    model_path: /content/surya-models
+    # Replace after prepare-models; never use a moving model revision.
+    revision: ''
+    max_page_seconds: 120
+    max_new_tokens: 8192
 # Paths are relative to this repository, or absolute on persistent storage.
 download:
+  accepted_formats: [pdf]
+  # Add html explicitly when collecting approved static educational web pages.
   catalog_path: corpus/catalog/documents.csv
   raw_root: corpus/raw
   log_root: corpus/logs/download

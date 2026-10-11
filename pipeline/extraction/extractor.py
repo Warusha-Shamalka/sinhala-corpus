@@ -167,7 +167,7 @@ def parse_page(content: bytes, *, row, number: int, config_hash: str, settings: 
 
 
 def fingerprint(settings, backend):
-    config = {'pipeline_version': VERSION, 'backend': backend,
+    config = {'pipeline_version': VERSION, 'backend': backend, 'extraction_code_sha256': file_hash(Path(__file__)),
               **{k: v for k, v in settings.items() if not isinstance(v, Path) and k != 'max_documents'}}
     return hashlib.sha256(json.dumps(config, sort_keys=True).encode()).hexdigest(), config
 

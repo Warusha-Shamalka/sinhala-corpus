@@ -38,8 +38,22 @@ def publish(output, files):
             raise ValueError('Output already exists; choose a new directory')
         temporary = Path(tempfile.mkdtemp(prefix='.native-', dir=output.parent))
         for name, content in files.items():
-            (temporary / name).write_bytes(content)
+            path = (temporary / name).resolve()
+            if not path.is_relative_to(temporary.resolve()):
+                raise ValueError('Artifact path escapes output')
+            path.parent.mkdir(parents=True, exist_ok=True)
+            if isinstance(content, Path):
+                shutil.copyfile(content, path)
+            else:
+                path.write_bytes(content)
+            with path.open('rb') as stream:
+                os.fsync(stream.fileno())
+        from pipeline.download.downloader import sync_directory
+        for directory in sorted((p for p in temporary.rglob('*') if p.is_dir()), key=lambda p: len(p.parts), reverse=True):
+            sync_directory(directory)
+        sync_directory(temporary)
         os.rename(temporary, output)
+        sync_directory(output.parent)
     finally:
         if temporary is not None and temporary.exists():
             shutil.rmtree(temporary)
