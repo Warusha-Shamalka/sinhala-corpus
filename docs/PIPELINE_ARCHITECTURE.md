@@ -374,3 +374,7 @@ python3 -B scripts/check_offline.py
 ```
 
 Further reading: [discovery guide](../pipeline/discovery/README.md), [downloader guide](../pipeline/download/README.md), [download validation](DOWNLOAD_VALIDATION_RESULTS.md), [data contracts](DATA_CONTRACTS.md), [review guide](DISCOVERY_REVIEW_GUIDE.md), and [TODO list](TODO.md).
+
+## Live progress and background status
+
+Discovery and downloads now support `--progress auto|plain|off` and `--quiet`, with atomic per-run snapshots and a read-only `python3 -B -m pipeline.progress <snapshot-path>` checker. Download reports remain JSON on stdout; discovery offers `--json`. See the [progress guide](PROGRESS_GUIDE.md) for commands, counters, snapshot paths and interruption/staleness behavior. Downloader dry-runs still make no requests or writes.

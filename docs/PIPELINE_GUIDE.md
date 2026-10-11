@@ -306,3 +306,7 @@ Defaults: 5 selected jobs per run; 50 MiB per transferred PDF; 300 seconds and 5
 Change paths and limits in [configs/pipeline.yaml](../configs/pipeline.yaml), or pass a separate file with `--config`. `--max-documents` overrides the job count for one invocation. The [downloader's limits table](../pipeline/download/README.md#default-production-limits) lists each YAML key and its scope.
 
 Currently only PDFs from the source's exact configured host qualify. The eight production pilots still have no URLs and therefore select zero jobs. The live-test file under `corpus/logs/download/smoke_20261009/raw/` belongs to an isolated test catalog. Select real production URLs before expecting files under `corpus/raw/pdf/`.
+
+## Live progress and background status
+
+Discovery and downloads now support `--progress auto|plain|off` and `--quiet`, with atomic per-run snapshots and a read-only `python3 -B -m pipeline.progress <snapshot-path>` checker. Download reports remain JSON on stdout; discovery offers `--json`. See the [progress guide](PROGRESS_GUIDE.md) for commands, counters, snapshot paths and interruption/staleness behavior. Downloader dry-runs still make no requests or writes.

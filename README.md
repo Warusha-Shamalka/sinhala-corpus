@@ -186,3 +186,7 @@ Preview the download queue with `python3 -B -m pipeline.download.downloader --dr
 Production PDFs and receipts save to `corpus/raw/pdf/<doc_id>/<sha256>.pdf` and `.json`. After validation and persistence, the downloader checkpoints the catalog to `DOWNLOADED`; events go to `corpus/logs/download/`. Earlier raw versions are retained.
 
 Defaults are five jobs per run, 50 MiB per PDF, 300 seconds and 50 requests per source, a 20-second socket timeout, at least one second between requests, two transient request retries and a 30-second maximum retry wait. Edit [configs/pipeline.yaml](configs/pipeline.yaml) to change paths or limits. See [production save locations and limits](pipeline/download/README.md#production-save-locations) for exact scope and restrictions. The isolated smoke-test download is under `corpus/logs/download/smoke_20261009/raw/`; the production catalog currently has zero eligible jobs.
+
+## Live progress and background status
+
+Discovery and downloads now support `--progress auto|plain|off` and `--quiet`, with atomic per-run snapshots and a read-only `python3 -B -m pipeline.progress <snapshot-path>` checker. Download reports remain JSON on stdout; discovery offers `--json`. See the [progress guide](docs/PROGRESS_GUIDE.md) for commands, counters, snapshot paths and interruption/staleness behavior. Downloader dry-runs still make no requests or writes.
