@@ -62,3 +62,5 @@ The immediate priority remains discovery filtering and validation. Several hando
 - [Guarded Gemma pilot review](GEMMA_PILOT_REVIEW.md): supplied ten-page outcomes, source-image spot checks and the reference-first next step.
 
 - [OCR_BROAD_PILOT.md](OCR_BROAD_PILOT.md): 14-page subject/style pilot, isolated acquisition, frozen source provenance and paired Qwen/Gemma Colab instructions.
+
+- [Surya OCR trial](SURYA_OCR_TRIAL.md): pinned local detector/recognizer, T4 Colab steps, completion checks and limits following the Qwen handwriting failure.

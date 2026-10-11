@@ -69,3 +69,9 @@ The subsequent [guarded ten-page Gemma review](GEMMA_PILOT_REVIEW.md) records si
 Prepared `reviews/ocr/broad_20261011`: 14 pages from eight public PDFs across six subject groups. Subject/style hints are page-image inspections, not verified references. All 14 human reference rows remain pending. Qwen2.5-VL-3B has been added as the next local-weight candidate; no actual Qwen GPU execution or CER/WER measurement has occurred here. See [OCR_BROAD_PILOT.md](OCR_BROAD_PILOT.md) for exact coverage, gaps and the paired Colab workflow. The production catalog remains unchanged.
 
 Offline verification after these changes: **175 tests passed**, both tracked OCR packets passed metadata/review validation, and the broad packet passed local image-hash validation. These checks use fixtures for neural inference and do not establish Qwen GPU compatibility or transcription accuracy.
+
+## Surya trial preparation (11 October 2026)
+
+Added pinned Surya 0.17.1 local detector/recognizer, file-hash verification, a network-blocked inference path, captured regional termination checks, and a default one-page Colab setup. **184 offline tests passed**; the new tests cover component/config integrity, missing/foreign files, region truncation, deadlines, output provenance, fixture API integration and network guarding. Notebook code and its embedded setup script parse successfully. These are local fixtures, not an actual GPU model run or accuracy measurement.
+
+The supplied Qwen first-page prediction produced Hindi/Devanagari text from Sinhala handwriting despite normal generation completion. It remains unapproved for training. Follow [Surya trial instructions](SURYA_OCR_TRIAL.md) for the next Colab execution. Production catalog and frozen review packets are unchanged.

@@ -20,7 +20,7 @@ PROMPT = ('Transcribe all visible text from this Sinhala educational page in rea
           'translate, correct the source, or invent missing text. Use [UNREADABLE] for illegible text. '
           'Output only the transcription.')
 MODELS = {'gemma': 'google/gemma-4-E2B-it', 'deepseek': 'deepseek-ai/DeepSeek-OCR-2',
-          'qwen': 'Qwen/Qwen2.5-VL-3B-Instruct'}
+          'qwen': 'Qwen/Qwen2.5-VL-3B-Instruct', 'surya':'datalab/surya-ocr-0.17.1'}
 
 
 def repetition_loop(tokens):
@@ -141,8 +141,8 @@ class GPUBackend:
 def run(packet, output, backend, model_path, revision, *, max_pages=10, max_new_tokens=8192, max_generation_seconds=120, engine=None):
     packet, output, model_path = Path(packet), Path(output), Path(model_path)
     manifest = load_packet(packet)
-    if backend not in MODELS or not re.fullmatch(r'[0-9a-f]{40}', revision):
-        raise ValueError('Use a supported backend and full 40-character model commit revision')
+    if backend not in MODELS or not re.fullmatch(r'[0-9a-f]{64}' if backend=='surya' else r'[0-9a-f]{40}', revision):
+        raise ValueError('Use a supported backend and pinned revision (Surya: component manifest SHA256; others: full model commit)')
     if not model_path.is_dir(): raise ValueError('Download a local model snapshot first')
     if type(max_pages) is not int or max_pages < 1 or type(max_new_tokens) is not int or not 1 <= max_new_tokens <= 8192:
         raise ValueError('Invalid page/token limit')
@@ -159,8 +159,10 @@ def run(packet, output, backend, model_path, revision, *, max_pages=10, max_new_
         weights[str(path.relative_to(model_path))] = file_hash(path)
     if engine is None and not weights: raise ValueError('Local snapshot has no safetensors weights')
     metadata = {'schema_version':'neural-ocr-run-1','backend':backend,'model_id':MODELS[backend], 'model_revision':revision,
-                'weights_sha256':weights, 'packet_manifest_sha256':file_hash(packet/'manifest.json'), 'prompt':PROMPT,
-                'max_new_tokens':max_new_tokens,'max_pages':max_pages,'selected_samples':[s['sample_id'] for s in selected],
+                'weights_sha256':weights, 'packet_manifest_sha256':file_hash(packet/'manifest.json'), 'prompt':None if backend=='surya' else PROMPT,
+                'model_revision_kind':'local_components_manifest_sha256' if backend=='surya' else 'huggingface_commit',
+                'decoding':{'task':'ocr_with_boxes','region_max_tokens':256,'math_mode':True,'sort_lines':True} if backend=='surya' else None,
+                'max_new_tokens':None if backend=='surya' else max_new_tokens,'max_pages':max_pages,'selected_samples':[s['sample_id'] for s in selected],
                 'generation_guard':{'max_seconds':max_generation_seconds,'repetition':'exact_token_tail_v1'} if backend in {'gemma','qwen'} else None,
                 'gemma_generation_guard':{'max_seconds':max_generation_seconds,'repetition':'exact_token_tail_v1'} if backend == 'gemma' else None,
                 'created_at_utc':utc_now(),'review_required':True,'training_approved':False}
@@ -171,6 +173,10 @@ def run(packet, output, backend, model_path, revision, *, max_pages=10, max_new_
     try:
         print(f'Loading {MODELS[backend]} on the GPU...', flush=True)
         loading_started = time.monotonic()
+        if engine is None and backend=='surya':
+            from pipeline.ocr.surya_backend import SuryaBackend, block_network
+            block_network()
+            engine=SuryaBackend(model_path,revision,max_generation_seconds)
         engine = engine or GPUBackend(backend, model_path, max_new_tokens, max_generation_seconds)
         metadata.update(runtime=engine.identity, status='running', completed_pages=0)
         write_json(output/'run.json',metadata)
@@ -211,7 +217,7 @@ def main():
     parser.add_argument('--backend',choices=MODELS,required=True);parser.add_argument('--model-path',type=Path,required=True)
     parser.add_argument('--revision',required=True);parser.add_argument('--max-pages',type=int,default=10)
     parser.add_argument('--max-new-tokens',type=int,default=8192)
-    parser.add_argument('--max-generation-seconds',type=int,default=120,help='Gemma/Qwen soft generation deadline; excludes model loading/image preprocessing; not applied to DeepSeek upstream infer')
+    parser.add_argument('--max-generation-seconds',type=int,default=120,help='Gemma/Qwen soft decode deadline; Surya soft page deadline between model steps; excludes model loading; not applied to DeepSeek upstream infer')
     args=parser.parse_args()
     try:run(args.packet,args.output,args.backend,args.model_path,args.revision,max_pages=args.max_pages,max_new_tokens=args.max_new_tokens,max_generation_seconds=args.max_generation_seconds)
     except Exception as exc:parser.exit(2,f'Neural OCR comparison error: {exc}\n')

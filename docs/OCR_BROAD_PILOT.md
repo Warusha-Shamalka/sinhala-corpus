@@ -39,7 +39,7 @@ The first command initializes an isolated catalog if missing and prints a downlo
 
 `pdftoppm` from Poppler is required for rendering. Explicit selection includes downloaded native-text PDFs and does not require extraction bundles or an OCR-required flag. Duplicate raw pages and PDFs crossing splits are rejected. Preparation refuses to overwrite an existing packet. Recreated images or metadata may differ with source/renderer changes: compare raw/image hashes and use one frozen packet for both models, rather than mixing runs from different packets.
 
-## Colab comparison
+## Previous Qwen/Gemma Colab comparison
 
 1. Commit/push the reviewed code changes so Colab can clone them. Upload the updated `notebooks/ocr_accuracy_colab.ipynb` and the **complete** `reviews/ocr/broad_20261011` folder, including ignored images, to Drive at `My Drive/sinhala-corpus/reviews/ocr/broad_20261011`.
 2. Choose a **T4 GPU** runtime. The notebook defaults to `BACKEND = 'qwen'`, `PACKET_NAME = 'broad_20261011'`, `MAX_PAGES = 1`. Run cells in order and inspect the first page JSON beside its source PNG. This tests compatibility and obvious transcription failures; it does not measure accuracy.
@@ -47,6 +47,10 @@ The first command initializes an isolated catalog if missing and prints a downlo
 4. Use a fresh GPU runtime, change `BACKEND = 'gemma'`, and repeat on the **same packet**. The prior maths-only Gemma run cannot substitute for this paired broader run. Run one model at a time.
 5. Prepare independent references following `docs/OCR_ACCURACY_GUIDE.md`. Evaluate both prediction directories together after verification. Reports show all-page outcomes even before references exist; CER/WER stay null for unverified pages. After verification, subject/style breakdowns include only scored pages; inspect missing/truncated counts and split coverage before drawing conclusions.
 
-Qwen2.5-VL-3B-Instruct is an additional candidate based on its documented image/document capabilities, not demonstrated Sinhala accuracy. Its adapter uses local weights, float16/eager attention and bounded image pixels; actual T4 compatibility and accuracy are **pending**. Both Gemma and Qwen preserve stopped outputs and use repetition/soft time guards. DeepSeek remains optional on BF16-capable hardware; its current completion-unverified outputs cannot complete an accuracy comparison.
+Qwen2.5-VL-3B-Instruct is an additional candidate based on its documented image/document capabilities, not demonstrated Sinhala accuracy. Its adapter uses local weights, float16/eager attention and bounded image pixels; the supplied one-page Qwen run subsequently confirmed execution but failed Sinhala handwriting recognition; verified-reference accuracy is **pending**. Both Gemma and Qwen preserve stopped outputs and use repetition/soft time guards. DeepSeek remains optional on BF16-capable hardware; its current completion-unverified outputs cannot complete an accuracy comparison.
 
 Model source: [official Qwen2.5-VL-3B-Instruct model card](https://huggingface.co/Qwen/Qwen2.5-VL-3B-Instruct). Public resource URLs are recorded per sample in the manifest and per download in receipts.
+
+## Next candidate: Surya
+
+The supplied Qwen one-page trial completed technically but produced Hindi/Devanagari text from Sinhala handwriting. Its output is not accepted for training. The next adapter is pinned Surya 0.17.1; the updated notebook now defaults to `BACKEND = 'surya'`, one page on T4. Follow [SURYA_OCR_TRIAL.md](SURYA_OCR_TRIAL.md) for the current setup and limits. Actual Surya execution and independently measured accuracy remain pending. The frozen packet and prior outputs remain unchanged.

@@ -2,23 +2,21 @@
 
 Colab runs Python on a remote machine. Your laptop needs a browser and an internet connection; it does not need to load the model. Google Drive holds persistent inputs and results. `/content` is temporary compute storage and may disappear when the runtime ends.
 
-## First run: Qwen on the broader packet
+## Current trial: Surya
 
-1. Commit and push the notebook and its Python modules on your current branch. This notebook currently clones `feat/pdf-extraction`; update its `BRANCH` value if the work is subsequently merged elsewhere.
-2. Open Google Drive in your browser. Create `sinhala-corpus/reviews/ocr`. Upload the entire local folder `reviews/ocr/broad_20261011` inside `ocr`. Include `images`, `references`, `manifest.json`, `review.csv`, and `README.md`. The 14 images occupy approximately 27 MiB; Git deliberately excludes these generated images. Uploading code to GitHub alone does not upload the images.
-3. Open [Google Colab](https://colab.research.google.com/). Choose **File → Upload notebook**, then select `notebooks/ocr_accuracy_colab.ipynb` from this repository. Save a copy in Drive if prompted.
-4. Choose **Runtime → Change runtime type**, then choose a GPU accelerator. A T4 is the target for the Qwen compatibility trial; memory and compatibility still need checking on the actual runtime. GPU availability is not guaranteed, including on paid plans.
-5. Leave `BACKEND = 'qwen'` and `PACKET_NAME = 'broad_20261011'`. Click the triangle beside each code cell, starting at the top. Wait for one cell to finish before running the next. The first cell asks permission to mount your Drive.
-6. Follow the notebook's Hugging Face access instructions if the model requires authentication. Store a read token using the Colab Secrets panel, never in code or notebook output.
-7. Packages and weights may take several minutes to download. The transcription cell reports weight verification, model loading, and `[1/1] ... starting transcription` for the initial one-page trial, then saves each completed page's JSON immediately to Drive. Start with `MAX_PAGES = 1` for a small compatibility trial; use a new run folder for the full 14-page run (`MAX_PAGES = 14`).
-8. Inspect the results in `My Drive/sinhala-corpus/ocr-comparison/qwen_<timestamp>/`. Keep `predictions`, `model_selection.json`, `repository_commit.txt`, `requirements.lock.txt`, and `accuracy_report.json` together.
-9. When finished, choose **Runtime → Disconnect and delete runtime**. Saved Drive outputs persist. Cached model weights in `/content` will need downloading again in a new runtime.
+1. Commit/push the changed modules and notebook on the branch cloned by the notebook (`feat/pdf-extraction` currently).
+2. Keep the complete `reviews/ocr/broad_20261011` folder in Drive at `My Drive/sinhala-corpus/reviews/ocr/broad_20261011`. Include the ignored `images` folder; uploading code to GitHub does not upload page images.
+3. Upload the updated local `notebooks/ocr_accuracy_colab.ipynb` into Colab. Select **Runtime → Change runtime type → T4 GPU** and start a fresh runtime.
+4. Leave `BACKEND = 'surya'`, `PACKET_NAME = 'broad_20261011'` and `MAX_PAGES = 1`. Run code cells from top to bottom. No Hugging Face token is needed for the Surya checkpoints.
+5. Wait for the isolated Python environment, packages and recognition/detection weights to finish downloading. The inference cell reports model loading and `[1/1]` page processing and saves JSON to Drive.
+6. Inspect the first source PNG and prediction JSON side by side. If compatible and useful, rerun the model-selection cell to create a new run folder, change `MAX_PAGES = 14`, then run transcription. Existing predictions are preserved.
+7. Keep all output/provenance files in `My Drive/sinhala-corpus/ocr-comparison/surya_<timestamp>/`. Disconnect and delete the runtime when finished; Drive results persist.
 
-**Current validation:** notebook JSON/code syntax and orchestration are checked locally with fixtures. The maintainer has now supplied Gemma T4 execution artifacts (see the trial below); DeepSeek execution remains pending. The supplied guarded Gemma maths pilot shows generation safeguards stopping loops, but completed output also contains transcription errors. Qwen GPU execution remains pending; no model has verified-reference Sinhala accuracy measurements. First-run dependency installation resolves packages; the resulting lock file records exact installed versions for reproduction, rather than claiming an already validated fixed neural environment.
+See [SURYA_OCR_TRIAL.md](SURYA_OCR_TRIAL.md) for dependencies, completion checks and limitations. **184 offline tests passed**, including fixture coverage of the Surya adapter; actual Surya GPU execution and verified-reference Sinhala accuracy remain pending. The supplied Gemma runs and Qwen handwriting failure are earlier execution evidence, not Surya validation.
 
 ## What the notebook does
 
-It mounts Drive, clones this branch, creates an isolated Python environment, validates the source-image packet, resolves a full Hugging Face model commit, downloads that snapshot, and runs transcription using local GPU weights. Model inference is configured with Hugging Face/Transformers offline flags after downloading. This is corpus processing, not the final benchmark inference system.
+It mounts Drive, clones this branch, creates an isolated Python environment, validates the source-image packet, downloads and fingerprints both local Surya checkpoints (or resolves a full Hugging Face model commit for another backend), and runs transcription using local GPU weights. Model inference is configured with Hugging Face/Transformers offline flags after downloading. This is corpus processing, not the final benchmark inference system.
 
 The runner records model weight hashes, runtime versions, fixed prompt, page/image identities, token limit, timings and failures. It never opens the reference text or review labels during transcription. Predictions remain `review_required: true` and `training_approved: false`. It does not update the production catalog or create a training dataset.
 
@@ -65,3 +63,7 @@ Push the changed Python module before cloning a fresh Colab checkout. Changes in
 See [OCR_BROAD_PILOT.md](OCR_BROAD_PILOT.md) for the prepared 14-page packet and coverage gaps. After Qwen's one-page compatibility trial, rerun the model-selection cell to create a fresh run folder, set `MAX_PAGES = 14`, and run the full packet. Then use a fresh T4 runtime with `BACKEND = 'gemma'` on exactly the same images. The earlier maths-only run cannot replace this paired run.
 
 Qwen's local-weight adapter uses float16/eager attention, bounded image pixels and the same repetition/soft deadline protections. This is an engineering trial; actual T4 performance and Sinhala accuracy remain unmeasured. [Official Qwen model card](https://huggingface.co/Qwen/Qwen2.5-VL-3B-Instruct). Predictions can be generated before human references are ready; measured CER/WER requires independent verified references.
+
+## Current next trial: Surya
+
+The notebook now defaults to **Surya**. Use a fresh T4 runtime, the same broad packet and `MAX_PAGES = 1`; see [SURYA_OCR_TRIAL.md](SURYA_OCR_TRIAL.md) for current step-by-step instructions. It uses an isolated Python 3.12.12 environment and pinned dependencies, downloads detector and recognition weights without a Hugging Face token, and verifies all component hashes before offline OCR. Surya GPU execution remains pending. The supplied Qwen handwriting trial produced Hindi output and is retained as failure evidence; the earlier Qwen-first instructions describe the preceding experiment.

@@ -189,3 +189,13 @@ See [Gemma pilot review](GEMMA_PILOT_REVIEW.md). Generation stopping works on th
 - [ ] Fix discovery subject detection: “Sinhala medium” indicates language, not Sinhala as the subject; distinguish biological history terminology from History resources.
 
 See [OCR_BROAD_PILOT.md](OCR_BROAD_PILOT.md) for prepared pages, storage, limitations and Colab steps.
+
+## Surya trial after Qwen handwriting failure
+
+- [x] Record supplied Qwen first-page failure: Hindi/Devanagari output from a Sinhala physics image; no training approval.
+- [x] Add pinned Surya 0.17.1 adapter with local recognition/detection checkpoint hashes, offline inference, regional termination checks and preserved boxes/confidences.
+- [x] Update Colab to default to Surya, one page, a fresh T4 runtime and isolated pinned Python/dependencies.
+- [ ] Execute the one-page Surya T4 trial and inspect its source/transcription pair.
+- [ ] If compatible, run all 14 frozen pages in a new run directory; verify references before numerical comparison or training acceptance.
+
+See [SURYA_OCR_TRIAL.md](SURYA_OCR_TRIAL.md). Surya GPU execution remains pending.

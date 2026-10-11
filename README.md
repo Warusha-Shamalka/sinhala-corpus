@@ -201,4 +201,6 @@ Flagged PDF pages can now be rendered and recognized locally with Sinhala/Englis
 
 For a laptop without a usable GPU, start with the [Colab OCR guide](docs/COLAB_OCR_GUIDE.md) and [notebook](notebooks/ocr_accuracy_colab.ipynb). The ten-page [accuracy reference packet](reviews/ocr/pilot_20261011/README.md) has empty references awaiting independent human review. Gemma T4 execution has maintainer-supplied evidence; complete GPU comparisons and measured accuracy remain pending; see the [accuracy/acceptance guide](docs/OCR_ACCURACY_GUIDE.md).
 
-The [broader OCR pilot](docs/OCR_BROAD_PILOT.md) adds 14 public-source pages across six subject groups and a paired Qwen/Gemma Colab workflow. Qwen GPU execution and independent-reference accuracy are pending. The experiment downloads use a separate catalog and raw-storage folder; the production catalog is unchanged.
+The [broader OCR pilot](docs/OCR_BROAD_PILOT.md) adds 14 public-source pages across six subject groups and a paired Qwen/Gemma Colab workflow. Qwen executed on the supplied first page but produced Hindi from Sinhala handwriting; independent-reference accuracy remains pending. The experiment downloads use a separate catalog and raw-storage folder; the production catalog is unchanged.
+
+The next candidate is the [pinned Surya OCR trial](docs/SURYA_OCR_TRIAL.md). The notebook now starts with Surya on one frozen page; T4 execution and verified-reference accuracy remain pending.
