@@ -1,0 +1,9 @@
+doc_id,title,subject,domain,grade,education_level,document_type,source,source_url,publication_year,exam_year,language,license,status,local_filename,sha256,extraction_method,ocr_required,page_count,quality_score,pipeline_version,last_processed,error
+LK-EDU-000001,Grade 6 History,History,Humanities,6,Junior Secondary,textbook,,,,,si,,DISCOVERED,,,,,,,0.1,,
+LK-EDU-000002,Grade 7 History,History,Humanities,7,Junior Secondary,textbook,,,,,si,,DISCOVERED,,,,,,,0.1,,
+LK-EDU-000003,Grade 10 History,History,Humanities,10,O-Level,textbook,,,,,si,,DISCOVERED,,,,,,,0.1,,
+LK-EDU-000004,O/L History past paper,History,Humanities,10-11,O-Level,past_paper,,,,,si,,DISCOVERED,,,,,,,0.1,,
+LK-EDU-000005,Grade 10 Sinhala Language and Literature,Sinhala Language and Literature,Language,10,O-Level,textbook,,,,,si,,DISCOVERED,,,,,,,0.1,,
+LK-EDU-000006,Grade 11 Business and Accounting Studies,Business and Accounting Studies,Business Studies,11,O-Level,textbook,,,,,si,,DISCOVERED,,,,,,,0.1,,
+LK-EDU-000007,A/L Economics,Economics,Business Studies,12-13,A-Level,textbook,,,,,si,,DISCOVERED,,,,,,,0.1,,
+LK-EDU-000008,A/L Political Science,Political Science,Social Science,12-13,A-Level,textbook,,,,,si,,DISCOVERED,,,,,,,0.1,,

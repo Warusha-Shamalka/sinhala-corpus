@@ -52,3 +52,7 @@ The immediate priority remains discovery filtering and validation. Several hando
 - [Development and automated checks](DEVELOPMENT_CHECKS.md): pinned setup, CI and teammate review validation.
 
 - [Resource-local discovery evidence](DISCOVERY_LOCAL_EVIDENCE_RESULTS.md): generic-link handling, regression coverage and bounded live comparison.
+
+- [PDF download validation](DOWNLOAD_VALIDATION_RESULTS.md): offline tests, isolated live transfer, recovery and current limits.
+
+- [Detailed pipeline architecture](PIPELINE_ARCHITECTURE.md): diagrams of collection, download recovery, document states, planned processing and storage.

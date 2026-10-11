@@ -12,6 +12,8 @@ from unittest.mock import patch
 
 from pipeline.discovery import crawler
 
+PILOT_FIXTURE = Path(__file__).parent / "fixtures/catalog_pilots.csv"
+
 
 def candidate(url, **changes):
     return {"title": "History resource", "source": "School", "source_url": url,
@@ -146,12 +148,35 @@ class CatalogIntegrityTests(unittest.TestCase):
         self.assertEqual(len(crawler.append_catalog(self.path, [candidate("https://school.test/a.pdf")])), 1)
 
     def test_pilot_rows_and_ids_are_preserved(self):
-        self.path.write_bytes(crawler.CATALOG_PATH.read_bytes())
+        # Production catalog growth must not change this fixed pilot scenario.
+        self.path.write_bytes(PILOT_FIXTURE.read_bytes())
         before = crawler.read_catalog(self.path)
+        self.assertEqual(len(before), 8)
         added = crawler.append_catalog(self.path, [candidate("https://school.test/new.pdf")])
-        self.assertEqual(crawler.read_catalog(self.path)[:8], before)
+        self.assertEqual(crawler.read_catalog(self.path), before + added)
         self.assertEqual(added[0]["doc_id"], "LK-EDU-000009")
         self.assertTrue(all(not row["source_url"] for row in before))
+
+    def test_grown_catalog_preserves_pilots_and_processed_records(self):
+        self.path.write_bytes(PILOT_FIXTURE.read_bytes())
+        pilots = crawler.read_catalog(self.path)
+        existing = crawler.assign_ids([
+            candidate("https://school.test/downloaded.pdf"),
+            candidate("https://school.test/pending.pdf"),
+        ], pilots)
+        existing[0].update(status="DOWNLOADED", sha256="a" * 64,
+                           local_filename="corpus/raw/pdf/test.pdf", pipeline_version="download-0.1",
+                           last_processed="2026-10-11T00:00:00+00:00")
+        existing[1]["doc_id"] = "LK-EDU-000042"
+        before = pilots + existing
+        self.write(before)
+        # A missing production catalog also proves the test uses only its fixture.
+        with patch.object(crawler, "CATALOG_PATH", self.path.parent / "absent-production.csv"):
+            added = crawler.append_catalog(self.path, [candidate("https://school.test/new.pdf")])
+            after = crawler.read_catalog(self.path)
+        self.assertEqual(after, before + added)
+        self.assertEqual(added[0]["doc_id"], "LK-EDU-000043")
+        self.assertEqual(after[:8], pilots)
 
     def test_run_reports_only_rows_committed_after_a_racing_writer(self):
         item = candidate("https://school.test/shared.pdf")

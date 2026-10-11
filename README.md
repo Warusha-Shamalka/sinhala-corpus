@@ -8,6 +8,8 @@ The project collects and organizes educational resources relevant to Sri Lanka, 
 
 SinhalaMMLU is a key use case. Corpus preparation is separate from challenge inference, which must use model weights and a prompt within the supplied 8B cap, without internet or retrieval. General corpus products may support other research. Google Drive is the intended persistent store and Colab is temporary compute; this deployment is planned, not configured here.
 
+See the [detailed architecture diagrams](docs/PIPELINE_ARCHITECTURE.md) for stage-by-stage behavior, persistence and planned processing.
+
 ## High-level architecture
 
 - `configs/` stores controlled source and subject configurations.
@@ -37,6 +39,7 @@ The project uses configuration-driven discovery rather than hard-coded site or s
 
 - `configs/sources.yaml` defines which sources are valid and enabled.
 - `configs/subjects.yaml` defines the subject taxonomy and grade ranges.
+- `configs/pipeline.yaml` defines download storage paths and batch/transfer limits.
 
 These files are treated as authoritative project metadata. They should be preserved and updated intentionally.
 
@@ -45,13 +48,13 @@ These files are treated as authoritative project metadata. They should be preser
 Implemented:
 - discovery crawler
 - discovery dry-run support
+- bounded PDF downloader with immutable raw files, receipts and catalog checkpoints
 - source/subject configuration
 - document catalog metadata
 - offline discovery review sampling and reporting
 - pinned dependencies and automated regression/review checks
 
 Planned / not yet implemented:
-- downloader
 - extraction
 - OCR
 - cleaning
@@ -162,11 +165,11 @@ Implemented:
 - subject configuration
 - source configuration
 - discovery crawler
+- bounded PDF downloader
 - dry-run discovery
 - catalog metadata tracking
 
 Planned / not yet implemented:
-- downloader
 - extraction
 - OCR
 - cleaning
@@ -175,3 +178,11 @@ Planned / not yet implemented:
 - dataset generation
 
 The repository is intentionally structured so that these later stages can be added without disrupting the configured discovery and catalog setup.
+
+## Downloading resources
+
+Preview the download queue with `python3 -B -m pipeline.download.downloader --dry-run`. The initial pilots have no URLs, so they do not qualify yet. See the [downloader guide](pipeline/download/README.md) before selecting a small batch. It supports PDFs; extraction, OCR and other resource formats remain planned. Candidate suitability is currently a provisional project assumption while independent review is pending.
+
+Production PDFs and receipts save to `corpus/raw/pdf/<doc_id>/<sha256>.pdf` and `.json`. After validation and persistence, the downloader checkpoints the catalog to `DOWNLOADED`; events go to `corpus/logs/download/`. Earlier raw versions are retained.
+
+Defaults are five jobs per run, 50 MiB per PDF, 300 seconds and 50 requests per source, a 20-second socket timeout, at least one second between requests, two transient request retries and a 30-second maximum retry wait. Edit [configs/pipeline.yaml](configs/pipeline.yaml) to change paths or limits. See [production save locations and limits](pipeline/download/README.md#production-save-locations) for exact scope and restrictions. The isolated smoke-test download is under `corpus/logs/download/smoke_20261009/raw/`; the production catalog currently has zero eligible jobs.
