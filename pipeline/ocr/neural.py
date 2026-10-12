@@ -21,7 +21,7 @@ PROMPT = ('Transcribe all visible text from this Sinhala educational page in rea
           'Output only the transcription.')
 MODELS = {'gemma': 'google/gemma-4-E2B-it', 'deepseek': 'deepseek-ai/DeepSeek-OCR-2',
           'qwen': 'Qwen/Qwen2.5-VL-3B-Instruct', 'surya':'datalab/surya-ocr-0.17.1',
-          'gemini_api': 'gemini-2.5-flash'}
+          'gemini_api': 'gemini-1.5-flash'}
 
 
 def repetition_loop(tokens):
@@ -162,7 +162,12 @@ def run(packet, output, backend, model_path, revision, *, max_pages=10, max_new_
         raise ValueError('Invalid page/token limit')
     if type(max_generation_seconds) is not int or not 1 <= max_generation_seconds <= 3600:
         raise ValueError('Generation time limit must be 1–3600 seconds')
-    if output.exists(): raise ValueError('Choose a new output directory; existing runs are preserved')
+    if output.exists():
+        completed = list(output.glob('LK-EDU-*.json'))
+        if completed:
+            raise ValueError('Choose a new output directory; existing runs are preserved')
+        import shutil
+        shutil.rmtree(output)
     # Frozen input identities; references and review labels are deliberately not opened here.
     selected = manifest['samples'][:max_pages]
     weights = {}

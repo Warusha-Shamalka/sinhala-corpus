@@ -58,15 +58,15 @@ def clean_sinhala_text(text):
 class GeminiBackend:
     """OCR backend using Gemini API for high-quality Sinhala text extraction."""
 
-    def __init__(self, api_key, model_name='gemini-2.5-flash', max_generation_seconds=120):
+    def __init__(self, api_key, model_name='gemini-1.5-flash', max_generation_seconds=120):
         import google.generativeai as genai
         genai.configure(api_key=api_key)
-        self.model = genai.GenerativeModel(model_name)
-        self.model_name = model_name
+        self.model = genai.GenerativeModel(model_name or 'gemini-1.5-flash')
+        self.model_name = model_name or 'gemini-1.5-flash'
         self.max_generation_seconds = max_generation_seconds
         self.identity = {
             'backend': 'gemini_api',
-            'model': model_name,
+            'model': self.model_name,
             'max_generation_seconds': max_generation_seconds,
             'prompt': SINHALA_PROMPT[:100] + '...',
         }
