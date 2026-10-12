@@ -86,7 +86,7 @@ def run(config_path, *, sources_path=None, source_id=None, doc_ids=None,
     stage_runner = stage_runner or child
     run_id = f"batch_{datetime.now(timezone.utc):%Y%m%dT%H%M%SZ}_{uuid4().hex[:8]}"
     folder = processing['log_root'].parent / 'batch' / run_id
-    attempted, failed_docs, bundles = set(), set(), set()
+    attempted, failed_docs, bundles, new_bundles = set(), set(), set(), set()
     base_config = yaml.safe_load(config_path.read_text(encoding='utf-8'))
     def checkpoint():
         temporary = folder / 'run.json.tmp'
@@ -127,8 +127,11 @@ def run(config_path, *, sources_path=None, source_id=None, doc_ids=None,
                         failed_docs.add(error['doc_id']); result['errors'].append({'stage': 'process', **error})
                     for row in cycle['process'].get('results', []):
                         if row.get('bundle'): bundles.add(row['bundle'])
-                        if row.get('outcome') in {'predicted', 'truncated', 'failed'} and row.get('bundle'):
-                            result['new_pages'] += 1
+                        # Count saved artifacts, including completion_unverified or
+                        # future outcome labels; completion is not a page-budget gate.
+                        bundle = row.get('bundle')
+                        if bundle and row.get('outcome') != 'verified_existing' and bundle not in new_bundles:
+                            new_bundles.add(bundle); result['new_pages'] += 1
                         if row.get('outcome') == 'failed': result['errors'].append({'stage': 'process', **row})
                 result['processed_bundles'] = sorted(bundles)
                 checkpoint()

@@ -126,6 +126,20 @@ an actual isolated CPU HTML process, and provisional export integrity. This does
 validate a new multi-cycle Surya GPU run or certify Sinhala transcription accuracy.
 Run a small Colab batch before increasing limits.
 
+Maintainer-supplied Colab report `batch_20261012T062841Z_ea700048` demonstrates five
+cycles for document `LK-EDU-000264`, saving pages 1–10 with no reported execution
+errors. Nine outcomes were `predicted`; page 10 was `completion_unverified` with
+short-text, Sinhala/legacy-font and incomplete-prediction warnings. The twenty
+`verified_existing` outcomes are repeated checks across cycles, not twenty extra
+pages. No downloads occurred because the selected document was already available.
+This does not certify transcription accuracy or cross-runtime Drive recovery.
+
+That report exposed a counter bug: the old runner showed `new_pages=9` despite ten
+new bundles because completion-unverified outcomes were omitted. The corrected
+runner counts each newly saved bundle regardless of outcome, while excluding
+existing verification. The historical report remains unchanged; its apparent
+one-page discrepancy is accounting, not a missing artifact.
+
 Local verification on 12 October 2026: fourteen new tests pass; the complete offline
 suite ran 251 tests (250 passed, one Tesseract test skipped). All twelve production
 notebook code cells and embedded setup programs parse without saved outputs. The

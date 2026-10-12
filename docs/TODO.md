@@ -270,7 +270,10 @@ See [CORPUS_QUALITY_GUIDE.md](CORPUS_QUALITY_GUIDE.md). Keep these changes with 
 - [x] Add immutable provisional text snapshots with explicit unreviewed status, warnings, source/model hashes and empty-page exclusions.
 - [x] Preserve the reviewed exporter and approvals; no estimated accuracy is promoted into a quality certificate.
 - [x] Pass fourteen new regression tests and the complete offline suite: 251 ran, 250 passed and one Tesseract test was skipped. Syntax-check all twelve production notebook code cells and embedded setup programs.
-- [ ] Trial a multi-cycle Surya batch and resume on Drive, then increase acquisition caps gradually.
+- [ ] Verify recovery in a fresh Colab runtime and increase acquisition caps gradually after inspecting flagged outputs.
+- [x] Inspect maintainer-supplied Colab batch `batch_20261012T062841Z_ea700048`: five cycles, ten unique saved bundles, nine predicted pages and one completion-unverified page; no reported execution errors. Prior pages were verified in later cycles. Cross-runtime recovery and accuracy remain unverified.
+- [x] Fix the new-page budget counter to include completion-unverified and future outcome labels whenever a new bundle was saved; add a regression test.
+- [x] Pass the updated offline suite after the counter fix: 252 tests ran, 251 passed and one Tesseract test was skipped.
 - [ ] Select useful provisional pages for later spot checks/source review; handwriting, equations and source-style accuracy remain unmeasured.
 
 See [BATCH_COLLECTION_GUIDE.md](BATCH_COLLECTION_GUIDE.md). Full manual Sinhala retyping is not required to continue acquisition.

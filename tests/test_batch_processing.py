@@ -71,6 +71,20 @@ class BatchProcessingTests(unittest.TestCase):
         self.assertEqual(self.calls, [])
         self.assertEqual(before, {str(path): path.read_bytes() for path in self.store.rglob('*') if path.is_file()})
 
+    def test_completion_unverified_bundle_consumes_new_page_budget(self):
+        def unverified(command, config, ids, sources, progress):
+            result = self.stage(command, config, ids, sources, progress)
+            if command == 'process':
+                for row in result['results']:
+                    if row['outcome'] == 'predicted': row['outcome'] = 'completion_unverified'
+            return result
+        result = batch.run(self.config, stage_runner=unverified, max_batches=5, max_new_pages=3)
+        self.assertEqual(result['new_pages'], 3)
+        self.assertEqual(result['stop_reason'], 'new_page_limit')
+        self.assertEqual(result['outcomes']['completion_unverified'], 3)
+        self.assertEqual(len(result['batches']), 2)
+        self.assertEqual(self.calls[-1][2]['processing']['max_pages'], 1)
+
     def test_source_and_document_selection_and_invalid_limits(self):
         self.assertEqual(self.run_batch(source_id='school', doc_ids=[self.doc], dry_run=True)['download_planned'], [self.doc])
         for kwargs in ({'source_id': 'unknown'}, {'doc_ids': ['missing']}, {'max_batches': 0}, {'max_new_pages': True}):
