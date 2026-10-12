@@ -49,6 +49,7 @@ class CandidateDecision:
     document_type: str = "other"
     reasons: list[str] = field(default_factory=list)
     rejection_reason: str = ""
+    medium_hint: str = ""
 
 
 def _normalized_text(value: str) -> str:
@@ -122,17 +123,35 @@ def is_within_domain(url: str, base_url: str) -> bool:
     return candidate_host == source_host or candidate_host.endswith(f".{source_host}")
 
 
+def _mask_phrases(text: str, phrases: list[str]) -> str:
+    """Remove context phrases without shifting offsets used for specificity."""
+    for phrase in phrases:
+        pattern = rf"(?<![\w\u0d80-\u0dff]){re.escape(_normalized_text(phrase))}(?![\w\u0d80-\u0dff])"
+        text = re.sub(pattern, lambda match: " " * len(match.group()), text)
+    return text
+
+
+def extract_medium_hint(text: str, subjects_config: dict) -> str:
+    """Return explicit, unverified medium wording; conflicting media stay unknown."""
+    matches = [language for language, phrases in subjects_config.get("medium_markers", {}).items()
+               if any(_contains_phrase(text, phrase) for phrase in phrases)]
+    return matches[0] if len(matches) == 1 else ""
+
+
 def subject_matches(text: str, subjects_config: dict) -> tuple[str, str]:
     """Prefer contained specific names, while retaining independent ambiguity."""
     normalized = _normalized_text(text)
+    normalized = _mask_phrases(normalized, [phrase
+        for phrases in subjects_config.get("medium_markers", {}).values() for phrase in phrases])
     matches = []
     for domain, data in subjects_config.get("domains", {}).items():
         for subject in data.get("subjects", []):
             name = subject["name"]
+            subject_evidence = _mask_phrases(normalized, subject.get("excluded_phrases", []))
             for alias in (name, *subject.get("aliases", [])):
                 phrase = _normalized_text(alias)
                 pattern = rf"(?<![\w\u0d80-\u0dff]){re.escape(phrase)}(?![\w\u0d80-\u0dff])"
-                for match in re.finditer(pattern, normalized):
+                for match in re.finditer(pattern, subject_evidence):
                     matches.append((match.start(), match.end(), name, str(domain)))
     specific = [
         item for item in matches
@@ -249,6 +268,9 @@ def classify_candidate(
         reasons.append("direct_document_link +5")
 
     subject, domain = subject_matches(item_evidence, subjects_config)
+    medium_hint = extract_medium_hint(item_evidence, subjects_config)
+    if medium_hint:
+        reasons.append(f"explicit_medium_hint:{medium_hint} (unverified; not a subject)")
     if subject:
         score += 3
         reasons.append(f"configured_subject:{subject} +3")
@@ -356,6 +378,7 @@ def classify_candidate(
         score=score,
         title=title,
         subject=subject,
+        medium_hint=medium_hint,
         domain=domain,
         grade=grade,
         education_level=education_level,

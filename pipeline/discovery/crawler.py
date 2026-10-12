@@ -132,6 +132,7 @@ def load_configuration(source_path=None, subject_path=None, catalog_path=None) -
             if not isinstance(subject, dict) or not isinstance(subject.get("name"), str) or not subject["name"]:
                 raise ValueError(f"Domain {domain} contains an invalid subject")
             _validate_aliases(subject.get("aliases", []), f"subject {subject['name']}")
+            _validate_aliases(subject.get("excluded_phrases", []), f"subject {subject['name']} exclusions")
             _validate_range(subject, f"subject {subject['name']}")
     levels = subjects_config.get("education_levels")
     if not isinstance(levels, dict):
@@ -141,6 +142,13 @@ def load_configuration(source_path=None, subject_path=None, catalog_path=None) -
             raise ValueError(f"Invalid education level: {level}")
         _validate_range(details, f"level {level}")
         _validate_aliases(details.get("aliases", []), f"level {level}")
+    media = subjects_config.get("medium_markers", {})
+    if not isinstance(media, dict):
+        raise ValueError("medium_markers must be a mapping")
+    for language, phrases in media.items():
+        if not isinstance(language, str) or not language.strip():
+            raise ValueError("medium_markers requires nonempty language keys")
+        _validate_aliases(phrases, f"medium {language}")
     markers = subjects_config.get("grade_markers", {})
     if not isinstance(markers, dict):
         raise ValueError("grade_markers must be a mapping")
@@ -317,7 +325,7 @@ def append_catalog(path: Path, new_records: list[dict[str, str]], *, lock_timeou
         header, existing = _read_catalog(path)
         urls = catalog_url_set(existing)
         candidates = []
-        allowed_fields = set(header) | {"_candidate_score", "_candidate_reasons", "_language_hint"}
+        allowed_fields = set(header) | {"_candidate_score", "_candidate_reasons", "_language_hint", "_medium_hint"}
         for candidate in new_records:
             if not isinstance(candidate, dict) or set(candidate) - allowed_fields:
                 raise CatalogError("Discovery candidate has unknown fields")
@@ -646,13 +654,14 @@ def discover_source(
         in_domain = bool(candidate_url) and is_within_domain(candidate_url, base_url)
         if decision_sink is not None:
             decision_sink({
-                "schema_version": "discovery-decision-1", "rule_version": "discovery-0.3",
+                "schema_version": "discovery-decision-1", "rule_version": "discovery-0.4",
                 "source_id": source["id"], "referring_url": page_url, "candidate_url": candidate_url,
                 "href": link.href,
                 "title": decision.title, "accepted": bool(candidate and in_domain),
                 "score": decision.score, "reasons": decision.reasons,
                 "rejection_reason": (decision.rejection_reason if in_domain else "invalid or external URL"),
                 "subject": decision.subject, "grade": decision.grade, "document_type": decision.document_type,
+                "medium_hint": decision.medium_hint,
                 "evidence": {"anchor": link.text, "title": link.title, "before": link.before, "after": link.after,
                              "resource_context": link.resource_context, "context_kind": link.context_kind},
                 "observed_at_utc": datetime.now(timezone.utc).isoformat(),
@@ -944,6 +953,7 @@ def _run(args, logger, log_path, decision_sink, summary, progress=None) -> int:
             row.pop("_candidate_score", None)
             row.pop("_candidate_reasons", None)
             row.pop("_language_hint", None)
+            row.pop("_medium_hint", None)
         try:
             rows = append_catalog(catalog_path, rows)
         except (OSError, CatalogError, csv.Error) as exc:

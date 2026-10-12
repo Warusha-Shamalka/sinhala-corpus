@@ -1,6 +1,6 @@
 # Project progress and TODO
 
-Updated: 11 October 2026. This checklist tracks implemented work separately from planned stages. Detailed acceptance criteria remain in [IMPLEMENTATION_BACKLOG.md](IMPLEMENTATION_BACKLOG.md).
+Updated: 12 October 2026. This checklist tracks implemented work separately from planned stages. Detailed acceptance criteria remain in [IMPLEMENTATION_BACKLOG.md](IMPLEMENTATION_BACKLOG.md).
 
 ## Completed
 
@@ -44,7 +44,8 @@ Verification details: [discovery results](DISCOVERY_VALIDATION_RESULTS.md) and [
 - [ ] Complete the teammate review issue; validate the first 10-row PR before finishing the sample.
 - [x] Add bounded structural evidence for generic download links, preserving item boundaries and recording audit reasons.
 - [x] Commit/push local discovery evidence changes; implementation is present on `dev` (`d4e113c`).
-- [ ] Distinguish language-medium tokens from subject names and syllabus-version wording from document type.
+- [x] Distinguish configured medium phrases from subject names, preserving unverified medium hints in discovery audit decisions.
+- [ ] Distinguish syllabus-version wording from document type.
 - [ ] Extend reviewed Sinhala aliases and explicit grade/level forms without merging distinct subjects.
 - [ ] Keep this repository focused on corpus acquisition; coordinate benchmark taxonomy/model work with the separate training repository when needed.
 
@@ -130,7 +131,7 @@ See [PROGRESS_GUIDE.md](PROGRESS_GUIDE.md) for usage and limitations.
 
 Verified on 11 October 2026: the production catalog contains 489 records: 482 `DISCOVERED` and seven `DOWNLOADED`. All seven production PDFs (IDs 9–15) match their stored receipt sizes and SHA256 hashes. The eight original pilots still have blank URLs and remain excluded from downloading. The earlier 2.1 MB smoke PDF is separate from these production files. The implemented code previously passed all 109 tests; see [download validation](DOWNLOAD_VALIDATION_RESULTS.md).
 
-Native PDF extraction and selective OCR are implemented; cleaning and derived-dataset stages remain planned. Model training and competition submission belong in the separate training repository. Candidate URLs are not verified documents or training examples.
+Native PDF extraction, OCR, static HTML, conservative cleaning and reviewed pretraining export are implemented. Real source review and the first approved release remain pending. Model training and competition submission belong in the separate training repository. Candidate URLs are not verified documents or training examples.
 
 ## PDF extraction checkpoint — 11 October 2026
 
@@ -186,7 +187,7 @@ See [Gemma pilot review](GEMMA_PILOT_REVIEW.md). Generation stopping works on th
 - [ ] Run Gemma on the identical broad packet in a fresh runtime.
 - [ ] Transcribe/verify independent references and compare complete runs; do not promote raw predictions into training data.
 - [ ] Fill missing handwritten Language/History/Business, printed Physics, Economics and MCQ coverage with inspected public sources.
-- [ ] Fix discovery subject detection: “Sinhala medium” indicates language, not Sinhala as the subject; distinguish biological history terminology from History resources.
+- [x] Fix discovery subject detection for configured medium phrases and biological history contexts; preserve genuine explicit subject matches and ambiguity.
 
 See [OCR_BROAD_PILOT.md](OCR_BROAD_PILOT.md) for prepared pages, storage, limitations and Colab steps.
 
@@ -224,9 +225,17 @@ See [NATIVE_TEXT_DATASET_GUIDE.md](NATIVE_TEXT_DATASET_GUIDE.md).
 - [x] Export reviewed text with exact/near deduplication and source-document/version split protection.
 - [x] Configure persistent store initialization, discovery path overrides and common collect/process/status/review/export commands.
 - [x] Add a production Colab notebook with an isolated pinned environment and two-page initial trial.
-- [ ] Push the new branch and execute the two-page production Surya trial in Colab; verify Drive artifacts and restart behavior.
+- [x] Push and merge `feat/corpus-pipeline` into `dev` (merge `5194669`); retain the teammate's working branch.
+- [ ] Execute the two-page production Surya trial in Colab; verify Drive artifacts and restart behavior.
 - [ ] Complete real source review, source-use evidence and the first approved pretraining release.
 - [ ] Measure OCR accuracy on independent references before considering automated acceptance for any source/style.
 - [ ] Add richer verified subject/grade metadata and instruction/QA outputs when the text corpus is validated.
 
 See [CORPUS_PRODUCTION_GUIDE.md](CORPUS_PRODUCTION_GUIDE.md) for current limits and supported formats. No accurate training release is claimed from test fixtures.
+
+## Discovery metadata context (12 October 2026)
+
+- [x] Validate configurable medium/exclusion phrases, mask only known contexts and preserve explicit subject distinctions.
+- [x] Keep verified document language blank; store conflicting/unknown medium hints conservatively.
+- [x] Add seven regression tests; offline suite ran 221 tests (220 passed, one Tesseract test skipped).
+- [ ] Review additional source wording and correct existing catalog metadata in a separate evidence-backed change; current fixes apply to newly evaluated links.

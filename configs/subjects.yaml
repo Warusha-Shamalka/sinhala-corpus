@@ -22,6 +22,8 @@ domains:
     subjects:
       - name: History
         aliases: ["ඉතිහාසය"]
+        # Context exclusions suppress this subject only; never relabel as Biology.
+        excluded_phrases: ["life history", "evolutionary history", "biological history"]
         grade_min: 6
         grade_max: 13
       - name: Drama and Theatre
@@ -120,6 +122,12 @@ domains:
       - name: Biosystems Technology
         grade_min: 12
         grade_max: 13
+
+# Explicit wording is only a medium hint, not verified document language.
+medium_markers:
+  si: ["Sinhala medium", "medium Sinhala", "සිංහල මාධ්‍ය", "සිංහල මාධ්‍යය", "සිංහල මාධ්‍යයෙන්"]
+  ta: ["Tamil medium", "medium Tamil"]
+  en: ["English medium", "medium English"]
 
 grade_markers:
   before_number: [grade, grades, class, "ශ්‍රේණිය"]
