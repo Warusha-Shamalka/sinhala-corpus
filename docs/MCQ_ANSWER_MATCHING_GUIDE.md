@@ -228,3 +228,15 @@ Scope: separate-paper matching remains unchanged. This feature does not automati
 read PDFs to classify combined documents, parse solution prose, reconstruct omitted
 choices, handle all table layouts or resolve compilation identities. A real public
 combined-document pilot remains required before scaling.
+
+## Recover missing metadata before matching
+
+Run `enrich-pair-index` between index preparation and suggestions. It reads titles,
+URL filenames and optional first-page processing bundles; each extracted field has
+inspectable evidence and conflicting values remain blank. Native text/OCR is handled
+by the existing processing stage, not a new model. See [metadata commands and
+limitations](../pipeline/metadata/README.md).
+
+The 2011 Chemistry pilot now has one **proposed cross-source pair**, based on exam,
+subject and year. Part, medium and edition verification remain outstanding; no MCQ
+answer has been approved. See [pilot results](MARKING_DISCOVERY_PILOT.md).

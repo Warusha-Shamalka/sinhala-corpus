@@ -359,3 +359,18 @@ Validation: 296 offline tests ran (295 passed, one Tesseract test skipped). The 
 See [MCQ_ANSWER_MATCHING_GUIDE.md](MCQ_ANSWER_MATCHING_GUIDE.md#combined-documents-questions-and-answers-in-one-source).
 
 Combined-route validation: 310 offline tests ran (309 passed, one Tesseract-dependent skip). The isolated ALapi index now yields 212 combined-document review candidates, zero confirmed pairs; no production catalog or downloaded source was changed.
+
+- [ ] Run bounded discovery pilots for configured e-Thaksalawa and NIE sources, inspecting redirects, resource hubs and document coverage before adding their candidates to a shared review index.
+- [ ] Find the question-paper counterparts for the user-inspected ALapi 2026 Biology answer key and 2011 Chemistry explanatory marking scheme; confirm full stems/choices before treating either as combined.
+
+## Evidence-backed paper metadata
+
+- [x] Extract bounded identity hints from titles and URL filenames; ignore upload paths and explicitly labelled publication dates.
+- [x] Accept verified first-page native/OCR processing bundles with source/page/line evidence.
+- [x] Preserve conflicts, immutable input snapshots, hashes and unverified review status.
+- [x] Trial the existing 299-record index (three conflicting fields; no pairs).
+- [x] Find a cross-source 2011 Chemistry paper lead and produce one unapproved match to the ALapi key.
+- [ ] Process/check both Chemistry headers and confirm part, medium and edition before matching answers.
+- [ ] Extend source-tested identity patterns for Sinhala paper-part labels, schools, provinces, sessions and syllabus editions.
+
+Validation: 319 offline tests ran, 318 passed and one Tesseract-dependent test skipped. The nine new metadata tests use invented fixtures; no benchmark test material was accessed.

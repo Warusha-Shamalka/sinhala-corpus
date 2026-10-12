@@ -58,3 +58,43 @@ one bounded pair, verify the pairing, then select question/key source regions us
 [the answer matching guide](MCQ_ANSWER_MATCHING_GUIDE.md). Missing answers remain
 unresolved. Pesuru source identification and compilation-origin mapping remain TODOs.
 No benchmark test data is needed for any of these steps.
+
+## User inspection notes
+
+The user inspected two candidates after the pilot:
+
+- Temporary ID `LK-EDU-000490`, filename `1788109345_2026 biology mcq answers .pdf`: answers only. Keep as a key; find the corresponding question paper.
+- Temporary ID `LK-EDU-000586`, filename `1753420693_2011 Chemistry_Marking.pdf`: correct answers with explanations. Full question stems and choices have not been confirmed, so keep as a key until inspected further.
+
+These are user-reported observations, not independently verified extraction or answer approval. IDs belong to the isolated review catalog.
+
+This pilot selected only `--source alapiedu`; its CSV does not represent all configured sources. `e_thaksalawa` and `nie` are also enabled and crawl-approved in `configs/sources.yaml`, but were not included in this marking-scheme trial. MathsAPI and Pesuru are not active source entries in the current configuration.
+
+## Metadata enrichment and a cross-source lead
+
+The title/filename enrichment trial processed 299 existing review-index records,
+flagged three conflicting fields and still yielded zero compatible pairs. No
+first-page bundles were supplied in that run. Synthetic offline tests separately
+exercise verified first-page evidence, incomplete OCR and corrupt-artifact rejection.
+
+A public [2011 Chemistry Sinhala paper listing](https://pastpapers.wiki/2011-a-l-chemistry-past-paper-sinhala-medium/)
+links to [a 27-page PDF](https://pastpapers.wiki/download/7820/gce-a-l/29462/2011-ppr-3.pdf).
+The listing identifies AL/Chemistry/2011/Sinhala; the PDF's complete identity has not
+been verified. This source was researched as a single pilot lead, not enabled for
+bulk crawling. Another Examlanka listing was inspected but its paper download link
+returned 404. The web tool could not fetch the supplied ALapi Chemistry marking PDF.
+
+Adding the paper listing as an unverified isolated candidate produced **one suggestion**:
+
+- Paper: temporary `PILOT-CHEMISTRY-2011-PAPER` from the linked listing.
+- Key: temporary `LK-EDU-000586`, the user-inspected ALapi marking scheme.
+- Matching hints: AL, Chemistry, 2011.
+- Missing on one or both sides: paper number, medium and variant.
+- Metadata and pairing remain unverified; no answers were assigned.
+
+Temporary local output: `/tmp/chemistry-2011-enriched/` and
+`/tmp/chemistry-2011-suggestions/`. These are not production catalog entries or
+persistent Drive artifacts. No production data was modified. Next inspect both
+original headers, obtain processing bundles and confirm part/medium/edition before
+configuring question/key regions. The downloadable PDF lead is not proof that all
+its questions correspond to the key.
