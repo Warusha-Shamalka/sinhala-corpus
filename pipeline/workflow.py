@@ -13,7 +13,7 @@ from pipeline.download import downloader
 from pipeline.extraction import extractor
 from pipeline.processing import pages
 from pipeline.processing import batch
-from pipeline.dataset import reviewed, provisional, daily
+from pipeline.dataset import reviewed, provisional, daily, tasks
 from pipeline.quality import corpus as corpus_quality
 from pipeline.dataset.native import encode, digest, publish
 
@@ -129,6 +129,14 @@ def main():
     release.add_argument('--replace-existing', action='store_true', help='Explicitly replace changed provisional page text and record the change')
     daily_verify = commands.add_parser('verify-daily-release')
     daily_verify.add_argument('--root', type=Path, required=True)
+    task_prepare = commands.add_parser('prepare-tasks', help='Prepare public-source line annotations for theory and MCQs')
+    task_prepare.add_argument('--release', type=Path, required=True)
+    task_prepare.add_argument('--output', type=Path, required=True)
+    task_export = commands.add_parser('export-tasks', help='Export separate theory and source-verified MCQ files')
+    task_export.add_argument('--packet', type=Path, required=True)
+    task_export.add_argument('--output', type=Path, required=True)
+    task_verify = commands.add_parser('verify-task-release')
+    task_verify.add_argument('--root', type=Path, required=True)
     args = parser.parse_args()
     try:
         if args.command == 'init': result = initialize(args.store, args.seed)
@@ -157,6 +165,9 @@ def main():
                                  previous=args.previous, policy={'validation_percent': args.validation_percent,
                                  'split_seed': args.split_seed, 'max_candidates': args.max_candidates}, replace_existing=args.replace_existing)
         elif args.command == 'verify-daily-release': result = daily.verify(args.root)
+        elif args.command == 'prepare-tasks': result = tasks.prepare(args.release, args.output)
+        elif args.command == 'export-tasks': result = tasks.build(args.packet, args.output)
+        elif args.command == 'verify-task-release': result = tasks.verify(args.root)
         else: result = reviewed.export(args.packet, args.output)
         print(json.dumps(result, ensure_ascii=False, indent=2))
         failed = bool(result.get('errors') or result.get('artifact_errors') or any(r.get('outcome') in {'failed', 'catalog_conflict'} for r in result.get('results', [])))
