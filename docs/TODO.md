@@ -323,3 +323,19 @@ See [THEORY_AND_MCQ_GUIDE.md](THEORY_AND_MCQ_GUIDE.md). No hidden test material 
 - [ ] Carry paper/key families into future global dataset split planning before those key documents enter other training releases.
 
 See [MCQ_ANSWER_MATCHING_GUIDE.md](MCQ_ANSWER_MATCHING_GUIDE.md).
+
+## Build the public paper/key catalog
+
+- [x] Prepare an editable pairing index from existing catalog/title hints, without approving identities.
+- [x] Suggest compatible paper/key candidates with matched/missing fields, ambiguity and unresolved reports.
+- [ ] Identify actual Pesuru/past-paper source sites and check their crawl configuration and source-use conditions.
+- [ ] Discover marking schemes as well as papers; improve source-specific resource classification where needed.
+- [ ] Extract exam, subject, year, paper number, language and edition evidence from public document headers.
+- [ ] Review suggested pairs against both originals and record confirmed metadata and pairing decisions.
+- [ ] Track Pesuru/other compilation editions and each question's original paper reference; never join collections by year alone.
+- [ ] Convert confirmed index pairs into answer-matcher configuration with selected source regions.
+- [ ] Test one real complete public pair before scaling discovery and answer matching.
+
+The index is a separate editable review artifact; it does not modify the master catalog.
+
+Validation: 296 offline tests ran (295 passed, one Tesseract test skipped). The current catalog produced 87 draft paper entries, no key entries and zero pair suggestions. These are metadata candidates, not verified documents.

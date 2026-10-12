@@ -151,3 +151,31 @@ behavior, not Sinhala OCR accuracy. A real public paper/key trial remains pendin
 the existing Biology guide cannot establish matching accuracy. The current local
 catalog has no records labeled `marking_scheme`. Collect and check one pair before
 expanding sources or making accuracy claims.
+
+## Start when there is no paper/key index yet
+
+Prepare an editable index from the existing discovery catalog:
+
+```bash
+python3 -B -m pipeline.workflow prepare-pair-index --catalog corpus/catalog/documents.csv --output /tmp/paper-index
+python3 -B -m pipeline.workflow suggest-paper-pairs --index /tmp/paper-index/documents.csv --output /tmp/paper-suggestions
+```
+
+Use fresh output directories for reruns. `documents.csv` retains source IDs, URLs,
+titles and raw hashes. Its role/exam/year/paper hints are unverified; check and edit
+these against the public originals. Fill unknown fields, particularly language and
+variant. Set metadata_status to verified and supply reviewer only after that check.
+Do not change stable document IDs or provenance fields to make a match appear.
+
+Suggestions require matching exam/subject/year for ordinary papers, reject known
+identity conflicts, list missing fields and flag multiple candidate partners.
+Unknown fields remain unknown; match_count is an evidence count, not a probability.
+Nothing is automatically approved or inserted into the answer matcher. Confirmed
+pairs still need the pairing YAML and source line regions described above.
+
+Compilation hints get collection_id=UNRESOLVED. Fill an actual collection/edition ID
+on both documents before suggesting a compilation pair. This stage never matches a
+compilation to an ordinary exam solely by year. Compilation question-origin mapping
+remains future work. Discovery of new sites and header extraction are not performed
+by these offline commands. Zero suggestions means more metadata or key documents
+are needed, not that the catalog should be guessed.
