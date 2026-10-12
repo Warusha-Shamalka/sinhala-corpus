@@ -308,3 +308,18 @@ See [DAILY_TRAINING_RELEASE_GUIDE.md](DAILY_TRAINING_RELEASE_GUIDE.md).
 - [ ] Add task-level incremental exports and connect separate theory/MCQ training loaders.
 
 See [THEORY_AND_MCQ_GUIDE.md](THEORY_AND_MCQ_GUIDE.md). No hidden test material is an input to this work.
+
+## Public paper and answer-key matching (12 October 2026)
+
+- [x] Validate explicit paper/key identities including exam, subject, year, paper number, language and variant.
+- [x] Detect simple numbered MCQ line blocks and join strict key rows by pair, section and original question number.
+- [x] Report missing/duplicate questions or keys, incomplete choices, unsupported key lines and unverified pairs without approving labels.
+- [x] Import numeric processed key pages as evidence only, with artifact verification and originating-release split checks.
+- [x] Preserve input annotations and raw sources; freeze pairing configuration, matching report and bundle receipts in task exports.
+- [x] Add a configuration template, CLI command, Colab controls and source-review instructions.
+- [x] Pass 18 new answer-matching tests; full offline suite: 291 tests ran, 290 passed and one Tesseract test skipped. All 16 production notebook code cells and embedded scripts parse.
+- [ ] Run a real public paper/key pilot; current catalog has no entries labeled marking_scheme.
+- [ ] Add geometry-aware table parsing, cross-page assembly and Sinhala option label support using independently checked public examples.
+- [ ] Carry paper/key families into future global dataset split planning before those key documents enter other training releases.
+
+See [MCQ_ANSWER_MATCHING_GUIDE.md](MCQ_ANSWER_MATCHING_GUIDE.md).

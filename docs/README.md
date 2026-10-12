@@ -73,3 +73,5 @@ The immediate priority remains discovery filtering and validation. Several hando
 - [Production corpus workflow](CORPUS_PRODUCTION_GUIDE.md): persistent PDF/HTML collection, configurable Surya processing, human correction, duplicate/split checks, reviewed releases and the production Colab notebook.
 
 - [Separate theory and MCQ datasets](THEORY_AND_MCQ_GUIDE.md): line-based source selection, answer evidence, separate split exports and unresolved candidates.
+
+- [Public paper/answer-key matching](MCQ_ANSWER_MATCHING_GUIDE.md): explicit document identities, section-aware proposals, numeric key evidence and uncertainty handling.

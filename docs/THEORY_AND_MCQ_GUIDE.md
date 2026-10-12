@@ -82,8 +82,10 @@ source explanation supports it. Record the reviewer's name and set
 ```
 
 Evidence can be on another included page in the same data split. An answer page
-must first exist in the daily release; do not paste external untracked text into
-the packet. If its OCR was filtered out, acquire/review it and create a new release.
+must exist in the daily release or be imported through the
+[verified key-bundle route](MCQ_ANSWER_MATCHING_GUIDE.md) as evidence only. Do not
+paste external untracked text into the packet. Correct faulty OCR through source
+review before relying on it.
 The source check confirms the evidence supports the selected answer, including
 mapping printed labels to the selected choice order. A hash or nonempty quotation
 cannot establish correctness. Do not approve a guessed answer. Selecting ranges
@@ -143,15 +145,21 @@ or measured linguistic accuracy. A new output directory is required.
 
 ## Training handoff and remaining work
 
+For numbered public papers with published keys, the
+[answer matching stage](MCQ_ANSWER_MATCHING_GUIDE.md) can create draft MCQ ranges and
+propose answers before source review. Numeric key pages can be imported as
+evidence-only bundles without relaxing prose filters.
+
 Use theory `text` for text adaptation and MCQ question/choices/answer for supervised
 examples. Never train on validation files. The manifest records the originating
 daily release and task hashes; record these alongside the model checkpoint. These
 are cumulative task exports, not task-level daily deltas. The earlier daily
 `added_train.jsonl` is a general text delta and must not be mistaken for an MCQ delta.
 
-Current implementation requires explicit line annotations and answer checks.
-Automatic layout-aware MCQ detection, cross-page assembly, synthetic generation
-from public theory, answer-key alignment, task deltas, richer verified metadata
+Manual line annotations and source answer checks remain supported. The matcher now
+handles simple numbered line layouts on explicitly identified paper/key pairs.
+Richer layout detection, cross-page assembly, synthetic generation
+from public theory, task deltas, richer verified metadata
 and the training-repo loader remain future work. Synthetic examples, if added later,
 need generator provenance and separate factual validation. Closed-API training-data
 generation must be disclosed under the supplied challenge rules. No corpus or

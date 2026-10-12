@@ -1,0 +1,35 @@
+# Copy to a local file and fill from the public originals. Blank values deliberately fail validation.
+# Do not use competition test questions, answer keys or other hidden evaluation material.
+schema_version: paper-answer-pairs-1
+pairs:
+  - pair_id: public-paper-pilot
+    paper:
+      doc_id: ''
+      raw_sha256: ''
+      exam: ''
+      subject: ''
+      year: ''
+      paper_number: ''
+      language: ''
+      variant: ''  # Record main/resit/term/region or other actual distinguishing edition.
+    marking_scheme:
+      doc_id: ''
+      raw_sha256: ''
+      exam: ''
+      subject: ''
+      year: ''
+      paper_number: ''
+      language: ''
+      variant: ''
+    pairing_verified: false
+    pairing_reviewer: ''
+    pairing_notes: ''
+    choice_labels: ['1', '2', '3', '4']  # Must match the printed labels and order; letters also supported.
+    questions:
+      - record_id: ''
+        lines: [1, 1]  # Inclusive range in pages.txt, covering complete questions and choices.
+        section: 'I'
+    answers:
+      - record_id: ''
+        lines: [1, 1]  # Only key rows, excluding headings/footers.
+        section: 'I'

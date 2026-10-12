@@ -19,6 +19,11 @@ require recorded source checks and answer evidence; incomplete items stay
 candidates. Daily text is an intermediate mixed-content format. See
 [the theory/MCQ guide](../../docs/THEORY_AND_MCQ_GUIDE.md).
 
+`answers.py` validates declared public paper/key identities and proposes numbered
+MCQ/key matches with explicit sections, uncertainty reporting and evidence-only
+key imports. Per-question source checks are still required. See
+[answer matching](../../docs/MCQ_ANSWER_MATCHING_GUIDE.md).
+
 # Contents
 
 - dataset creation scripts
