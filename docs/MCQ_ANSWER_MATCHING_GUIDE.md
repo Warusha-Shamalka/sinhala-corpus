@@ -181,3 +181,50 @@ by these offline commands. Zero suggestions means more metadata or key documents
 are needed, not that the catalog should be guessed.
 
 Title-based subject and medium hints now supplement the pairing index. Conflicts with catalog values leave the field blank with a review note. Roman paper numbers I/II/III normalize to 1/2/3; none of these hints approve an identity. See [the marking discovery pilot](MARKING_DISCOVERY_PILOT.md) for current coverage and remaining gaps.
+
+
+## Combined documents: questions and answers in one source
+
+A marking scheme can contain complete MCQs as well as answers. It does not require
+an external paper. The index accepts `role=combined` after inspecting the source;
+this does not approve its metadata or answers. Every `key` and `combined` row also
+appears in `combined_review.jsonl` when running `suggest-paper-pairs`, so key-only
+documents can be checked for embedded questions instead of being overlooked.
+A declared combined row gets a self-suggestion with `mode=combined`, still unapproved.
+Titles alone never automatically establish that questions are present.
+
+1. Inspect the public original for full question stems, all choices and explicit
+   answers. A solution explanation without complete choices is insufficient.
+2. Process the document normally and prepare a task packet. Pages supplying
+   questions must be regular packet pages; evidence-only imports cannot supply them.
+3. Copy `configs/combined_answers.example.yaml` into a local configuration.
+   Use the same document ID/hash for both roles (`mode: combined`). Enter actual
+   identity metadata; do not invent an exam/year for a compilation.
+4. In `pages.txt`, select non-overlapping question and answer ranges and explicit
+   section labels. A same-page answer must be outside the question/choices range.
+5. For numbered keys (`1 - B`, `2: (A)`), omit `question_number`. For a single
+   explicit `Answer: B`, `Correct answer: (B)` or `පිළිතුර: B` line, set
+   `question_number: 1` to the original question number. This binding is declared
+   from the source, never inferred from proximity. Only one nonblank answer line
+   is allowed in such a region. Other explanation/table formats stay unresolved.
+6. Check question-to-answer association, then record `pairing_verified` and its
+   reviewer. Run the existing command with a fresh output folder:
+
+   ```bash
+   python3 -B -m pipeline.workflow match-paper-answers \
+     --packet /path/to/task_packet --pairs /path/to/combined_answers.yaml \
+     --output /path/to/combined_matched_packet
+   ```
+
+Review proposed question/choice text and answer evidence before approving MCQ export,
+just as for separate documents. A checked association does not approve OCR text.
+The frozen matching report records the route, document identities and source ranges.
+Answer regions are excluded from training text; recognized inline answer lines
+inside a question region block that question instead of becoming part of a choice.
+Repeated numbering must use separate sections. Missing, ambiguous or unsupported
+answers stay unresolved; the matcher does not solve questions.
+
+Scope: separate-paper matching remains unchanged. This feature does not automatically
+read PDFs to classify combined documents, parse solution prose, reconstruct omitted
+choices, handle all table layouts or resolve compilation identities. A real public
+combined-document pilot remains required before scaling.

@@ -343,3 +343,19 @@ The index is a separate editable review artifact; it does not modify the master 
 Validation: 296 offline tests ran (295 passed, one Tesseract test skipped). The current catalog produced 87 draft paper entries, no key entries and zero pair suggestions. These are metadata candidates, not verified documents.
 
 2026-10-12 marking discovery pilot: 543 unique candidates from one listing, including 212 marking-scheme candidates. An isolated index with the existing 87 paper entries still produced zero pair suggestions: 83 paper entries lack a subject and 72 lack an exam hint. Production catalog unchanged; no PDFs downloaded. Full suite: 301 tests, 300 passed and one skipped. See [MARKING_DISCOVERY_PILOT.md](MARKING_DISCOVERY_PILOT.md).
+
+
+## Combined question/answer documents
+
+- [x] Include marking schemes in a `combined_review.jsonl` inspection queue.
+- [x] Accept a declared `combined` index role and unapproved same-document suggestions.
+- [x] Support explicit combined matcher mode with identical source ID/hash and separate source ranges.
+- [x] Match numbered keys or a single explicitly bound answer line; preserve evidence and review gates.
+- [x] Block recognized answer lines inside question/choice regions and reject overlapping regions.
+- [ ] Inspect the discovered marking schemes for complete embedded MCQs; record combined roles only from originals.
+- [ ] Run one real combined-document pilot and one separate-paper pilot through reviewed MCQ export.
+- [ ] Add source-tested support for solution prose, answer tables and compilation identities as needed.
+
+See [MCQ_ANSWER_MATCHING_GUIDE.md](MCQ_ANSWER_MATCHING_GUIDE.md#combined-documents-questions-and-answers-in-one-source).
+
+Combined-route validation: 310 offline tests ran (309 passed, one Tesseract-dependent skip). The isolated ALapi index now yields 212 combined-document review candidates, zero confirmed pairs; no production catalog or downloaded source was changed.
