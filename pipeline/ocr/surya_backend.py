@@ -160,8 +160,18 @@ class SuryaBackend:
             if len(results)!=1:
                 raise ValueError('Surya returned an unexpected page count')
             raw=results[0].model_dump(mode='json')
-            import unicodedata
-            text=unicodedata.normalize('NFC', '\n'.join(line['text'] for line in raw['text_lines']))
+            import unicodedata, re
+            lines = [unicodedata.normalize('NFC', line['text']) for line in raw['text_lines']]
+            loop_pattern = re.compile(r'(\b[\w\s]{2,15}\b)(?:\s*\1){3,}', re.IGNORECASE)
+            filtered = []
+            for l in lines:
+                s = l.strip()
+                if re.search(r'scanned with|camscanner', s, re.IGNORECASE):
+                    continue
+                if loop_pattern.search(s) and len(s) > 40:
+                    continue
+                filtered.append(l)
+            text='\n'.join(filtered)
             complete=self.completion
             if time.monotonic()>=self.deadline:
                 complete='time_limit'

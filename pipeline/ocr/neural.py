@@ -20,7 +20,8 @@ PROMPT = ('Transcribe all visible text from this Sinhala educational page in rea
           'translate, correct the source, or invent missing text. Use [UNREADABLE] for illegible text. '
           'Output only the transcription.')
 MODELS = {'gemma': 'google/gemma-4-E2B-it', 'deepseek': 'deepseek-ai/DeepSeek-OCR-2',
-          'qwen': 'Qwen/Qwen2.5-VL-3B-Instruct', 'surya':'datalab/surya-ocr-0.17.1'}
+          'qwen': 'Qwen/Qwen2.5-VL-3B-Instruct', 'surya':'datalab/surya-ocr-0.17.1',
+          'gemini_api': 'gemini-2.5-flash'}
 
 
 def repetition_loop(tokens):
@@ -143,12 +144,20 @@ class GPUBackend:
                     'completion_status':reason, 'outcome':'truncated' if reason != 'complete' else 'predicted'}
 
 
-def run(packet, output, backend, model_path, revision, *, max_pages=10, max_new_tokens=8192, max_generation_seconds=120, engine=None):
-    packet, output, model_path = Path(packet), Path(output), Path(model_path)
+def run(packet, output, backend, model_path, revision, *, max_pages=10, max_new_tokens=8192, max_generation_seconds=120, engine=None, api_key=None):
+    packet, output = Path(packet), Path(output)
+    model_path = Path(model_path) if model_path else None
     manifest = load_packet(packet)
-    if backend not in MODELS or not re.fullmatch(r'[0-9a-f]{64}' if backend=='surya' else r'[0-9a-f]{40}', revision):
+    if backend == 'gemini_api':
+        if not api_key:
+            import os
+            api_key = os.environ.get('GEMINI_API_KEY') or os.environ.get('GOOGLE_API_KEY') or os.environ.get('G_API') or os.environ.get('mmlu')
+        if not api_key:
+            raise ValueError('Set GEMINI_API_KEY or pass --api-key for the Gemini backend')
+    elif backend not in MODELS or not re.fullmatch(r'[0-9a-f]{64}' if backend=='surya' else r'[0-9a-f]{40}', revision):
         raise ValueError('Use a supported backend and pinned revision (Surya: component manifest SHA256; others: full model commit)')
-    if not model_path.is_dir(): raise ValueError('Download a local model snapshot first')
+    if backend != 'gemini_api' and (not model_path or not model_path.is_dir()):
+        raise ValueError('Download a local model snapshot first')
     if type(max_pages) is not int or max_pages < 1 or type(max_new_tokens) is not int or not 1 <= max_new_tokens <= 8192:
         raise ValueError('Invalid page/token limit')
     if type(max_generation_seconds) is not int or not 1 <= max_generation_seconds <= 3600:
@@ -156,18 +165,20 @@ def run(packet, output, backend, model_path, revision, *, max_pages=10, max_new_
     if output.exists(): raise ValueError('Choose a new output directory; existing runs are preserved')
     # Frozen input identities; references and review labels are deliberately not opened here.
     selected = manifest['samples'][:max_pages]
-    weight_files = sorted(model_path.rglob('*.safetensors'))
-    print(f'Verifying {len(weight_files)} model weight files...', flush=True)
     weights = {}
-    for index, path in enumerate(weight_files, 1):
-        print(f'Weights [{index}/{len(weight_files)}]: {path.name}', flush=True)
-        weights[str(path.relative_to(model_path))] = file_hash(path)
-    if engine is None and not weights: raise ValueError('Local snapshot has no safetensors weights')
-    metadata = {'schema_version':'neural-ocr-run-1','backend':backend,'model_id':MODELS[backend], 'model_revision':revision,
-                'weights_sha256':weights, 'packet_manifest_sha256':file_hash(packet/'manifest.json'), 'prompt':None if backend=='surya' else PROMPT,
-                'model_revision_kind':'local_components_manifest_sha256' if backend=='surya' else 'huggingface_commit',
+    if backend != 'gemini_api' and model_path:
+        weight_files = sorted(model_path.rglob('*.safetensors'))
+        print(f'Verifying {len(weight_files)} model weight files...', flush=True)
+        for index, path in enumerate(weight_files, 1):
+            print(f'Weights [{index}/{len(weight_files)}]: {path.name}', flush=True)
+            weights[str(path.relative_to(model_path))] = file_hash(path)
+        if engine is None and not weights: raise ValueError('Local snapshot has no safetensors weights')
+    metadata = {'schema_version':'neural-ocr-run-1','backend':backend,'model_id':MODELS[backend], 'model_revision':revision or 'api',
+                'weights_sha256':weights, 'packet_manifest_sha256':file_hash(packet/'manifest.json'),
+                'prompt':None if backend=='surya' else (PROMPT if backend != 'gemini_api' else 'gemini_sinhala_ocr_v1'),
+                'model_revision_kind':'api' if backend=='gemini_api' else ('local_components_manifest_sha256' if backend=='surya' else 'huggingface_commit'),
                 'decoding':{'task':'ocr_with_boxes','region_max_tokens':256,'math_mode':True,'sort_lines':True} if backend=='surya' else None,
-                'max_new_tokens':None if backend=='surya' else max_new_tokens,'max_pages':max_pages,'selected_samples':[s['sample_id'] for s in selected],
+                'max_new_tokens':None if backend in {'surya','gemini_api'} else max_new_tokens,'max_pages':max_pages,'selected_samples':[s['sample_id'] for s in selected],
                 'generation_guard':{'max_seconds':max_generation_seconds,'repetition':'exact_token_tail_v1'} if backend in {'gemma','qwen'} else None,
                 'gemma_generation_guard':{'max_seconds':max_generation_seconds,'repetition':'exact_token_tail_v1'} if backend == 'gemma' else None,
                 'created_at_utc':utc_now(),'review_required':True,'training_approved':False}
@@ -176,9 +187,12 @@ def run(packet, output, backend, model_path, revision, *, max_pages=10, max_new_
     output.mkdir(parents=True)
     metadata['status']='loading';write_json(output/'run.json',metadata)
     try:
-        print(f'Loading {MODELS[backend]} on the GPU...', flush=True)
+        print(f'Loading {MODELS[backend]}...', flush=True)
         loading_started = time.monotonic()
-        if engine is None and backend=='surya':
+        if engine is None and backend=='gemini_api':
+            from pipeline.ocr.gemini_backend import GeminiBackend
+            engine=GeminiBackend(api_key, max_generation_seconds=max_generation_seconds)
+        elif engine is None and backend=='surya':
             from pipeline.ocr.surya_backend import SuryaBackend, block_network
             block_network()
             engine=SuryaBackend(model_path,revision,max_generation_seconds)
@@ -219,12 +233,13 @@ def run(packet, output, backend, model_path, revision, *, max_pages=10, max_new_
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--packet',type=Path,required=True);parser.add_argument('--output',type=Path,required=True)
-    parser.add_argument('--backend',choices=MODELS,required=True);parser.add_argument('--model-path',type=Path,required=True)
-    parser.add_argument('--revision',required=True);parser.add_argument('--max-pages',type=int,default=10)
+    parser.add_argument('--backend',choices=MODELS,required=True);parser.add_argument('--model-path',type=Path,default=None)
+    parser.add_argument('--revision',default=None);parser.add_argument('--max-pages',type=int,default=10)
     parser.add_argument('--max-new-tokens',type=int,default=8192)
+    parser.add_argument('--api-key',default=None,help='API key for gemini_api backend (or set GEMINI_API_KEY env var)')
     parser.add_argument('--max-generation-seconds',type=int,default=120,help='Gemma/Qwen soft decode deadline; Surya soft page deadline between model steps; excludes model loading; not applied to DeepSeek upstream infer')
     args=parser.parse_args()
-    try:run(args.packet,args.output,args.backend,args.model_path,args.revision,max_pages=args.max_pages,max_new_tokens=args.max_new_tokens,max_generation_seconds=args.max_generation_seconds)
+    try:run(args.packet,args.output,args.backend,args.model_path,args.revision,max_pages=args.max_pages,max_new_tokens=args.max_new_tokens,max_generation_seconds=args.max_generation_seconds,api_key=args.api_key)
     except Exception as exc:parser.exit(2,f'Neural OCR comparison error: {exc}\n')
 
 if __name__=='__main__':main()
