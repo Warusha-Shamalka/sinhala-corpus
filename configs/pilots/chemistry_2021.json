@@ -1,0 +1,33 @@
+{
+  "schema_version": "mcq-ocr-pilot-1",
+  "pilot_id": "chemistry_2021",
+  "exam_year": "2021",
+  "displayed_session": "2021 (2022)",
+  "subject": "Chemistry",
+  "paper_number": "1",
+  "pairing_verified": false,
+  "training_approved": false,
+  "jobs": [
+    {
+      "doc_id": "LK-EDU-910001",
+      "source_url": "https://www.alapiedu.com/Category/paper_hub/uploads/1753416960_2021AL%20Chemistry.pdf",
+      "raw_sha256": "5d3edfc550e89c43c071960119322edcafd8cfa3b63523894dfa3a75abe4d779",
+      "page_number": 1,
+      "role": "paper",
+      "title": "2021 AL Chemistry paper"
+    },
+    {
+      "doc_id": "LK-EDU-910002",
+      "source_url": "https://www.alapiedu.com/Category/marking_hub/uploads/1753427919_New%202021%20Chemistry_Marking.pdf",
+      "raw_sha256": "01f4ed18a2e0e5dcde36c8b84b19d07a4e2bdba42437bfed7cce036ce518487f",
+      "page_number": 3,
+      "role": "key",
+      "title": "2021 Chemistry full paper marking"
+    }
+  ],
+  "notes": [
+    "Header identity was visually inspected by the assistant; not human verified.",
+    "Key is a multi-column table; row 29 has multiple printed answers and row 48 has a handwritten correction. Do not force single labels.",
+    "This is an OCR handoff, not a completed MCQ training release."
+  ]
+}
