@@ -45,7 +45,7 @@ Verification details: [discovery results](DISCOVERY_VALIDATION_RESULTS.md) and [
 - [x] Add bounded structural evidence for generic download links, preserving item boundaries and recording audit reasons.
 - [x] Commit/push local discovery evidence changes; implementation is present on `dev` (`d4e113c`).
 - [x] Distinguish configured medium phrases from subject names, preserving unverified medium hints in discovery audit decisions.
-- [ ] Distinguish syllabus-version wording from document type.
+- [x] Distinguish known English syllabus-version wording from a competing named resource type; preserve standalone syllabus candidates.
 - [ ] Extend reviewed Sinhala aliases and explicit grade/level forms without merging distinct subjects.
 - [ ] Keep this repository focused on corpus acquisition; coordinate benchmark taxonomy/model work with the separate training repository when needed.
 
@@ -239,3 +239,11 @@ See [CORPUS_PRODUCTION_GUIDE.md](CORPUS_PRODUCTION_GUIDE.md) for current limits 
 - [x] Keep verified document language blank; store conflicting/unknown medium hints conservatively.
 - [x] Add seven regression tests; offline suite ran 221 tests (220 passed, one Tesseract test skipped).
 - [ ] Review additional source wording and correct existing catalog metadata in a separate evidence-backed change; current fixes apply to newly evaluated links.
+
+## Discovery document types (12 October 2026)
+
+- [x] Separate new/old/revised/updated syllabus or curriculum wording from notes, workbooks and paper resource types.
+- [x] Preserve standalone syllabus documents and explicit syllabus mentions; explain suppressed version signals in rule `discovery-0.5` audits.
+- [x] Add five regression tests covering resource types, URL/title evidence, phrase boundaries and audit explanations.
+- [x] Run the complete offline checks: 226 tests ran, 225 passed and one Tesseract test was skipped.
+- [ ] Review Sinhala syllabus-version wording and other real-source formats before extending the rules.

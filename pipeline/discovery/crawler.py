@@ -654,7 +654,7 @@ def discover_source(
         in_domain = bool(candidate_url) and is_within_domain(candidate_url, base_url)
         if decision_sink is not None:
             decision_sink({
-                "schema_version": "discovery-decision-1", "rule_version": "discovery-0.4",
+                "schema_version": "discovery-decision-1", "rule_version": "discovery-0.5",
                 "source_id": source["id"], "referring_url": page_url, "candidate_url": candidate_url,
                 "href": link.href,
                 "title": decision.title, "accepted": bool(candidate and in_domain),

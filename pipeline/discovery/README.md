@@ -25,7 +25,15 @@ Individual subjects may specify `excluded_phrases`. History excludes “life his
 without assigning Biology automatically. A separate explicit History occurrence
 still counts, and independent subject conflicts remain unknown. These configurable
 rules cover known phrases, not complete semantic understanding. Rule version is
-`discovery-0.4`; existing catalog rows and historical review packets are not rewritten.
+`discovery-0.5`; existing catalog rows and historical review packets are not rewritten.
+
+Document typing also distinguishes syllabus versions from resource identity:
+“Physics new syllabus notes” is a lesson candidate, and “2024 Physics new syllabus
+paper” is a past-paper candidate. Standalone “Physics new syllabus” still denotes a
+possible syllabus document. A separate explicit syllabus mention retains the existing
+syllabus precedence. Suppressed version labels are explained in the decision audit.
+The bounded English phrase rules cover new/old/revised/updated syllabus or curriculum;
+unreviewed wording, mixed resource links and semantic ambiguity still need review.
 
 URLs must be HTTP(S), without credentials or malformed hosts/ports. Spaces and Unicode URL paths are percent-encoded while existing escapes/query semantics are retained. Relative links resolve against the final redirected page URL. Script, style and template content cannot supply candidate evidence.
 
