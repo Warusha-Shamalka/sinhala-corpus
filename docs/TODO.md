@@ -45,7 +45,7 @@ Verification details: [discovery results](DISCOVERY_VALIDATION_RESULTS.md) and [
 - [x] Add bounded structural evidence for generic download links, preserving item boundaries and recording audit reasons.
 - [x] Commit/push local discovery evidence changes; implementation is present on `dev` (`d4e113c`).
 - [x] Distinguish configured medium phrases from subject names, preserving unverified medium hints in discovery audit decisions.
-- [ ] Distinguish syllabus-version wording from document type.
+- [x] Distinguish known English syllabus-version wording from a competing named resource type; preserve standalone syllabus candidates.
 - [ ] Extend reviewed Sinhala aliases and explicit grade/level forms without merging distinct subjects.
 - [ ] Keep this repository focused on corpus acquisition; coordinate benchmark taxonomy/model work with the separate training repository when needed.
 
@@ -239,3 +239,56 @@ See [CORPUS_PRODUCTION_GUIDE.md](CORPUS_PRODUCTION_GUIDE.md) for current limits 
 - [x] Keep verified document language blank; store conflicting/unknown medium hints conservatively.
 - [x] Add seven regression tests; offline suite ran 221 tests (220 passed, one Tesseract test skipped).
 - [ ] Review additional source wording and correct existing catalog metadata in a separate evidence-backed change; current fixes apply to newly evaluated links.
+
+## Discovery document types (12 October 2026)
+
+- [x] Separate new/old/revised/updated syllabus or curriculum wording from notes, workbooks and paper resource types.
+- [x] Preserve standalone syllabus documents and explicit syllabus mentions; explain suppressed version signals in rule `discovery-0.5` audits.
+- [x] Add five regression tests covering resource types, URL/title evidence, phrase boundaries and audit explanations.
+- [x] Run the complete offline checks: 226 tests ran, 225 passed and one Tesseract test was skipped.
+- [ ] Review Sinhala syllabus-version wording and other real-source formats before extending the rules.
+
+## Corpus review quality reporting (12 October 2026)
+
+- [x] Add offline review coverage, OCR outcomes/warnings, edited-pending drafts and prioritized review IDs.
+- [x] Diagnose invalid approvals without weakening the strict exporter; verify source evidence and reject changing report snapshots.
+- [x] Add approved-correction editing distances with bounded computation and explicit scored/skipped coverage; do not label these as independent OCR accuracy.
+- [x] Check source/version and duplicate split conflicts, with an optional shell preflight gate.
+- [x] Save immutable JSON/Markdown reports outside review packets; include input/component hashes and unverified metadata coverage.
+- [x] Add a production Colab reporting cell and default its clone branch to merged `dev`; set a pushed feature branch explicitly when trialing unmerged changes.
+- [x] Add eleven regression tests covering pending reviews, corrections, invalid approval, failures, budgets, split leakage, duplicates, corruption, concurrent edits and CLI gate behavior.
+- [x] Pass the full offline suite: 237 tests ran, 236 passed and one Tesseract test was skipped; validate all ten production notebook code cells and embedded setup programs syntactically.
+- [ ] Generate reports from actual Colab production packets before/after source-checked human review; real GPU/Drive testing and the first approved release remain pending.
+
+See [CORPUS_QUALITY_GUIDE.md](CORPUS_QUALITY_GUIDE.md). Keep these changes with the document-type fix for one larger PR into `dev` when ready.
+
+## Batch acquisition while review is deferred (12 October 2026)
+
+- [x] Add bounded collect/process cycles with source/document selection, total download-job/page caps and persistent journals/config snapshots.
+- [x] Isolate collection and OCR in separate Python processes so offline OCR cannot disable later downloads.
+- [x] Verify/reuse completed pages and avoid repeatedly retrying the same failing document in one invocation.
+- [x] Add immutable provisional text snapshots with explicit unreviewed status, warnings, source/model hashes and empty-page exclusions.
+- [x] Preserve the reviewed exporter and approvals; no estimated accuracy is promoted into a quality certificate.
+- [x] Pass fourteen new regression tests and the complete offline suite: 251 ran, 250 passed and one Tesseract test was skipped. Syntax-check all twelve production notebook code cells and embedded setup programs.
+- [ ] Verify recovery in a fresh Colab runtime and increase acquisition caps gradually after inspecting flagged outputs.
+- [x] Inspect maintainer-supplied Colab batch `batch_20261012T062841Z_ea700048`: five cycles, ten unique saved bundles, nine predicted pages and one completion-unverified page; no reported execution errors. Prior pages were verified in later cycles. Cross-runtime recovery and accuracy remain unverified.
+- [x] Fix the new-page budget counter to include completion-unverified and future outcome labels whenever a new bundle was saved; add a regression test.
+- [x] Pass the updated offline suite after the counter fix: 252 tests ran, 251 passed and one Tesseract test was skipped.
+- [ ] Select useful provisional pages for later spot checks/source review; handwriting, equations and source-style accuracy remain unmeasured.
+
+See [BATCH_COLLECTION_GUIDE.md](BATCH_COLLECTION_GUIDE.md). Full manual Sinhala retyping is not required to continue acquisition.
+
+## Daily training handoff (12 October 2026)
+
+- [x] Build immutable cumulative/delta experimental text candidates from provisional or reviewed releases.
+- [x] Filter incomplete/warning-bearing OCR; record quarantines and scanner-footer normalization.
+- [x] Deduplicate across the cumulative lineage and preserve document/raw/URL/duplicate-family splits.
+- [x] Prevent replay of prior training text in deltas; preserve verified upgrades and record explicit replacements/removals.
+- [x] Write training handoffs with release identity, checksums, checkpoint lineage and required run-record fields.
+- [x] Verify source/text identities, split/duplicate consistency, delta content and handoff hashes.
+- [x] Add twelve daily-release regression tests; the full offline suite ran 264 tests (263 passed, one Tesseract test skipped). Syntax-check all thirteen notebook code cells and embedded setup programs.
+- [ ] Execute a real daily release in Colab and inspect retained/quarantined counts.
+- [ ] Connect the separate training repository and configure its daily checkpoint/evaluation/submission workflow.
+- [ ] Produce independently supported MCQ/instruction data separately; text adaptation does not invent QA labels.
+
+See [DAILY_TRAINING_RELEASE_GUIDE.md](DAILY_TRAINING_RELEASE_GUIDE.md).

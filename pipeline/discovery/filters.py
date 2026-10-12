@@ -35,6 +35,10 @@ INFRASTRUCTURE_TERMS = (
 NAVIGATION_TERMS = ("home", "about", "contact")
 LISTING_TERMS = ("hub", "category", "categories", "tag", "tags", "search", "listing")
 DOCUMENT_EXTENSIONS = (".pdf", ".doc", ".docx", ".ppt", ".pptx", ".xls", ".xlsx", ".odt", ".rtf")
+SYLLABUS_VERSION_PHRASES = (
+    "new syllabus", "old syllabus", "revised syllabus", "updated syllabus",
+    "new curriculum", "old curriculum", "revised curriculum", "updated curriculum",
+)
 
 
 @dataclass
@@ -212,13 +216,22 @@ def extract_grade(text: str, subjects_config: dict) -> tuple[str, str]:
 def detect_document_type(url: str, text: str) -> str:
     """Infer one of the existing controlled document types, else ``other``."""
     combined = _normalized_text(f"{url} {text}")
-    for document_type, terms in DOCUMENT_TYPES.items():
-        if any(_contains_phrase(combined, term) for term in terms):
-            return document_type
-    if _contains_phrase(combined, "paper") and re.search(
+    matches = {document_type: any(_contains_phrase(combined, term) for term in terms)
+               for document_type, terms in DOCUMENT_TYPES.items()}
+    explicit_paper = bool(_contains_phrase(combined, "paper") and re.search(
         r"\b(?:19|20)\d{2}\b|\b(?:grade|class)\s*(?:[6-9]|1[0-3])\b|\b(?:o\s*/\s*l|a\s*/\s*l|ordinary level|advanced level)\b",
         combined,
-    ):
+    ))
+    if explicit_paper or any(found for kind, found in matches.items() if kind != "syllabus"):
+        # A named resource can follow a syllabus version without being a syllabus.
+        # Keep standalone/new syllabus documents and separate explicit mentions.
+        syllabus_evidence = _mask_phrases(combined, list(SYLLABUS_VERSION_PHRASES))
+        matches["syllabus"] = any(_contains_phrase(syllabus_evidence, term)
+                                  for term in DOCUMENT_TYPES["syllabus"])
+    for document_type in DOCUMENT_TYPES:
+        if matches[document_type]:
+            return document_type
+    if explicit_paper:
         return "past_paper"
     return "other"
 
@@ -373,6 +386,10 @@ def classify_candidate(
     )
     if not accepted and not rejection_reason:
         rejection_reason = "timetable/non-document page" if timetable else "below candidate threshold"
+    document_type = detect_document_type(url, item_evidence)
+    if document_type != "syllabus" and any(_contains_phrase(item_evidence, phrase)
+                                          for phrase in SYLLABUS_VERSION_PHRASES):
+        reasons.append("syllabus_version_wording_not_used_as_document_type")
     return CandidateDecision(
         accepted=accepted,
         score=score,
@@ -382,7 +399,7 @@ def classify_candidate(
         domain=domain,
         grade=grade,
         education_level=education_level,
-        document_type=detect_document_type(url, item_evidence),
+        document_type=document_type,
         reasons=reasons,
         rejection_reason=rejection_reason,
     )

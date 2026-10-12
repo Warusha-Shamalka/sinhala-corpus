@@ -285,6 +285,19 @@ processing run, or prepare from its exact bundle directory. The notebook does th
 
 ## Validation and remaining evidence
 
+Acquisition can continue while manual corrections are deferred. The optional
+`pipeline.workflow run` command performs bounded download/process cycles and
+`pipeline.workflow provisional` saves explicitly unreviewed text snapshots. These
+commands do not approve pages or export a verified training release. See
+[BATCH_COLLECTION_GUIDE.md](BATCH_COLLECTION_GUIDE.md) for limits, storage and resume.
+
+Before export, use the new `pipeline.workflow quality --packet` command to inspect
+review coverage, OCR failures, edited approvals and split/duplicate blockers. It
+loads no model and changes no review decisions. Optional saved JSON/Markdown reports
+are immutable snapshots outside the packet. See [CORPUS_QUALITY_GUIDE.md](CORPUS_QUALITY_GUIDE.md)
+for commands, computation limits and correction-burden interpretation. Correction
+distances are not independently measured OCR accuracy.
+
 Run `python3 -B scripts/check_offline.py`. Tests cover both PDF and HTML paths,
 raw/extracted/processed corruption, resumable batches, selected pages, changed model
 versions, review corrections/approval invalidation, source-version split checks,

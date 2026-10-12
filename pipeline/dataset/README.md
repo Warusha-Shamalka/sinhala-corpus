@@ -9,6 +9,11 @@ See [the native dataset guide](../../docs/NATIVE_TEXT_DATASET_GUIDE.md).
 approval and split-safe deduplicated export for production OCR/native pages.
 See [the production guide](../../docs/CORPUS_PRODUCTION_GUIDE.md).
 
+`provisional.py` snapshots unreviewed page text. `daily.py` filters provisional or
+verified input releases into cumulative/delta text candidates, retaining review
+status, deduplicating source families and writing a training handoff. See
+[the daily release guide](../../docs/DAILY_TRAINING_RELEASE_GUIDE.md).
+
 # Contents
 
 - dataset creation scripts

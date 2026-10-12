@@ -85,7 +85,7 @@ def prepare(root, output, config_hash=None):
     return {'packet': str(output), 'pages': len(records), 'approved': 0}
 
 
-def load(packet, unchecked=None):
+def load(packet, unchecked=None, validate_approved=True):
     manifest = json.loads((packet / 'manifest.json').read_text(encoding='utf-8'))
     if manifest.get('schema_version') != 'corpus-review-1':
         raise ValueError('Invalid corpus review manifest')
@@ -113,7 +113,7 @@ def load(packet, unchecked=None):
         review = by_id[record['record_id']]
         if None in review or any(v is None for v in review.values()) or review['decision'] not in {'pending', 'reject', 'approve'}:
             raise ValueError('Invalid review decision')
-        if review['decision'] == 'approve' and record['record_id'] != unchecked:
+        if validate_approved and review['decision'] == 'approve' and record['record_id'] != unchecked:
             text = path.read_text(encoding='utf-8')
             validate_approval(review, text)
     return manifest, records, reviews

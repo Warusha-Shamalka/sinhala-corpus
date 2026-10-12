@@ -84,6 +84,12 @@ for History). Add reviewed phrases with regression tests; do not use exclusions 
 silently assign a different subject. Existing records require a separate reviewed
 metadata correction rather than automatic rewriting.
 
+Discovery document typing treats “new/old/revised/updated syllabus” or “curriculum”
+as version wording when notes, papers, workbooks or another named resource are also
+present. Standalone syllabus links remain syllabus candidates. This is an English
+phrase heuristic; it does not establish the actual publication version or validate
+document contents. Decisions record the suppressed type signal for inspection.
+
 ### `configs/sources.yaml`
 
 This file defines what the crawler is allowed to traverse. A source is considered eligible only when it is both enabled and verified. Disabled or unverified entries should be skipped and logged as appropriate.
