@@ -12,7 +12,8 @@ from pipeline.discovery.crawler import ROOT, read_catalog
 from pipeline.download import downloader
 from pipeline.extraction import extractor
 from pipeline.processing import pages
-from pipeline.dataset import reviewed
+from pipeline.processing import batch
+from pipeline.dataset import reviewed, provisional
 from pipeline.quality import corpus as corpus_quality
 from pipeline.dataset.native import encode, digest, publish
 
@@ -104,6 +105,19 @@ def main():
     quality.add_argument('--max-dedup-pages', type=int, default=1000)
     quality.add_argument('--require-exportable', action='store_true',
                          help='Exit 1 for preflight blockers; this does not certify OCR accuracy')
+    run = commands.add_parser('run', help='Bounded collect/process batches; does not approve or export training text')
+    run.add_argument('--config', type=Path, default=ROOT / 'configs/pipeline.yaml')
+    run.add_argument('--sources', type=Path)
+    run.add_argument('--source')
+    run.add_argument('--doc-id', action='append', dest='doc_ids')
+    run.add_argument('--max-batches', type=int, default=3)
+    run.add_argument('--max-download-jobs', type=int, default=5)
+    run.add_argument('--max-new-pages', type=int, default=20)
+    run.add_argument('--dry-run', action='store_true')
+    run.add_argument('--progress', choices=['auto', 'plain', 'off'], default='auto')
+    provisional_export = commands.add_parser('provisional', help='Export an explicitly unreviewed corpus text snapshot')
+    provisional_export.add_argument('--run-report', type=Path, required=True)
+    provisional_export.add_argument('--output', type=Path, required=True)
     args = parser.parse_args()
     try:
         if args.command == 'init': result = initialize(args.store, args.seed)
@@ -122,6 +136,11 @@ def main():
             limits = {'max_metric_cells': args.max_metric_cells, 'total_metric_cells': args.total_metric_cells,
                       'max_dedup_pages': args.max_dedup_pages}
             result = corpus_quality.write(args.packet, args.output, **limits) if args.output else corpus_quality.report(args.packet, **limits)
+        elif args.command == 'run':
+            result = batch.run(args.config, sources_path=args.sources, source_id=args.source, doc_ids=args.doc_ids,
+                               max_batches=args.max_batches, max_download_jobs=args.max_download_jobs,
+                               max_new_pages=args.max_new_pages, dry_run=args.dry_run, progress_mode=args.progress)
+        elif args.command == 'provisional': result = provisional.export(args.run_report, args.output)
         else: result = reviewed.export(args.packet, args.output)
         print(json.dumps(result, ensure_ascii=False, indent=2))
         failed = bool(result.get('errors') or result.get('artifact_errors') or any(r.get('outcome') in {'failed', 'catalog_conflict'} for r in result.get('results', [])))
