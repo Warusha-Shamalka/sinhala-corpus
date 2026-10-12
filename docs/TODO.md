@@ -261,3 +261,16 @@ See [CORPUS_PRODUCTION_GUIDE.md](CORPUS_PRODUCTION_GUIDE.md) for current limits 
 - [ ] Generate reports from actual Colab production packets before/after source-checked human review; real GPU/Drive testing and the first approved release remain pending.
 
 See [CORPUS_QUALITY_GUIDE.md](CORPUS_QUALITY_GUIDE.md). Keep these changes with the document-type fix for one larger PR into `dev` when ready.
+
+## Batch acquisition while review is deferred (12 October 2026)
+
+- [x] Add bounded collect/process cycles with source/document selection, total download-job/page caps and persistent journals/config snapshots.
+- [x] Isolate collection and OCR in separate Python processes so offline OCR cannot disable later downloads.
+- [x] Verify/reuse completed pages and avoid repeatedly retrying the same failing document in one invocation.
+- [x] Add immutable provisional text snapshots with explicit unreviewed status, warnings, source/model hashes and empty-page exclusions.
+- [x] Preserve the reviewed exporter and approvals; no estimated accuracy is promoted into a quality certificate.
+- [x] Pass fourteen new regression tests and the complete offline suite: 251 ran, 250 passed and one Tesseract test was skipped. Syntax-check all twelve production notebook code cells and embedded setup programs.
+- [ ] Trial a multi-cycle Surya batch and resume on Drive, then increase acquisition caps gradually.
+- [ ] Select useful provisional pages for later spot checks/source review; handwriting, equations and source-style accuracy remain unmeasured.
+
+See [BATCH_COLLECTION_GUIDE.md](BATCH_COLLECTION_GUIDE.md). Full manual Sinhala retyping is not required to continue acquisition.

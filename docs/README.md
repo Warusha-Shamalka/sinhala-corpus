@@ -14,6 +14,7 @@ The latest [discovery reliability and audit results](DISCOVERY_AUDIT_RESULTS.md)
 | --- | --- |
 | [TODO.md](TODO.md) | Completed milestones and the ordered remaining checklist |
 | [CORPUS_QUALITY_GUIDE.md](CORPUS_QUALITY_GUIDE.md) | Production review coverage, correction burden, prioritized review work and export preflight |
+| [BATCH_COLLECTION_GUIDE.md](BATCH_COLLECTION_GUIDE.md) | Bounded collection/processing while review is deferred; provisional text snapshots |
 | [DISCOVERY_REVIEW_GUIDE.md](DISCOVERY_REVIEW_GUIDE.md) | Label the generated candidate sample and calculate quality reports |
 | [CURRENT_STATE_REVIEW.md](CURRENT_STATE_REVIEW.md) | What exists, measured progress, limitations, and confirmed bugs |
 | [IMPLEMENTATION_BACKLOG.md](IMPLEMENTATION_BACKLOG.md) | Ordered work, proposed branches, dependencies, and acceptance criteria |
