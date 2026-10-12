@@ -13,6 +13,7 @@ from pipeline.download import downloader
 from pipeline.extraction import extractor
 from pipeline.processing import pages
 from pipeline.processing import batch
+from pipeline.metadata import paper_identity
 from pipeline.dataset import reviewed, provisional, daily, tasks, answers, pair_index
 from pipeline.quality import corpus as corpus_quality
 from pipeline.dataset.native import encode, digest, publish
@@ -146,6 +147,12 @@ def main():
     index = commands.add_parser('prepare-pair-index')
     index.add_argument('--catalog', type=Path, required=True)
     index.add_argument('--output', type=Path, required=True)
+    metadata = commands.add_parser('enrich-pair-index')
+    metadata.add_argument('--index', type=Path, required=True)
+    metadata.add_argument('--output', type=Path, required=True)
+    metadata.add_argument('--page-bundle', action='append', type=Path, default=[])
+    metadata.add_argument('--subjects', type=Path)
+    metadata.add_argument('--header-lines', type=int, default=40)
     suggestions = commands.add_parser('suggest-paper-pairs')
     suggestions.add_argument('--index', type=Path, required=True)
     suggestions.add_argument('--output', type=Path, required=True)
@@ -183,6 +190,7 @@ def main():
         elif args.command == 'match-paper-answers': result = answers.match(args.packet, args.pairs, args.output,
                                                                         key_bundles=args.key_bundle, release=args.release)
         elif args.command == 'prepare-pair-index': result = pair_index.prepare(args.catalog, args.output)
+        elif args.command == 'enrich-pair-index': result = paper_identity.enrich(args.index, args.output, page_bundles=args.page_bundle, subjects_path=args.subjects, header_lines=args.header_lines)
         elif args.command == 'suggest-paper-pairs': result = pair_index.suggest(args.index, args.output)
         else: result = reviewed.export(args.packet, args.output)
         print(json.dumps(result, ensure_ascii=False, indent=2))
