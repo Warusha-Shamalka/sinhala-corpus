@@ -13,7 +13,7 @@
 !pipeline/**/*.md
 !tests/
 !tests/**/*.py
-
+test_jsons
 # Python virtual environments and package caches
 .venv/
 venv/
