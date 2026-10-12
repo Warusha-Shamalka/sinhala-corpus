@@ -3,6 +3,7 @@
 schema_version: paper-answer-pairs-1
 pairs:
   - pair_id: public-paper-pilot
+    mode: separate  # Use combined only when both roles refer to the same document and raw hash.
     paper:
       doc_id: ''
       raw_sha256: ''

@@ -83,12 +83,22 @@ def suggest(index, output, max_comparisons=100000):
         rows = list(reader)
     if len({r['doc_id'] for r in rows}) != len(rows): raise ValueError('Duplicate index document ID')
     for row in rows:
-        if not row['doc_id'] or row['role'] not in {'paper', 'key'}: raise ValueError('Invalid indexed document')
+        if not row['doc_id'] or row['role'] not in {'paper', 'key', 'combined'}: raise ValueError('Invalid indexed document')
         if row['metadata_status'] not in {'unverified', 'verified'}: raise ValueError('Invalid metadata status')
         if row['metadata_status'] == 'verified' and not row['reviewer'].strip(): raise ValueError('Verified metadata requires reviewer')
     papers, keys = [r for r in rows if r['role'] == 'paper'], [r for r in rows if r['role'] == 'key']
     if len(papers) * len(keys) > max_comparisons: raise ValueError('Comparison limit exceeded; narrow the index')
-    suggestions = []
+    # A title/type is not evidence that the document contains complete questions.
+    combined_review = [{'doc_id': r['doc_id'], 'source_url': r['source_url'],
+                        'reason': 'declared_combined_document' if r['role'] == 'combined' else 'check_for_embedded_questions',
+                        'review_required': True, 'training_approved': False}
+                       for r in rows if r['role'] in {'key', 'combined'}]
+    suggestions = [{'pair_id': digest(encode([r['doc_id'], r['doc_id']])),
+                    'paper_doc_id': r['doc_id'], 'key_doc_id': r['doc_id'], 'mode': 'combined',
+                    'matched_fields': [], 'missing_fields': [f for f in IDENTITY if f != 'collection_id' and not r[f]],
+                    'match_count': 0, 'metadata_verified': r['metadata_status'] == 'verified',
+                    'pairing_verified': False, 'review_required': True}
+                   for r in rows if r['role'] == 'combined']
     for paper in papers:
         for key in keys:
             if 'UNRESOLVED' in (paper['collection_id'], key['collection_id']): continue
@@ -100,7 +110,7 @@ def suggest(index, output, max_comparisons=100000):
             matched = [f for f in IDENTITY if paper[f] and key[f]]
             missing = [f for f in IDENTITY if f != 'collection_id' and (not paper[f] or not key[f])]
             suggestions.append({'pair_id': digest(encode([paper['doc_id'], key['doc_id']])),
-                'paper_doc_id': paper['doc_id'], 'key_doc_id': key['doc_id'],
+                'paper_doc_id': paper['doc_id'], 'key_doc_id': key['doc_id'], 'mode': 'separate',
                 'matched_fields': matched, 'missing_fields': missing, 'match_count': len(matched),
                 'metadata_verified': all(r['metadata_status'] == 'verified' for r in (paper, key)),
                 'pairing_verified': False, 'review_required': True})
@@ -112,9 +122,10 @@ def suggest(index, output, max_comparisons=100000):
     unresolved = [{'doc_id': r['doc_id'], 'reason': 'no_compatible_pair_or_insufficient_identity'} for r in rows if r['doc_id'] not in involved]
     if file_hash(index) != sha: raise ValueError('Index changed while suggesting pairs')
     files = {'suggestions.jsonl': b''.join(encode(s) for s in suggestions),
+             'combined_review.jsonl': b''.join(encode(r) for r in combined_review),
              'unresolved.jsonl': b''.join(encode(r) for r in unresolved), 'documents.csv': index.read_bytes()}
     manifest = {'schema_version': 'paper-pair-suggestions-1', 'index_sha256': sha,
-                'suggestions': len(suggestions), 'unresolved_documents': len(unresolved),
+                'suggestions': len(suggestions), 'combined_review_documents': len(combined_review), 'unresolved_documents': len(unresolved),
                 'output_sha256': {name: digest(data) for name, data in files.items()},
                 'note': 'Suggestions never approve pairs or supply MCQ answers.'}
     publish(output, {**files, 'manifest.json': encode(manifest)})

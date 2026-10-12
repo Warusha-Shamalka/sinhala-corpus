@@ -1,0 +1,30 @@
+# Fill identity and source regions from one public combined document.
+# Blank identity fields deliberately fail validation; never use hidden benchmark data.
+schema_version: paper-answer-pairs-1
+pairs:
+  - pair_id: combined-public-pilot
+    mode: combined
+    paper: &document
+      doc_id: ''
+      raw_sha256: ''
+      exam: ''
+      subject: ''
+      year: ''
+      paper_number: ''
+      language: ''
+      variant: ''
+    marking_scheme: *document
+    pairing_verified: false
+    pairing_reviewer: ''
+    pairing_notes: 'Check that the selected answer belongs to this question/section.'
+    choice_labels: ['A', 'B', 'C', 'D']
+    questions:
+      - record_id: ''
+        lines: [1, 5]  # Complete question and choices, excluding the answer line.
+        section: 'I'
+    answers:
+      - record_id: ''  # May be the same page or another page of this document.
+        lines: [6, 6]  # Example layout only; use actual pages.txt line numbers.
+        section: 'I'
+        question_number: 1  # For a single explicit line such as Answer: B.
+        # For numbered key rows such as 1 - B, omit question_number.

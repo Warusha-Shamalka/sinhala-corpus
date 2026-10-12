@@ -18,6 +18,8 @@ QUESTION = re.compile(r'^\s*(?:Q\s*)?([0-9]{1,4})[.)]\s+\S', re.IGNORECASE)
 CHOICE = re.compile(r'^\s*(?:\(([A-Za-z]|[0-9]{1,2})\)|([A-Za-z])[.)])\s+\S')
 KEY = re.compile(r'^\s*([0-9]{1,4})\s*[.):-]\s*(?:\(([A-Za-z]|[0-9]{1,2})\)|([A-Za-z]|[0-9]{1,2}))\s*$')
 
+INLINE_KEY = re.compile(r'^\s*(?:answer|correct answer|පිළිතුර)\s*[:=-]\s*(?:\(([A-Za-z]|[0-9]{1,2})\)|([A-Za-z]|[0-9]{1,2}))\s*$', re.IGNORECASE)
+
 
 def canonical(value):
     return ' '.join(unicodedata.normalize('NFC', str(value)).casefold().split())
@@ -48,6 +50,13 @@ def load_pairs(path):
                 raise ValueError('Exam year must have four digits')
         if any(canonical(pair['paper'][field]) != canonical(pair['marking_scheme'][field]) for field in IDENTITY):
             raise ValueError(f'Paper/marking-scheme identity mismatch: {pid}')
+        same_document = all(pair['paper'][f] == pair['marking_scheme'][f] for f in ('doc_id', 'raw_sha256'))
+        mode = pair.setdefault('mode', 'combined' if same_document else 'separate')
+        if mode not in {'combined', 'separate'} or (mode == 'combined') != same_document:
+            raise ValueError('Combined mode requires the same document ID and raw hash; separate mode requires different documents')
+        if not same_document and (pair['paper']['doc_id'] == pair['marking_scheme']['doc_id'] or
+                                  pair['paper']['raw_sha256'] == pair['marking_scheme']['raw_sha256']):
+            raise ValueError('Document ID/hash aliases must be reconciled before separate matching')
         labels = pair.get('choice_labels')
         if (not isinstance(labels, list) or not 2 <= len(labels) <= 10 or
                 any(not isinstance(label, str) or not re.fullmatch('[A-Z]|[1-9]|10', label) for label in labels) or
@@ -57,6 +66,8 @@ def load_pairs(path):
             if not isinstance(pair.get(role), list) or not pair[role]:
                 raise ValueError(f'Missing {role} regions')
             for region in pair[role]:
+                if 'question_number' in region and (role != 'answers' or mode != 'combined' or type(region['question_number']) is not int or not 1 <= region['question_number'] <= 9999):
+                    raise ValueError('Explicit question_number requires a combined answer region and integer 1–9999')
                 if not isinstance(region.get('section'), str) or not region['section'].strip():
                     raise ValueError('Every region needs an explicit section, even when numbering never restarts')
         if pair.get('pairing_verified') is True and (not isinstance(pair.get('pairing_reviewer'), str) or not pair['pairing_reviewer'].strip()):
@@ -93,6 +104,7 @@ def questions(row, numbered_lines, labels):
         options = [(j, (match[1] or match[2]).upper()) for j, (_, line) in enumerate(block)
                    if (match := CHOICE.match(line))]
         issues = []
+        if any(INLINE_KEY.fullmatch(line) for _, line in block): issues.append('answer_line_inside_question_region')
         if number < 1: issues.append('invalid_question_number')
         if [label for _, label in options] != labels: issues.append('missing_reordered_or_duplicate_choices')
         if not options or options[0][0] == 0: issues.append('missing_question_stem')
@@ -207,18 +219,23 @@ def match(packet, pairs_path, output, *, key_bundles=(), release=None):
                         unparsed_sections.add(section)
                         report['issues'].append({'pair_id': pid, 'source': _evidence(row, region['lines']),
                                                  'reason': 'key_quality_warning', 'warnings': sorted(warnings)})
+                    inline_number = region.get('question_number')
+                    if inline_number is not None and sum(bool(line.strip()) for _, line in lines) != 1:
+                        unparsed_sections.add(section)
+                        report['issues'].append({'pair_id': pid, 'source': _evidence(row, region['lines']), 'reason': 'inline_answer_requires_one_line'})
                     for n, line in lines:
                         if not line.strip(): continue
-                        key = KEY.fullmatch(line)
-                        label = (key[2] or key[3]).upper() if key else None
-                        if key is None or int(key[1]) < 1 or label not in labels:
+                        key = INLINE_KEY.fullmatch(line) if inline_number is not None else KEY.fullmatch(line)
+                        number = inline_number if inline_number is not None else int(key[1]) if key else None
+                        label = ((key[1] or key[2]) if inline_number is not None else (key[2] or key[3])).upper() if key else None
+                        if key is None or number < 1 or label not in labels:
                             unparsed_sections.add(section)
                             report['issues'].append({'pair_id': pid, 'section': section, 'source': _evidence(row, [n, n]), 'reason': 'unsupported_answer_key_line'})
                         else:
-                            entries[(section, int(key[1]))].append({'label': label, 'source': _evidence(row, [n, n])})
+                            entries[(section, number)].append({'label': label, 'source': _evidence(row, [n, n])})
         if len(paper_splits) != 1: raise ValueError('Paired paper and marking scheme cross inherited splits')
         paired = pair.get('pairing_verified') is True
-        report['pairs'].append({'pair_id': pid, 'split': next(iter(paper_splits)), 'pairing_verified': paired,
+        report['pairs'].append({'pair_id': pid, 'mode': pair['mode'], 'split': next(iter(paper_splits)), 'pairing_verified': paired,
                                 'paper': pair['paper'], 'marking_scheme': pair['marking_scheme']})
         counts = Counter((q['section'], q['number']) for q in found)
         for item in found:

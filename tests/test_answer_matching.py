@@ -216,5 +216,65 @@ class AnswerMatchingTests(unittest.TestCase):
             self.assertEqual(workflow.main(), 0)
 
 
+    def setup_combined(self, inline=False):
+        text = '1. Which fictional label?\n(A) Copper\n(B) Indigo\nAnswer: B' if inline else PAPER + '\n' + KEY
+        self.setup_pair(paper=text)
+        self.pair['mode'] = 'combined'
+        self.pair['marking_scheme'] = copy.deepcopy(self.pair['paper'])
+        end = 3 if inline else 6
+        self.pair['questions'][0]['lines'] = [1, end]
+        self.pair['answers'] = [{'record_id': self.paper_id, 'lines': [end + 1, len(text.splitlines())], 'section': 'I'}]
+        if inline: self.pair['answers'][0]['question_number'] = 1
+        self.save()
+
+    def test_combined_numbered_key_keeps_answer_evidence_on_same_page(self):
+        self.setup_combined()
+        self.assertEqual(self.run_match()['counts']['proposed_match'], 2)
+        segments = [s for s in self.segments() if s['kind'] == 'mcq']
+        self.assertEqual([s['answer'] for s in segments], [2, 1])
+        self.assertTrue(all(s['answer_evidence']['record_id'] == self.paper_id for s in segments))
+        result = tasks.build(self.output, self.root / 'export')
+        self.assertEqual(result['counts']['mcq/train.jsonl'], 0)
+        tasks.verify(self.root / 'export')
+
+    def test_combined_inline_answer_excluded_from_choices(self):
+        self.setup_combined(inline=True)
+        self.assertEqual(self.run_match()['counts']['proposed_match'], 1)
+        segment = next(s for s in self.segments() if s['kind'] == 'mcq')
+        self.assertEqual(segment['answer'], 2)
+        self.assertEqual(segment['choice_lines'], [[2, 2], [3, 3]])
+        self.assertEqual(segment['answer_evidence']['lines'], [4, 4])
+        self.assertFalse(segment['answer_verified'])
+
+    def test_combined_identity_cannot_reference_different_pdf(self):
+        self.setup_pair(); self.pair['mode'] = 'combined'; self.save()
+        with self.assertRaisesRegex(ValueError, 'Combined mode'): self.run_match()
+
+    def test_combined_overlap_is_rejected(self):
+        self.setup_combined(inline=True)
+        self.pair['questions'][0]['lines'] = [1, 4]; self.save()
+        with self.assertRaisesRegex(ValueError, 'overlap'): self.run_match()
+
+    def test_inline_answer_binding_must_be_positive_integer(self):
+        self.setup_combined(inline=True)
+        for value in (True, 0, '1'):
+            self.pair['answers'][0]['question_number'] = value; self.save()
+            with self.subTest(value=value), self.assertRaises(ValueError): self.run_match()
+
+    def test_missing_inline_question_is_reported_not_assigned(self):
+        self.setup_combined(inline=True)
+        self.pair['answers'][0]['question_number'] = 2; self.save()
+        self.assertEqual(self.run_match()['counts']['unresolved'], 1)
+        segment = next(s for s in self.segments() if s['kind'] == 'mcq')
+        self.assertIsNone(segment['answer'])
+        self.assertIn('missing_key_entry', segment['matching_reasons'])
+
+    def test_question_region_with_answer_line_is_not_exportable(self):
+        row = {'record_id': 'fixture', 'text_sha256': 'a' * 64}
+        parsed = answers.questions(row, list(enumerate(('1. Fictional question?', '(A) One', '(B) Two', 'Answer: B'), 1)), ['A', 'B'])
+        self.assertIn('answer_line_inside_question_region', parsed[0]['reasons'])
+        self.assertNotIn('segment', parsed[0])
+
+
 if __name__ == '__main__':
     unittest.main()

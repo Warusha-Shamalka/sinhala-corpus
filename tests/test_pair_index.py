@@ -64,3 +64,18 @@ class PairIndexTests(unittest.TestCase):
         with (self.root/'index/documents.csv').open() as f: output=list(csv.DictReader(f))
         self.assertEqual(output[0]['subject'],'Physics'); self.assertEqual(output[0]['language'],'si')
         self.assertEqual(output[0]['paper_number'],'1'); self.assertEqual(output[1]['subject'],'')
+
+    def test_declared_combined_document_gets_self_suggestion_without_metadata_guess(self):
+        rows = self.rows()[:1]; rows[0].update(role='combined', exam='', year='')
+        result = self.suggest(rows)[0]
+        self.assertEqual(result['paper_doc_id'], result['key_doc_id'])
+        self.assertEqual(result['mode'], 'combined')
+        self.assertFalse(result['pairing_verified'])
+        self.assertIn('year', result['missing_fields'])
+
+    def test_keys_are_review_candidates_not_automatically_combined(self):
+        rows = self.rows()[1:]
+        self.assertEqual(self.suggest(rows), [])
+        review = json.loads((self.root / 'result/combined_review.jsonl').read_text())
+        self.assertEqual(review['reason'], 'check_for_embedded_questions')
+        self.assertFalse(review['training_approved'])
