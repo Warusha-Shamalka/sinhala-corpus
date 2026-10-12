@@ -54,6 +54,7 @@ Implemented:
 - native PDF/HTML extraction and replaceable local-image OCR, using Surya by default
 - conservative cleaning, source review and corrected text approval by two reviewers
 - exact/near duplicate grouping, source-version split checks and reviewed pretraining JSONL export
+- separate theory and source-backed MCQ export through explicit line annotations; [task dataset guide](docs/THEORY_AND_MCQ_GUIDE.md)
 - persistent-store initialization, pipeline status, resumable page processing and production Colab setup
 - source/subject configuration
 - document catalog metadata

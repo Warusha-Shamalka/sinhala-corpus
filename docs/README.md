@@ -71,3 +71,5 @@ The immediate priority remains discovery filtering and validation. Several hando
 - [Native text datasets](NATIVE_TEXT_DATASET_GUIDE.md): conservative cleaning, page review, approved JSONL export and the 95-page printed-PDF pilot findings.
 
 - [Production corpus workflow](CORPUS_PRODUCTION_GUIDE.md): persistent PDF/HTML collection, configurable Surya processing, human correction, duplicate/split checks, reviewed releases and the production Colab notebook.
+
+- [Separate theory and MCQ datasets](THEORY_AND_MCQ_GUIDE.md): line-based source selection, answer evidence, separate split exports and unresolved candidates.

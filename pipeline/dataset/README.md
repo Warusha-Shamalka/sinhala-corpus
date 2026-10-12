@@ -14,6 +14,11 @@ verified input releases into cumulative/delta text candidates, retaining review
 status, deduplicating source families and writing a training handoff. See
 [the daily release guide](../../docs/DAILY_TRAINING_RELEASE_GUIDE.md).
 
+`tasks.py` selects source passages into separate theory and MCQ outputs. MCQs
+require recorded source checks and answer evidence; incomplete items stay
+candidates. Daily text is an intermediate mixed-content format. See
+[the theory/MCQ guide](../../docs/THEORY_AND_MCQ_GUIDE.md).
+
 # Contents
 
 - dataset creation scripts

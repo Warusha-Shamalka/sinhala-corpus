@@ -4,6 +4,11 @@ This repository builds immutable text candidates for experimental daily training
 The separate training repository trains, evaluates and submits the model. These
 releases support text/domain adaptation; they do not supply MCQ answer labels.
 
+For the separate theory and MCQ products, this is an intermediate mixed-content
+release. Use the [task export stage](THEORY_AND_MCQ_GUIDE.md) to select theory and
+source-backed questions. Do not classify every accepted PDF page as theory or
+automatically turn extracted text into answered MCQs.
+
 ## Run in Colab
 
 Push this branch and use the updated production notebook from that pushed branch.

@@ -287,8 +287,24 @@ See [BATCH_COLLECTION_GUIDE.md](BATCH_COLLECTION_GUIDE.md). Full manual Sinhala 
 - [x] Write training handoffs with release identity, checksums, checkpoint lineage and required run-record fields.
 - [x] Verify source/text identities, split/duplicate consistency, delta content and handoff hashes.
 - [x] Add twelve daily-release regression tests; the full offline suite ran 264 tests (263 passed, one Tesseract test skipped). Syntax-check all thirteen notebook code cells and embedded setup programs.
-- [ ] Execute a real daily release in Colab and inspect retained/quarantined counts.
+- [x] Maintainer reported a real Colab release `daily_20261012T074447316202Z`: 20 train rows, one quarantine, zero validation rows from one Biology document. Independent accuracy remains unverified.
 - [ ] Connect the separate training repository and configure its daily checkpoint/evaluation/submission workflow.
 - [ ] Produce independently supported MCQ/instruction data separately; text adaptation does not invent QA labels.
 
 See [DAILY_TRAINING_RELEASE_GUIDE.md](DAILY_TRAINING_RELEASE_GUIDE.md).
+
+## Separate theory and MCQ products (12 October 2026)
+
+- [x] Establish daily page text as an intermediate mixed-content release.
+- [x] Add public-source line annotation packets; preserve unclassified pages instead of assuming theory.
+- [x] Export separate theory and MCQ training/validation files with source provenance.
+- [x] Require source question/choice checks and answer evidence for labeled MCQs; retain incomplete candidates separately.
+- [x] Preserve upstream splits, reject cross-split answer evidence and conflicting duplicate answer keys, and verify frozen exports.
+- [x] Add optional Colab packet/export controls and the practical task dataset guide.
+- [x] Add nine task-export tests using invented sources only; the offline suite ran 273 tests (272 passed, one Tesseract test skipped). All 15 notebook code cells parse with no saved outputs.
+- [ ] Validate a real mixed-source task release; current 20-page release is not an MCQ dataset.
+- [ ] Add automatic layout-aware MCQ candidate detection and cross-page question/answer-key assembly.
+- [ ] Evaluate synthetic MCQs generated exclusively from permitted public theory, with generator provenance and answer checks.
+- [ ] Add task-level incremental exports and connect separate theory/MCQ training loaders.
+
+See [THEORY_AND_MCQ_GUIDE.md](THEORY_AND_MCQ_GUIDE.md). No hidden test material is an input to this work.
