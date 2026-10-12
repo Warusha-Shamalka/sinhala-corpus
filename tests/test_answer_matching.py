@@ -275,6 +275,25 @@ class AnswerMatchingTests(unittest.TestCase):
         self.assertIn('answer_line_inside_question_region', parsed[0]['reasons'])
         self.assertNotIn('segment', parsed[0])
 
+    def test_unverified_pair_produces_separate_provisional_evidence(self):
+        self.setup_pair(); self.pair['pairing_verified'] = False; self.save()
+        self.assertEqual(self.run_match()['counts']['provisional_matches'], 2)
+        report = json.loads((self.output / 'matching_report.json').read_text())
+        self.assertEqual([r['candidate_answer'] for r in report['provisional_matches']], [2, 1])
+        self.assertTrue(all(not r['training_approved'] and not r['pairing_verified'] for r in report['provisional_matches']))
+        self.assertTrue(all(s['answer'] is None for s in self.segments()))
+        exported = tasks.build(self.output, self.root / 'export')
+        self.assertEqual(exported['counts']['mcq/train.jsonl'], 0)
+        tasks.verify(self.root / 'export')
+
+    def test_ambiguous_keys_do_not_create_provisional_answers(self):
+        self.setup_pair(key='1 - A\n1 - B'); self.pair['pairing_verified'] = False; self.save()
+        self.assertEqual(self.run_match()['counts']['provisional_matches'], 0)
+
+    def test_verified_pair_uses_existing_route_only(self):
+        self.setup_pair()
+        self.assertEqual(self.run_match()['counts']['provisional_matches'], 0)
+
 
 if __name__ == '__main__':
     unittest.main()

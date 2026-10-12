@@ -183,6 +183,7 @@ def match(packet, pairs_path, output, *, key_bundles=(), release=None):
         if row.get('evidence_only') and row['text'].splitlines():
             annotations[sid]['segments'] = [{'kind': 'exclude', 'lines': [1, len(row['text'].splitlines())], 'reason': 'answer evidence only'}]
     report = {'schema_version': 'paper-answer-matches-1', 'pairs': [], 'matches': [], 'issues': [],
+              'provisional_matches': [],
               'input_manifest_sha256': input_hashes['manifest.json'], 'pair_config_sha256': config_sha,
               'training_approved': False, 'matcher_code_sha256': file_hash(Path(__file__))}
     # Regions may not overlap across any role/pair: duplicate configurations are errors.
@@ -252,6 +253,27 @@ def match(packet, pairs_path, output, *, key_bundles=(), release=None):
                 lo, hi = segment['lines']
                 if any(lo <= old['lines'][1] and hi >= old['lines'][0] for old in annotations[sid]['segments']):
                     issues.append('existing_annotation_overlap'); segment = None
+            # Keep an inspectable candidate when association is the only unresolved check.
+            # Never populate the training annotation's answer through this route.
+            question_source = sources[sid]
+            complete = question_source.get('method') != 'ocr' or (
+                question_source.get('prediction_outcome') == 'predicted' and
+                question_source.get('completion_status') == 'complete')
+            warnings = set(question_source.get('quality_flags', [])) - {'short_text', 'little_sinhala_or_legacy_font'}
+            if segment and issues == ['pairing_unverified'] and complete and not warnings:
+                source_lines = question_source['text'].splitlines()
+                def source_text(span):
+                    return '\n'.join(source_lines[span[0] - 1:span[1]])
+                report['provisional_matches'].append({
+                    'pair_id': pid, 'section': key[0], 'question_number': key[1],
+                    'question_source_text': source_text(segment['question_lines']),
+                    'choice_source_texts': [source_text(span) for span in segment['choice_lines']],
+                    'source_choice_labels': labels,
+                    'candidate_answer': labels.index(entries[key][0]['label']) + 1,
+                    'question_evidence': item['source'], 'answer_evidence': entries[key][0]['source'],
+                    'pairing_verified': False, 'review_required': True, 'training_approved': False,
+                    'status': 'provisional', 'reasons': issues,
+                    'note': 'Number/section join only; document association and OCR accuracy are unverified.'})
             status = 'proposed_match' if not issues else 'unresolved'
             if segment:
                 segment.update(source_section=item['section'], paper_pair_id=pid,
@@ -269,6 +291,7 @@ def match(packet, pairs_path, output, *, key_bundles=(), release=None):
                                          'reason': 'key_without_question', 'key_entries': values})
     report['counts'] = dict(Counter(row['status'] for row in report['matches']))
     report['counts']['issues'] = len(report['issues'])
+    report['counts']['provisional_matches'] = len(report['provisional_matches'])
     display = ''.join(f'\n{sid} [{row["split"]}]\nSource: {row["source_url"]}\n' +
                       ''.join(f'{i:04d}: {line}\n' for i, line in enumerate(row['text'].splitlines(), 1))
                       for sid, row in sorted(sources.items()))
