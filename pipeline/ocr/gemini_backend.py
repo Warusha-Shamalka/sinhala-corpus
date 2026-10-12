@@ -1,6 +1,6 @@
 """Gemini API OCR backend for high-quality Sinhala text extraction.
 
-Uses Google's Gemini 2.5 Flash model via the google-generativeai SDK.
+Uses Google's Gemini Flash model via the google-generativeai SDK.
 Free tier: 15 RPM / 1500 RPD at zero cost with a Google AI Studio API key.
 Requires no local GPU — runs entirely via API call.
 """
@@ -58,11 +58,11 @@ def clean_sinhala_text(text):
 class GeminiBackend:
     """OCR backend using Gemini API for high-quality Sinhala text extraction."""
 
-    def __init__(self, api_key, model_name='gemini-2.5-flash', max_generation_seconds=120):
+    def __init__(self, api_key, model_name='gemini-3.8-flash', max_generation_seconds=120):
         import google.generativeai as genai
         genai.configure(api_key=api_key)
-        self.model = genai.GenerativeModel(model_name or 'gemini-2.5-flash')
-        self.model_name = model_name or 'gemini-2.5-flash'
+        self.model = genai.GenerativeModel(model_name or 'gemini-3.8-flash')
+        self.model_name = model_name or 'gemini-3.8-flash'
         self.max_generation_seconds = max_generation_seconds
         self.identity = {
             'backend': 'gemini_api',

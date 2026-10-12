@@ -21,7 +21,7 @@ PROMPT = ('Transcribe all visible text from this Sinhala educational page in rea
           'Output only the transcription.')
 MODELS = {'gemma': 'google/gemma-4-E2B-it', 'deepseek': 'deepseek-ai/DeepSeek-OCR-2',
           'qwen': 'Qwen/Qwen2.5-VL-3B-Instruct', 'surya':'datalab/surya-ocr-0.17.1',
-          'gemini_api': 'gemini-2.5-flash'}
+          'gemini_api': 'gemini-3.8-flash'}
 
 
 def repetition_loop(tokens):
