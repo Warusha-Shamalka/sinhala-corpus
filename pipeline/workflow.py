@@ -13,7 +13,7 @@ from pipeline.download import downloader
 from pipeline.extraction import extractor
 from pipeline.processing import pages
 from pipeline.processing import batch
-from pipeline.dataset import reviewed, provisional
+from pipeline.dataset import reviewed, provisional, daily
 from pipeline.quality import corpus as corpus_quality
 from pipeline.dataset.native import encode, digest, publish
 
@@ -118,6 +118,17 @@ def main():
     provisional_export = commands.add_parser('provisional', help='Export an explicitly unreviewed corpus text snapshot')
     provisional_export.add_argument('--run-report', type=Path, required=True)
     provisional_export.add_argument('--output', type=Path, required=True)
+    release = commands.add_parser('daily-release', help='Cumulative/delta experimental text candidates for training handoff')
+    release.add_argument('--provisional', type=Path, action='append', default=[])
+    release.add_argument('--reviewed', type=Path, action='append', default=[])
+    release.add_argument('--previous', type=Path)
+    release.add_argument('--output', type=Path, required=True)
+    release.add_argument('--validation-percent', type=int, default=10)
+    release.add_argument('--split-seed', default='sinhala-corpus-v1')
+    release.add_argument('--max-candidates', type=int, default=5000)
+    release.add_argument('--replace-existing', action='store_true', help='Explicitly replace changed provisional page text and record the change')
+    daily_verify = commands.add_parser('verify-daily-release')
+    daily_verify.add_argument('--root', type=Path, required=True)
     args = parser.parse_args()
     try:
         if args.command == 'init': result = initialize(args.store, args.seed)
@@ -141,6 +152,11 @@ def main():
                                max_batches=args.max_batches, max_download_jobs=args.max_download_jobs,
                                max_new_pages=args.max_new_pages, dry_run=args.dry_run, progress_mode=args.progress)
         elif args.command == 'provisional': result = provisional.export(args.run_report, args.output)
+        elif args.command == 'daily-release':
+            result = daily.build(args.output, provisional_roots=args.provisional, reviewed_roots=args.reviewed,
+                                 previous=args.previous, policy={'validation_percent': args.validation_percent,
+                                 'split_seed': args.split_seed, 'max_candidates': args.max_candidates}, replace_existing=args.replace_existing)
+        elif args.command == 'verify-daily-release': result = daily.verify(args.root)
         else: result = reviewed.export(args.packet, args.output)
         print(json.dumps(result, ensure_ascii=False, indent=2))
         failed = bool(result.get('errors') or result.get('artifact_errors') or any(r.get('outcome') in {'failed', 'catalog_conflict'} for r in result.get('results', [])))
