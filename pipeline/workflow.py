@@ -13,7 +13,7 @@ from pipeline.download import downloader
 from pipeline.extraction import extractor
 from pipeline.processing import pages
 from pipeline.processing import batch
-from pipeline.dataset import reviewed, provisional, daily, tasks, answers
+from pipeline.dataset import reviewed, provisional, daily, tasks, answers, pair_index
 from pipeline.quality import corpus as corpus_quality
 from pipeline.dataset.native import encode, digest, publish
 
@@ -143,6 +143,12 @@ def main():
     matching.add_argument('--output', type=Path, required=True)
     matching.add_argument('--key-bundle', action='append', type=Path, default=[])
     matching.add_argument('--release', type=Path, help='Originating daily release; required when importing numeric key evidence')
+    index = commands.add_parser('prepare-pair-index')
+    index.add_argument('--catalog', type=Path, required=True)
+    index.add_argument('--output', type=Path, required=True)
+    suggestions = commands.add_parser('suggest-paper-pairs')
+    suggestions.add_argument('--index', type=Path, required=True)
+    suggestions.add_argument('--output', type=Path, required=True)
     args = parser.parse_args()
     try:
         if args.command == 'init': result = initialize(args.store, args.seed)
@@ -176,6 +182,8 @@ def main():
         elif args.command == 'verify-task-release': result = tasks.verify(args.root)
         elif args.command == 'match-paper-answers': result = answers.match(args.packet, args.pairs, args.output,
                                                                         key_bundles=args.key_bundle, release=args.release)
+        elif args.command == 'prepare-pair-index': result = pair_index.prepare(args.catalog, args.output)
+        elif args.command == 'suggest-paper-pairs': result = pair_index.suggest(args.index, args.output)
         else: result = reviewed.export(args.packet, args.output)
         print(json.dumps(result, ensure_ascii=False, indent=2))
         failed = bool(result.get('errors') or result.get('artifact_errors') or any(r.get('outcome') in {'failed', 'catalog_conflict'} for r in result.get('results', [])))
