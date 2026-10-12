@@ -160,7 +160,8 @@ class SuryaBackend:
             if len(results)!=1:
                 raise ValueError('Surya returned an unexpected page count')
             raw=results[0].model_dump(mode='json')
-            text='\n'.join(line['text'] for line in raw['text_lines'])
+            import unicodedata
+            text=unicodedata.normalize('NFC', '\n'.join(line['text'] for line in raw['text_lines']))
             complete=self.completion
             if time.monotonic()>=self.deadline:
                 complete='time_limit'

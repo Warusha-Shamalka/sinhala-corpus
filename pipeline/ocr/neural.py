@@ -126,12 +126,17 @@ class GPUBackend:
             size = inputs['input_ids'].shape[-1]
             from transformers import StoppingCriteriaList
             guard = GenerationGuard(size, self.max_generation_seconds)
-            output = self.model.generate(**inputs, max_new_tokens=self.maximum, do_sample=False,
-                stopping_criteria=StoppingCriteriaList([guard]))
+            gen_kwargs = {'max_new_tokens': self.maximum, 'do_sample': False,
+                          'stopping_criteria': StoppingCriteriaList([guard])}
+            if self.backend in {'gemma', 'qwen'}:
+                gen_kwargs['repetition_penalty'] = 1.15
+            output = self.model.generate(**inputs, **gen_kwargs)
             tokens = output[0][size:]
             raw = self.processor.decode(tokens, skip_special_tokens=False)
             text = (response_text(self.processor.parse_response(raw, prefix=inputs['input_ids']))
                     if self.backend == 'gemma' else self.processor.decode(tokens, skip_special_tokens=True))
+            import unicodedata
+            text = unicodedata.normalize('NFC', text)
             limited = len(tokens) >= self.maximum
             reason = guard.reason or ('token_limit' if limited else 'complete')
             return {'text':text, 'raw_response':raw, 'generated_tokens':len(tokens),
