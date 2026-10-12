@@ -12,6 +12,7 @@ from pipeline.download.downloader import file_hash
 
 
 SPLITS = ('train', 'validation')
+PACKET_ARTIFACTS = {'sources.jsonl', 'pages.txt', 'matching_report.json', 'pairing.json', 'source_bundles.jsonl'}
 
 
 def _sources(root):
@@ -69,10 +70,11 @@ def _load(packet):
     manifest = json.loads((packet / 'manifest.json').read_text(encoding='utf-8'))
     if manifest.get('schema_version') != 'task-annotation-packet-1':
         raise ValueError('Invalid annotation packet')
-    if set(manifest.get('output_sha256', {})) != {'sources.jsonl', 'pages.txt'}:
+    artifact_names = set(manifest.get('output_sha256', {}))
+    if not {'sources.jsonl', 'pages.txt'} <= artifact_names <= PACKET_ARTIFACTS:
         raise ValueError('Invalid packet artifacts')
     for name, sha in manifest['output_sha256'].items():
-        if file_hash(packet / name) != sha:
+        if not (packet / name).resolve().is_relative_to(packet.resolve()) or file_hash(packet / name) != sha:
             raise ValueError('Packet source evidence changed')
     records = daily.jsonl(packet / 'sources.jsonl')
     by_id = {r['record_id']: r for r in records}
@@ -107,6 +109,8 @@ def _render(packet):
             covered.update(selected)
             if kind not in {'theory', 'mcq', 'exclude'}:
                 raise ValueError('Unknown segment kind')
+            if row.get('evidence_only') and kind != 'exclude':
+                raise ValueError('Answer-evidence-only pages cannot become theory or MCQ training records')
             item_id = digest(encode([sid, row['text_sha256'], kind, span]))
             provenance = {'page_record_id': sid, 'source_identity': row['source_identity'],
                           'source_url': row['source_url'], 'text_sha256': row['text_sha256'],
@@ -149,6 +153,8 @@ def _render(packet):
                                        'type': 'source_mcq', 'subject_original': None},
                           'split': row['split'], 'provenance': provenance,
                           'source_review_status': row['source_review_status']}
+                for field in ('source_question_number', 'source_section', 'paper_pair_id', 'source_choice_labels'):
+                    if field in segment: result['provenance'][field] = segment[field]
                 reasons = []
                 if answer is None: reasons.append('missing_answer')
                 if segment.get('question_choices_verified') is not True: reasons.append('question_choices_unverified')
@@ -205,7 +211,8 @@ def build(packet, output):
     packet, output = Path(packet), Path(output)
     _outside(output, packet)
     # Freeze edited annotations and source evidence into the release for reproducibility.
-    snapshot = {name: (packet / name).read_bytes() for name in ('manifest.json', 'sources.jsonl', 'pages.txt', 'annotations.jsonl')}
+    packet_manifest, _ = _load(packet)
+    snapshot = {name: (packet / name).read_bytes() for name in ('manifest.json', 'annotations.jsonl', *packet_manifest['output_sha256'])}
     parent, rows = _render(packet)
     files = {name: b''.join(encode(row) for row in values) for name, values in rows.items()}
     files.update({f'evidence/{name}': data for name, data in snapshot.items()})
@@ -227,7 +234,7 @@ def verify(root):
     if manifest.get('schema_version') != 'task-dataset-release-1':
         raise ValueError('Invalid task release schema')
     parent, expected = _render(root / 'evidence')
-    names = set(expected) | {f'evidence/{name}' for name in ('manifest.json', 'sources.jsonl', 'pages.txt', 'annotations.jsonl')}
+    names = set(expected) | {f'evidence/{name}' for name in ('manifest.json', 'annotations.jsonl', *parent['output_sha256'])}
     hashes = manifest['output_sha256']
     if set(hashes) != names or manifest['release_id'] != digest(encode(hashes)):
         raise ValueError('Invalid task release identity/artifacts')

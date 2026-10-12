@@ -13,7 +13,7 @@ from pipeline.download import downloader
 from pipeline.extraction import extractor
 from pipeline.processing import pages
 from pipeline.processing import batch
-from pipeline.dataset import reviewed, provisional, daily, tasks
+from pipeline.dataset import reviewed, provisional, daily, tasks, answers
 from pipeline.quality import corpus as corpus_quality
 from pipeline.dataset.native import encode, digest, publish
 
@@ -137,6 +137,12 @@ def main():
     task_export.add_argument('--output', type=Path, required=True)
     task_verify = commands.add_parser('verify-task-release')
     task_verify.add_argument('--root', type=Path, required=True)
+    matching = commands.add_parser('match-paper-answers', help='Pair public papers and propose source-key matches for review')
+    matching.add_argument('--packet', type=Path, required=True)
+    matching.add_argument('--pairs', type=Path, required=True)
+    matching.add_argument('--output', type=Path, required=True)
+    matching.add_argument('--key-bundle', action='append', type=Path, default=[])
+    matching.add_argument('--release', type=Path, help='Originating daily release; required when importing numeric key evidence')
     args = parser.parse_args()
     try:
         if args.command == 'init': result = initialize(args.store, args.seed)
@@ -168,6 +174,8 @@ def main():
         elif args.command == 'prepare-tasks': result = tasks.prepare(args.release, args.output)
         elif args.command == 'export-tasks': result = tasks.build(args.packet, args.output)
         elif args.command == 'verify-task-release': result = tasks.verify(args.root)
+        elif args.command == 'match-paper-answers': result = answers.match(args.packet, args.pairs, args.output,
+                                                                        key_bundles=args.key_bundle, release=args.release)
         else: result = reviewed.export(args.packet, args.output)
         print(json.dumps(result, ensure_ascii=False, indent=2))
         failed = bool(result.get('errors') or result.get('artifact_errors') or any(r.get('outcome') in {'failed', 'catalog_conflict'} for r in result.get('results', [])))
