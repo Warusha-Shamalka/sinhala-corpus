@@ -14,6 +14,19 @@ Page traversal is deliberately independent from catalog decisions: same-domain H
 
 ## Catalog updates
 
+Subject matching masks configured `medium_markers` phrases before classifying a
+subject: “Physics Sinhala medium” means a Physics candidate with an unverified
+`si` medium hint. It does not establish the document's actual language. Conflicting
+medium wording leaves the hint blank. Medium hints are recorded in the decision
+audit and internal candidate preview, without changing the catalog schema.
+
+Individual subjects may specify `excluded_phrases`. History excludes “life history”,
+“evolutionary history” and “biological history”; this suppresses a misleading match
+without assigning Biology automatically. A separate explicit History occurrence
+still counts, and independent subject conflicts remain unknown. These configurable
+rules cover known phrases, not complete semantic understanding. Rule version is
+`discovery-0.4`; existing catalog rows and historical review packets are not rewritten.
+
 URLs must be HTTP(S), without credentials or malformed hosts/ports. Spaces and Unicode URL paths are percent-encoded while existing escapes/query semantics are retained. Relative links resolve against the final redirected page URL. Script, style and template content cannot supply candidate evidence.
 
 Subject `aliases` are optional lists in `configs/subjects.yaml`; specific contained names take precedence, while independent subject mentions remain ambiguous. Eight initial Sinhala aliases are configured without merging distinct taxonomy labels. `grade_markers.before_number` and `after_number` configure grade labels, and education-level `aliases` configure Sinhala/English level phrases. Explicit grade ranges are retained; incompatible grades/levels stay unknown. Source-wide language is exposed only as an internal `_language_hint`; the candidate's catalog `language` remains blank until document validation.

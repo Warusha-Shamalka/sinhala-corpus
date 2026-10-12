@@ -237,6 +237,7 @@ def evaluate_link(
         "source_url": url,
         "language": "",  # Source-wide language is only an unverified hint.
         "_language_hint": str(source.get("language", "")),
+        "_medium_hint": decision.medium_hint,
         "status": "DISCOVERED",
         "_candidate_score": str(decision.score),
         "_candidate_reasons": "; ".join(decision.reasons),
