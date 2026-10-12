@@ -277,3 +277,18 @@ See [CORPUS_QUALITY_GUIDE.md](CORPUS_QUALITY_GUIDE.md). Keep these changes with 
 - [ ] Select useful provisional pages for later spot checks/source review; handwriting, equations and source-style accuracy remain unmeasured.
 
 See [BATCH_COLLECTION_GUIDE.md](BATCH_COLLECTION_GUIDE.md). Full manual Sinhala retyping is not required to continue acquisition.
+
+## Daily training handoff (12 October 2026)
+
+- [x] Build immutable cumulative/delta experimental text candidates from provisional or reviewed releases.
+- [x] Filter incomplete/warning-bearing OCR; record quarantines and scanner-footer normalization.
+- [x] Deduplicate across the cumulative lineage and preserve document/raw/URL/duplicate-family splits.
+- [x] Prevent replay of prior training text in deltas; preserve verified upgrades and record explicit replacements/removals.
+- [x] Write training handoffs with release identity, checksums, checkpoint lineage and required run-record fields.
+- [x] Verify source/text identities, split/duplicate consistency, delta content and handoff hashes.
+- [x] Add twelve daily-release regression tests; the full offline suite ran 264 tests (263 passed, one Tesseract test skipped). Syntax-check all thirteen notebook code cells and embedded setup programs.
+- [ ] Execute a real daily release in Colab and inspect retained/quarantined counts.
+- [ ] Connect the separate training repository and configure its daily checkpoint/evaluation/submission workflow.
+- [ ] Produce independently supported MCQ/instruction data separately; text adaptation does not invent QA labels.
+
+See [DAILY_TRAINING_RELEASE_GUIDE.md](DAILY_TRAINING_RELEASE_GUIDE.md).

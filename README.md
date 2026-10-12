@@ -6,7 +6,9 @@ This repository is being built to support research and downstream machine-learni
 
 The project collects and organizes educational resources relevant to Sri Lanka, especially Sinhala-language materials used in school education. The emphasis is on disciplined pipeline work: discover candidates, record them in the catalog, download only approved content, extract and clean data, validate quality, and produce derived datasets.
 
-SinhalaMMLU is a key use case. Corpus preparation is separate from challenge inference, which must use model weights and a prompt within the supplied 8B cap, without internet or retrieval. General corpus products may support other research. The [production workflow](docs/CORPUS_PRODUCTION_GUIDE.md) and [Colab notebook](notebooks/corpus_pipeline_colab.ipynb) configure Drive as persistent storage and Colab as temporary compute; the new production GPU deployment still needs its small validation run.
+SinhalaMMLU is a key use case. Corpus preparation is separate from challenge inference, which must use model weights and a prompt within the supplied 8B cap, without internet or retrieval. General corpus products may support other research. The [production workflow](docs/CORPUS_PRODUCTION_GUIDE.md) and [Colab notebook](notebooks/corpus_pipeline_colab.ipynb) configure Drive as persistent storage and Colab as temporary compute. A maintainer-supplied ten-page Colab batch demonstrates processing and within-run reuse; cross-runtime recovery and transcription accuracy remain to be validated.
+
+The [daily release builder](docs/DAILY_TRAINING_RELEASE_GUIDE.md) filters experimental text candidates, preserves source-family splits, and exports cumulative/new-only training files with a handoff manifest for the separate model repository. Provisional text retains its unreviewed status; these releases do not invent MCQ answers or execute training/submission.
 
 See the [detailed architecture diagrams](docs/PIPELINE_ARCHITECTURE.md) for stage-by-stage behavior, persistence and planned processing.
 
