@@ -13,6 +13,7 @@ from pipeline.download import downloader
 from pipeline.extraction import extractor
 from pipeline.processing import pages
 from pipeline.dataset import reviewed
+from pipeline.quality import corpus as corpus_quality
 from pipeline.dataset.native import encode, digest, publish
 
 
@@ -95,6 +96,14 @@ def main():
     export.add_argument('--packet', type=Path, required=True); export.add_argument('--output', type=Path, required=True)
     verify = commands.add_parser('verify-release')
     verify.add_argument('--root', type=Path, required=True)
+    quality = commands.add_parser('quality')
+    quality.add_argument('--packet', type=Path, required=True)
+    quality.add_argument('--output', type=Path, help='Optional immutable report folder outside the packet')
+    quality.add_argument('--max-metric-cells', type=int, default=1_000_000)
+    quality.add_argument('--total-metric-cells', type=int, default=5_000_000)
+    quality.add_argument('--max-dedup-pages', type=int, default=1000)
+    quality.add_argument('--require-exportable', action='store_true',
+                         help='Exit 1 for preflight blockers; this does not certify OCR accuracy')
     args = parser.parse_args()
     try:
         if args.command == 'init': result = initialize(args.store, args.seed)
@@ -109,9 +118,15 @@ def main():
         elif args.command == 'prepare-review':
             result = reviewed.prepare(pages.load_settings(args.config)['output_root'], args.output, args.config_hash)
         elif args.command == 'verify-release': result = reviewed.verify_release(args.root)
+        elif args.command == 'quality':
+            limits = {'max_metric_cells': args.max_metric_cells, 'total_metric_cells': args.total_metric_cells,
+                      'max_dedup_pages': args.max_dedup_pages}
+            result = corpus_quality.write(args.packet, args.output, **limits) if args.output else corpus_quality.report(args.packet, **limits)
         else: result = reviewed.export(args.packet, args.output)
         print(json.dumps(result, ensure_ascii=False, indent=2))
         failed = bool(result.get('errors') or result.get('artifact_errors') or any(r.get('outcome') in {'failed', 'catalog_conflict'} for r in result.get('results', [])))
+        if args.command == 'quality' and args.require_exportable:
+            failed = failed or result['export_preflight']['status'] != 'checks_passed'
         return int(failed)
     except KeyboardInterrupt:
         return 130
