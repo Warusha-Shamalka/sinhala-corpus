@@ -240,3 +240,21 @@ limitations](../pipeline/metadata/README.md).
 The 2011 Chemistry pilot now has one **proposed cross-source pair**, based on exam,
 subject and year. Part, medium and edition verification remain outstanding; no MCQ
 answer has been approved. See [pilot results](MARKING_DISCOVERY_PILOT.md).
+
+## Continue without manual association approval
+
+Leave `pairing_verified: false`. When the document identity declarations are complete
+and compatible, the matcher now writes `provisional_matches` inside
+`matching_report.json` if association review is the only unresolved matching check.
+These entries contain source question/choice text (including printed labels), a
+1-based `candidate_answer`, source evidence, and explicit false verification/training
+approval flags. Question OCR must be complete and have no substantive quality warnings.
+Missing/duplicate keys, incomplete choices, key-layout issues and annotation overlaps
+prevent provisional answers. Existing annotation answers stay null and the normal
+MCQ training export remains empty for those unverified items.
+
+The report is frozen with the packet and copied into task-export evidence. This is
+an experimental audit output, not an approved MCQ training file. It does not relax
+required identity fields, infer missing paper parts or run OCR by itself. The real
+2011 Chemistry pair still needs its missing identity details extracted before this
+stage can run; do not invent those values or mark the pair verified.

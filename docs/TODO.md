@@ -374,3 +374,6 @@ Combined-route validation: 310 offline tests ran (309 passed, one Tesseract-depe
 - [ ] Extend source-tested identity patterns for Sinhala paper-part labels, schools, provinces, sessions and syllabus editions.
 
 Validation: 319 offline tests ran, 318 passed and one Tesseract-dependent test skipped. The nine new metadata tests use invented fixtures; no benchmark test material was accessed.
+
+- [x] Retain separate provisional question/answer candidates in the matching report when pairing review is the only unresolved check, while leaving training annotations unapproved and answers null.
+- [ ] Obtain complete identity declarations and processed question/key regions for the Chemistry pilot before generating its real provisional MCQs.
