@@ -377,3 +377,14 @@ Validation: 319 offline tests ran, 318 passed and one Tesseract-dependent test s
 
 - [x] Retain separate provisional question/answer candidates in the matching report when pairing review is the only unresolved check, while leaving training annotations unapproved and answers null.
 - [ ] Obtain complete identity declarations and processed question/key regions for the Chemistry pilot before generating its real provisional MCQs.
+
+## Real MCQ pilot execution
+
+- [x] Download and inspect the 2011 Chemistry paper and key; identify the key as Paper II and avoid attaching it to Paper I MCQs.
+- [x] Detect an alternate-host duplicate by raw SHA256.
+- [x] Follow the user's choice to switch to a newer exam; download 2021 (2022) Chemistry paper/key and identify paper page 1 plus key page 3.
+- [x] Prepare a two-page Surya Colab notebook with pinned PDF hashes, isolated Drive store and downloadable OCR handoff.
+- [ ] Run that notebook on a working GPU; local NVIDIA driver is unavailable.
+- [ ] Validate returned OCR and implement evidence-preserving table normalization for provisional MCQ matching; retain multi-answer/corrected entries as unresolved.
+
+See [MCQ_PILOT_STATUS.md](MCQ_PILOT_STATUS.md) for precise state and next actions.

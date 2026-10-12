@@ -98,3 +98,7 @@ persistent Drive artifacts. No production data was modified. Next inspect both
 original headers, obtain processing bundles and confirm part/medium/edition before
 configuring question/key regions. The downloadable PDF lead is not proof that all
 its questions correspond to the key.
+
+Later source inspection supersedes the preliminary 2011 MCQ suggestion: the ALapi
+key contains Paper II explanations, with no Paper I key found. The user chose a
+2021 (2022) replacement pilot. See [MCQ_PILOT_STATUS.md](MCQ_PILOT_STATUS.md).
