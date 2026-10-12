@@ -1,0 +1,11 @@
+sample_id,status,transcriber,verifier,content_type,equations_present,equations_checked,reference_sha256,notes
+LK-EDU-000009_p000001,pending,,,unknown,unknown,false,,
+LK-EDU-000010_p000001,pending,,,unknown,unknown,false,,
+LK-EDU-000011_p000001,pending,,,unknown,unknown,false,,
+LK-EDU-000012_p000001,pending,,,unknown,unknown,false,,
+LK-EDU-000013_p000001,pending,,,unknown,unknown,false,,
+LK-EDU-000014_p000001,pending,,,unknown,unknown,false,,
+LK-EDU-000015_p000001,pending,,,unknown,unknown,false,,
+LK-EDU-000009_p000021,pending,,,unknown,unknown,false,,
+LK-EDU-000010_p000028,pending,,,unknown,unknown,false,,
+LK-EDU-000011_p000004,pending,,,unknown,unknown,false,,

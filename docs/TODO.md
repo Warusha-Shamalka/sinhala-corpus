@@ -96,7 +96,8 @@ See [PROGRESS_GUIDE.md](PROGRESS_GUIDE.md) for usage and limitations.
 
 ## Extraction, OCR and cleaning
 
-- [ ] Extract born-digital PDF/HTML content with page/block provenance and reading order.
+- [x] Extract native PDF text with page/block/word coordinates, raw provenance, versioned immutable outputs, OCR routing, recovery and progress.
+- [ ] Add HTML extraction and validate native Sinhala PDF fonts/layouts using reviewed source pages.
 - [ ] Preserve equations, tables, option labels and figure references.
 - [ ] Measure Sinhala OCR quality on reviewed scans and select a reproducible tool/configuration.
 - [ ] Route only failed/scan pages to OCR; retain page-level outcomes for mixed PDFs.
@@ -127,6 +128,105 @@ See [PROGRESS_GUIDE.md](PROGRESS_GUIDE.md) for usage and limitations.
 
 ## Current data reality
 
-Verified on 11 October 2026: the production catalog contains 489 records: 483 `DISCOVERED` and six `DOWNLOADED`. All six production PDFs (IDs 9–14) match their stored receipt sizes and SHA256 hashes. The eight original pilots still have blank URLs and remain excluded from downloading. The earlier 2.1 MB smoke PDF is separate from these production files. The implemented code previously passed all 109 tests; see [download validation](DOWNLOAD_VALIDATION_RESULTS.md).
+Verified on 11 October 2026: the production catalog contains 489 records: 482 `DISCOVERED` and seven `DOWNLOADED`. All seven production PDFs (IDs 9–15) match their stored receipt sizes and SHA256 hashes. The eight original pilots still have blank URLs and remain excluded from downloading. The earlier 2.1 MB smoke PDF is separate from these production files. The implemented code previously passed all 109 tests; see [download validation](DOWNLOAD_VALIDATION_RESULTS.md).
 
-Extraction/OCR and derived-dataset stages remain planned. Model training and competition submission belong in the separate training repository. Candidate URLs are not verified documents or training examples.
+Native PDF extraction and selective OCR are implemented; cleaning and derived-dataset stages remain planned. Model training and competition submission belong in the separate training repository. Candidate URLs are not verified documents or training examples.
+
+## PDF extraction checkpoint — 11 October 2026
+
+- [x] Inspect seven downloaded PDFs and verify raw hashes/receipts.
+- [x] Trial native extraction on a copied catalog: 132 pages, zero native text, seven OCR-routed documents, zero failed jobs; production catalog unchanged.
+- [x] Document extraction commands, output contracts, limits and observed pilot results.
+- [ ] Manually review representative scanned/handwritten pages and review the extraction PR into `dev`.
+- [x] Implement selective OCR separately; handwriting/equation accuracy checks remain pending, and empty-native-text bundles are not promoted into datasets.
+
+## Selective OCR baseline checkpoint — 11 October 2026
+
+- [x] Add local Tesseract Sinhala/English backend, bounded rendering/recognition and selective page CLI.
+- [x] Preserve native artifacts/catalog; write immutable per-page PNG/TSV/text/provenance with pending review.
+- [x] Add model hashes, restart/corruption checks, progress, tests and setup/validation guides.
+- [x] Trial two handwritten pages from LK-EDU-000011; recognition is poor and remains unapproved.
+- [ ] Prepare reviewed references and measure Sinhala handwriting/equation errors before choosing a stronger backend.
+- [ ] Add explicit review outcomes/quality-stage catalog transitions and accepted merged document text.
+- [ ] Defer bulk processing of 132 scanned pages until recognition quality is established.
+
+## Accuracy-first OCR / Colab checkpoint — 11 October 2026
+
+- [x] Prepare ten immutable source-image samples across seven downloaded documents, with raw-hash grouped calibration/holdout and empty human-reference files.
+- [x] Add independent-reference verification, hash checks and offline CER/WER reporting with honest missing coverage.
+- [x] Add optional Gemma/DeepSeek snapshot adapters and a beginner Colab notebook; keep heavyweight dependencies outside core requirements.
+- [x] Mark every raw neural result as pending review and unapproved for training; preserve production catalog/native bundles.
+- [ ] Have two Sinhala readers transcribe/verify the ten samples; currently zero verified references.
+- [ ] Finish the Gemma Colab pilot and archive its dependency/model manifests. Maintainer supplied T4 results for two pages; the first hit a repetition/token-limit failure.
+- [ ] Validate DeepSeek upstream environment on a BF16-capable GPU and implement completion detection; completion-unverified output is currently excluded from accuracy scoring.
+- [ ] Expand evaluation beyond the current source pilot to printed Sinhala, MCQs, tables, diagrams and subject diversity.
+- [x] Add phase progress plus Gemma repetition-loop/soft-deadline stopping; stopped output remains truncated. Local fixture checks pass; updated GPU behavior remains pending.
+- [ ] Review holdout CER/WER plus missing-line, option, number and equation errors before selecting an OCR backend.
+- [ ] Implement reviewed-page acceptance and an exporter that rejects pending/reserved evaluation documents.
+- [ ] Keep bulk OCR/training export deferred until these accuracy and acceptance checks pass.
+
+See [Colab guide](COLAB_OCR_GUIDE.md) and [accuracy guide](OCR_ACCURACY_GUIDE.md). Preparing a workflow is not a completed neural model comparison.
+
+## Guarded Gemma pilot evidence — 11 October 2026
+
+- [x] Review ten maintainer-supplied page artifacts: six normal completions, four repetition-loop stops; compare two completed outputs with their source images and identify substantial text/formula errors.
+- [ ] Archive the final `finished` run manifest; supplied snapshot still shows nine completed pages and the last page running.
+- [ ] Create independently verified calibration references before further full-page batches; no training acceptance or measured accuracy is available.
+- [ ] Design a bounded calibration-only region/crop experiment, preserving source coordinates and original images; evaluate printed Sinhala separately.
+
+See [Gemma pilot review](GEMMA_PILOT_REVIEW.md). Generation stopping works on the observed loops, but the present full-page configuration is not suitable for automatic training-data extraction.
+
+## Broader OCR diagnostic pilot
+
+- [x] Prepare 14 public-source pages across six subject groups, with printed/handwritten examples, diagrams, equations, columns and a table.
+- [x] Add frozen explicit page selection, isolated source acquisition/configuration and provenance receipts; keep production catalog unchanged.
+- [x] Add Qwen2.5-VL-3B adapter and a one-page Colab compatibility trial default.
+- [x] Report prediction outcomes before references and subject/style metrics after reference verification.
+- [ ] Run Qwen on T4: one page first, then all 14 in a new run folder.
+- [ ] Run Gemma on the identical broad packet in a fresh runtime.
+- [ ] Transcribe/verify independent references and compare complete runs; do not promote raw predictions into training data.
+- [ ] Fill missing handwritten Language/History/Business, printed Physics, Economics and MCQ coverage with inspected public sources.
+- [ ] Fix discovery subject detection: “Sinhala medium” indicates language, not Sinhala as the subject; distinguish biological history terminology from History resources.
+
+See [OCR_BROAD_PILOT.md](OCR_BROAD_PILOT.md) for prepared pages, storage, limitations and Colab steps.
+
+## Surya trial after Qwen handwriting failure
+
+- [x] Record supplied Qwen first-page failure: Hindi/Devanagari output from a Sinhala physics image; no training approval.
+- [x] Add pinned Surya 0.17.1 adapter with local recognition/detection checkpoint hashes, offline inference, regional termination checks and preserved boxes/confidences.
+- [x] Update Colab to default to Surya, one page, a fresh T4 runtime and isolated pinned Python/dependencies.
+- [x] Inspect the shared Surya T4 run: 10 selected pages finished, 7 predicted and 3 truncated; spot-check native Sinhala, handwritten Physics and History source pairs. Formal accuracy remains pending references.
+- [ ] If compatible, run all 14 frozen pages in a new run directory; verify references before numerical comparison or training acceptance.
+
+See [SURYA_OCR_TRIAL.md](SURYA_OCR_TRIAL.md). Shared run `surya_20261011T174018Z` executed successfully; its output is not training-approved.
+
+## Native text acquisition while OCR is evaluated
+
+- [x] Implement conservative NFC/line-ending normalization and Sinhala/native extraction rejection reasons.
+- [x] Prepare review packets with immutable extraction/text identities and source provenance, without catalog changes.
+- [x] Export approved text into JSONL with review evidence, exact deduplication and source-PDF split boundaries.
+- [x] Extract 95 pages from four local printed pilot PDFs: 2 review candidates, 93 quarantined at the default 80% Sinhala-letter threshold; no real pages approved or training dataset exported.
+- [ ] Acquire better sources with correctly encoded copyable Sinhala; current worksheet candidate has mapping errors and History candidate is a title page.
+- [ ] Implement HTML main-content extraction to collect public educational prose.
+- [ ] Investigate legacy PDF font decoding and validate mapping accuracy against source images.
+- [ ] Review usable native pages, record source-use evidence and deliver the first small pretraining release to the training repository.
+- [ ] Add near-duplicate/document-version grouping before scaling train/evaluation releases.
+
+See [NATIVE_TEXT_DATASET_GUIDE.md](NATIVE_TEXT_DATASET_GUIDE.md).
+
+## Production corpus path (12 October 2026)
+
+- [x] Create `feat/corpus-pipeline`; commit the completed native-text path separately.
+- [x] Add replaceable OCR factory, defaulting to pinned Surya with frozen local checkpoints.
+- [x] Process verified PDFs into immutable native/OCR page bundles with source images, raw outputs, warnings, progress, selected-page support and restart verification.
+- [x] Add explicitly enabled HTML download, strict static main-content extraction and provenance; flag visual/math/table content for review.
+- [x] Build side-by-side review packets, editable correction drafts and two-reviewer approval sealing.
+- [x] Export reviewed text with exact/near deduplication and source-document/version split protection.
+- [x] Configure persistent store initialization, discovery path overrides and common collect/process/status/review/export commands.
+- [x] Add a production Colab notebook with an isolated pinned environment and two-page initial trial.
+- [ ] Push the new branch and execute the two-page production Surya trial in Colab; verify Drive artifacts and restart behavior.
+- [ ] Complete real source review, source-use evidence and the first approved pretraining release.
+- [ ] Measure OCR accuracy on independent references before considering automated acceptance for any source/style.
+- [ ] Add richer verified subject/grade metadata and instruction/QA outputs when the text corpus is validated.
+
+See [CORPUS_PRODUCTION_GUIDE.md](CORPUS_PRODUCTION_GUIDE.md) for current limits and supported formats. No accurate training release is claimed from test fixtures.

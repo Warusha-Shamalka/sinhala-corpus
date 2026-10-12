@@ -92,13 +92,16 @@ class _DomainRedirectHandler(HTTPRedirectHandler):
         return super().redirect_request(req, fp, code, msg, headers, target)
 
 
-def load_configuration() -> tuple[list[dict], dict]:
-    for path in (SOURCES_PATH, SUBJECTS_PATH, CATALOG_PATH):
+def load_configuration(source_path=None, subject_path=None, catalog_path=None) -> tuple[list[dict], dict]:
+    source_path = source_path or SOURCES_PATH
+    subject_path = subject_path or SUBJECTS_PATH
+    catalog_path = catalog_path or CATALOG_PATH
+    for path in (source_path, subject_path, catalog_path):
         if not path.is_file():
             raise FileNotFoundError(f"Required project file does not exist: {path}")
-    with SOURCES_PATH.open(encoding="utf-8") as stream:
+    with source_path.open(encoding="utf-8") as stream:
         sources_data = yaml.safe_load(stream) or {}
-    with SUBJECTS_PATH.open(encoding="utf-8") as stream:
+    with subject_path.open(encoding="utf-8") as stream:
         subjects_config = yaml.safe_load(stream) or {}
     if not isinstance(sources_data, dict) or not isinstance(subjects_config, dict):
         raise ValueError("Source and subject configurations must be mappings")
@@ -354,10 +357,11 @@ def append_catalog(path: Path, new_records: list[dict[str, str]], *, lock_timeou
         return rows
 
 
-def create_logger() -> tuple[logging.Logger, Path]:
-    LOG_DIR.mkdir(parents=True, exist_ok=True)
+def create_logger(log_root=None) -> tuple[logging.Logger, Path]:
+    log_root = log_root or LOG_DIR
+    log_root.mkdir(parents=True, exist_ok=True)
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ") + "_" + uuid4().hex[:8]
-    log_path = LOG_DIR / f"discovery_{timestamp}_{os.getpid()}.log"
+    log_path = log_root / f"discovery_{timestamp}_{os.getpid()}.log"
     logger = logging.getLogger(f"sinhala_discovery.{os.getpid()}")
     logger.setLevel(logging.INFO)
     logger.handlers.clear()
@@ -752,7 +756,7 @@ def discover_source(
 
 
 def run(args: argparse.Namespace) -> int:
-    logger, log_path = create_logger()
+    logger, log_path = create_logger(args.log_root) if getattr(args, 'log_root', None) else create_logger()
     run_id = log_path.stem
     decisions_path = log_path.with_suffix(".decisions.jsonl")
     summary_path = log_path.with_suffix(".summary.json")
@@ -807,8 +811,11 @@ def _run(args, logger, log_path, decision_sink, summary, progress=None) -> int:
     started = time.monotonic()
     logger.info("Crawl started at %s", datetime.now(timezone.utc).isoformat())
     try:
-        sources, subjects_config = load_configuration()
-        existing = read_catalog(CATALOG_PATH)
+        overrides = {'source_path': getattr(args, 'sources', None), 'subject_path': getattr(args, 'subjects', None),
+                     'catalog_path': getattr(args, 'catalog', None)}
+        sources, subjects_config = load_configuration(**overrides) if any(overrides.values()) else load_configuration()
+        catalog_path = overrides['catalog_path'] or CATALOG_PATH
+        existing = read_catalog(catalog_path)
     except (OSError, ValueError, yaml.YAMLError, CatalogError) as exc:
         summary["error"] = str(exc)
         logger.error("Configuration/catalog validation failed: %s", exc)
@@ -938,7 +945,7 @@ def _run(args, logger, log_path, decision_sink, summary, progress=None) -> int:
             row.pop("_candidate_reasons", None)
             row.pop("_language_hint", None)
         try:
-            rows = append_catalog(CATALOG_PATH, rows)
+            rows = append_catalog(catalog_path, rows)
         except (OSError, CatalogError, csv.Error) as exc:
             summary["error"] = str(exc)
             logger.error("Catalog append failed; no successful update reported: %s", exc)
@@ -971,6 +978,10 @@ def _validate_limits(limits):
 def build_argument_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Discover educational resources from verified configured sources.")
     parser.add_argument("--source", help="Crawl only this configured source ID")
+    parser.add_argument('--catalog', type=Path, help='Persistent catalog path; default remains repository catalog')
+    parser.add_argument('--sources', type=Path, help='Alternate source configuration')
+    parser.add_argument('--subjects', type=Path, help='Alternate subject configuration')
+    parser.add_argument('--log-root', type=Path, help='Persistent discovery log directory')
     parser.add_argument("--max-pages", type=int, default=DEFAULT_LIMITS["max_pages_per_source"])
     parser.add_argument("--max-depth", type=int, default=DEFAULT_LIMITS["max_depth"])
     parser.add_argument("--delay", type=float, default=DEFAULT_LIMITS["request_delay_seconds"])

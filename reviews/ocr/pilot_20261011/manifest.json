@@ -1,0 +1,133 @@
+{
+  "schema_version": "ocr-reference-packet-1",
+  "purpose": "ocr_evaluation",
+  "created_at_utc": "2026-10-11T09:03:47.576029+00:00",
+  "sampling": "document round-robin, first/middle/last pages",
+  "coverage_note": "Current downloaded source sample; not representative of all subjects or printed/handwritten styles.",
+  "rendering": {
+    "dpi": 300,
+    "max_image_side": 3000
+  },
+  "samples": [
+    {
+      "sample_id": "LK-EDU-000009_p000001",
+      "doc_id": "LK-EDU-000009",
+      "raw_sha256": "626a3e412561d5ca93435fce6faadd66e8d79605596fe4d00d95650e933f7e65",
+      "page_number": 1,
+      "source_url": "https://www.alapiedu.com/uploads/Applide%20Maths%20Full%20Short%20Note%20New%20Syllabus.pdf",
+      "title": "Applide Maths Full Short Note New Syllabus",
+      "split": "calibration",
+      "image_path": "images/LK-EDU-000009_p000001.png",
+      "image_sha256": "ee1eea51a6315bcef283527fe9528ef815fcbe92a702116054a7709f8198a009",
+      "reference_path": "references/LK-EDU-000009_p000001.txt"
+    },
+    {
+      "sample_id": "LK-EDU-000010_p000001",
+      "doc_id": "LK-EDU-000010",
+      "raw_sha256": "3b1b3178e0cacaae5fd42ddb2e36a5a955f1ff3169874f97bb0f01cfba4f21e0",
+      "page_number": 1,
+      "source_url": "https://www.alapiedu.com/uploads/Pure%20Maths%20Full%20Short%20Note%20New%20Syllabus.pdf",
+      "title": "Pure Maths Full Short Note New Syllabus",
+      "split": "calibration",
+      "image_path": "images/LK-EDU-000010_p000001.png",
+      "image_sha256": "cc15ad9172d1d5494e03411a7fc59f44519392511e4abfe8327f9fa15e5e79f8",
+      "reference_path": "references/LK-EDU-000010_p000001.txt"
+    },
+    {
+      "sample_id": "LK-EDU-000011_p000001",
+      "doc_id": "LK-EDU-000011",
+      "raw_sha256": "9861a1d1382a9fe334483f12c41fbcffaf76c8c4649e8ef20a6d0b41f9630a3e",
+      "page_number": 1,
+      "source_url": "https://www.alapiedu.com/uploads/%F0%9F%96%8D%EF%B8%8F%20%E0%B7%81%E0%B7%8A%E2%80%8D%E0%B6%BB%E0%B7%9A%E0%B6%AB%E0%B7%92.pdf",
+      "title": "🖍️ ශ්‍රේණි",
+      "split": "calibration",
+      "image_path": "images/LK-EDU-000011_p000001.png",
+      "image_sha256": "9f57b0a056fc92a2b39c368a7ddba876c0117fcf1c287f309b6c766b8a4becb1",
+      "reference_path": "references/LK-EDU-000011_p000001.txt"
+    },
+    {
+      "sample_id": "LK-EDU-000012_p000001",
+      "doc_id": "LK-EDU-000012",
+      "raw_sha256": "3451d07f06476f962a745d22a84269c93a3cbff8ae0daa0ce9a25033db8545ba",
+      "page_number": 1,
+      "source_url": "https://www.alapiedu.com/uploads/%E0%B6%AF%E0%B7%9B%E0%B7%81%E0%B7%92%E0%B6%9A.pdf",
+      "title": "දෛශික",
+      "split": "calibration",
+      "image_path": "images/LK-EDU-000012_p000001.png",
+      "image_sha256": "1af209b6c76636a77a02e6e6831274d492b70b90d4d3adab2674421cff421705",
+      "reference_path": "references/LK-EDU-000012_p000001.txt"
+    },
+    {
+      "sample_id": "LK-EDU-000013_p000001",
+      "doc_id": "LK-EDU-000013",
+      "raw_sha256": "05a3aef354f98fe005bc102d9b85e0fb2dab201474e8dd1e3c39f005a72541bf",
+      "page_number": 1,
+      "source_url": "https://www.alapiedu.com/uploads/%E0%B6%B1%E0%B7%8A%E2%80%8D%E0%B6%BA%E0%B7%8F%E0%B7%83.pdf",
+      "title": "න්‍යාස",
+      "split": "holdout",
+      "image_path": "images/LK-EDU-000013_p000001.png",
+      "image_sha256": "8a8a146b90ee5722610737e76dc34dcd54863e6ee372e44de52be4fc4b7d4dc4",
+      "reference_path": "references/LK-EDU-000013_p000001.txt"
+    },
+    {
+      "sample_id": "LK-EDU-000014_p000001",
+      "doc_id": "LK-EDU-000014",
+      "raw_sha256": "2a4add3b903a7efa11724e9e055586680c328e69082dfedf189a56536786db46",
+      "page_number": 1,
+      "source_url": "https://www.alapiedu.com/uploads/%E0%B6%B6%E0%B7%84%E0%B7%94%E0%B6%B4%E0%B6%AF%20%E0%B7%81%E0%B7%8A%E2%80%8D%E0%B6%BB%E0%B7%92%E0%B6%AD%20%20.pdf",
+      "title": "බහුපද ශ්‍රිත",
+      "split": "holdout",
+      "image_path": "images/LK-EDU-000014_p000001.png",
+      "image_sha256": "e698da18a9c1e48873ca0d5142b1db1de38f66330766fec5db6395b4720c16fe",
+      "reference_path": "references/LK-EDU-000014_p000001.txt"
+    },
+    {
+      "sample_id": "LK-EDU-000015_p000001",
+      "doc_id": "LK-EDU-000015",
+      "raw_sha256": "c5f1252d32f6dc4d27f1f600028c4b993b71a73595820671b816313319b03b8b",
+      "page_number": 1,
+      "source_url": "https://www.alapiedu.com/uploads/%E0%B7%83%E0%B6%B8%E0%B7%8A%E0%B6%B7%E0%B7%8F%E0%B7%80%E0%B7%92%E0%B6%AD%E0%B7%8F%E0%B7%80%E0%B6%BA.pdf",
+      "title": "සම්භාවිතාවය",
+      "split": "holdout",
+      "image_path": "images/LK-EDU-000015_p000001.png",
+      "image_sha256": "5893ba9f0b4860d203fe6b8a04c8396843415e741c5f221781cdbee0e2f242c0",
+      "reference_path": "references/LK-EDU-000015_p000001.txt"
+    },
+    {
+      "sample_id": "LK-EDU-000009_p000021",
+      "doc_id": "LK-EDU-000009",
+      "raw_sha256": "626a3e412561d5ca93435fce6faadd66e8d79605596fe4d00d95650e933f7e65",
+      "page_number": 21,
+      "source_url": "https://www.alapiedu.com/uploads/Applide%20Maths%20Full%20Short%20Note%20New%20Syllabus.pdf",
+      "title": "Applide Maths Full Short Note New Syllabus",
+      "split": "calibration",
+      "image_path": "images/LK-EDU-000009_p000021.png",
+      "image_sha256": "b03c46ddb8a08d970a04fccacd851b1889e2e9d1295e9510fccae6a2b586edd4",
+      "reference_path": "references/LK-EDU-000009_p000021.txt"
+    },
+    {
+      "sample_id": "LK-EDU-000010_p000028",
+      "doc_id": "LK-EDU-000010",
+      "raw_sha256": "3b1b3178e0cacaae5fd42ddb2e36a5a955f1ff3169874f97bb0f01cfba4f21e0",
+      "page_number": 28,
+      "source_url": "https://www.alapiedu.com/uploads/Pure%20Maths%20Full%20Short%20Note%20New%20Syllabus.pdf",
+      "title": "Pure Maths Full Short Note New Syllabus",
+      "split": "calibration",
+      "image_path": "images/LK-EDU-000010_p000028.png",
+      "image_sha256": "39bc44cf5768ddc6bed235b62a965607c40cc5a6522cf4b47f4000be92201e33",
+      "reference_path": "references/LK-EDU-000010_p000028.txt"
+    },
+    {
+      "sample_id": "LK-EDU-000011_p000004",
+      "doc_id": "LK-EDU-000011",
+      "raw_sha256": "9861a1d1382a9fe334483f12c41fbcffaf76c8c4649e8ef20a6d0b41f9630a3e",
+      "page_number": 4,
+      "source_url": "https://www.alapiedu.com/uploads/%F0%9F%96%8D%EF%B8%8F%20%E0%B7%81%E0%B7%8A%E2%80%8D%E0%B6%BB%E0%B7%9A%E0%B6%AB%E0%B7%92.pdf",
+      "title": "🖍️ ශ්‍රේණි",
+      "split": "calibration",
+      "image_path": "images/LK-EDU-000011_p000004.png",
+      "image_sha256": "bf457251d4a5a8d35c614883cbaa18a70be9c8f0acc54be7fa977855c8c8d34e",
+      "reference_path": "references/LK-EDU-000011_p000004.txt"
+    }
+  ]
+}

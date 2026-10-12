@@ -1,6 +1,6 @@
 # Pipeline progress and background status
 
-Implemented for discovery and PDF downloading. Extraction, OCR and cleaning adapters remain planned. Progress observes work; it does not change download limits, source approval, raw storage or catalog states.
+Implemented for discovery, PDF downloading and native PDF extraction. Selective OCR progress is implemented; cleaning adapters remain planned. Progress observes work; it does not change download limits, source approval, raw storage or catalog states.
 
 ## Run with visible progress
 
@@ -72,3 +72,11 @@ python3 -B scripts/check_offline.py
 ```
 
 Offline tests cover known/unknown transfer sizes, rate/ETA, throttling, stderr/stdout separation, quiet output, snapshot failure handling, read-only/stale checks, robots absence/retry phases, interruptions, final discovery/download counters, verification of existing artifacts and downloader dry-run write safety. Tests use temporary catalogs and synthetic HTTP fixtures; they do not download educational content or modify the production catalog.
+
+## Extraction progress
+
+See [EXTRACTION_GUIDE.md](EXTRACTION_GUIDE.md). Extraction saves snapshots under configured `extraction.log_root`, normally `corpus/logs/extraction/`. Counters show jobs plus the current PDF's pages completed/total and OCR-flagged pages. `ocr_required` counts successfully routed documents, not OCR work completed. Extraction dry-runs and empty job sets create no snapshots.
+
+## OCR progress
+
+The [OCR stage](OCR_GUIDE.md) saves snapshots under `ocr.log_root` (normally `corpus/logs/ocr/`). It reports selected pages attempted/completed and failures, with the current document/page. `completed` means the selected OCR sample finished; every saved page still needs review, and unselected document pages are not complete. Dry-runs create no snapshots.

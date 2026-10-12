@@ -1,6 +1,28 @@
 schema_version: pipeline-1
+processing:
+  catalog_path: corpus/catalog/documents.csv
+  raw_root: corpus/raw
+  output_root: corpus/extracted/processed
+  log_root: corpus/logs/processing
+  max_documents: 5
+  max_pages: 10
+  dpi: 300
+  max_image_side: 3000
+  render_timeout_seconds: 60
+  max_image_bytes: 52428800
+  # Use all while native Sinhala font accuracy is unresolved; auto keeps usable native pages.
+  ocr_mode: all
+  ocr:
+    backend: surya
+    model_path: /content/surya-models
+    # Replace after prepare-models; never use a moving model revision.
+    revision: ''
+    max_page_seconds: 120
+    max_new_tokens: 8192
 # Paths are relative to this repository, or absolute on persistent storage.
 download:
+  accepted_formats: [pdf]
+  # Add html explicitly when collecting approved static educational web pages.
   catalog_path: corpus/catalog/documents.csv
   raw_root: corpus/raw
   log_root: corpus/logs/download
@@ -12,3 +34,35 @@ download:
   max_requests: 50
   max_retries: 2
   max_retry_wait: 30
+extraction:
+  catalog_path: corpus/catalog/documents.csv
+  raw_root: corpus/raw
+  output_root: corpus/extracted/pages
+  log_root: corpus/logs/extraction
+  max_documents: 5
+  max_pages: 500
+  max_raw_bytes: 52428800
+  max_page_bytes: 10485760
+  max_output_bytes: 104857600
+  max_seconds: 300
+  command_timeout_seconds: 20
+  min_text_chars: 20
+  max_replacement_ratio: 0.02
+ocr:
+  catalog_path: corpus/catalog/documents.csv
+  raw_root: corpus/raw
+  extraction_root: corpus/extracted/pages
+  output_root: corpus/extracted/ocr
+  log_root: corpus/logs/ocr
+  tesseract_command: tesseract
+  tessdata_dir: ''
+  languages: sin+eng
+  dpi: 300
+  max_image_side: 3000
+  psm: 3
+  max_pages: 3
+  max_seconds: 300
+  command_timeout_seconds: 60
+  max_command_bytes: 52428800
+  min_text_chars: 20
+  min_mean_confidence: 60

@@ -6,7 +6,7 @@ This repository is being built to support research and downstream machine-learni
 
 The project collects and organizes educational resources relevant to Sri Lanka, especially Sinhala-language materials used in school education. The emphasis is on disciplined pipeline work: discover candidates, record them in the catalog, download only approved content, extract and clean data, validate quality, and produce derived datasets.
 
-SinhalaMMLU is a key use case. Corpus preparation is separate from challenge inference, which must use model weights and a prompt within the supplied 8B cap, without internet or retrieval. General corpus products may support other research. Google Drive is the intended persistent store and Colab is temporary compute; this deployment is planned, not configured here.
+SinhalaMMLU is a key use case. Corpus preparation is separate from challenge inference, which must use model weights and a prompt within the supplied 8B cap, without internet or retrieval. General corpus products may support other research. The [production workflow](docs/CORPUS_PRODUCTION_GUIDE.md) and [Colab notebook](notebooks/corpus_pipeline_colab.ipynb) configure Drive as persistent storage and Colab as temporary compute; the new production GPU deployment still needs its small validation run.
 
 See the [detailed architecture diagrams](docs/PIPELINE_ARCHITECTURE.md) for stage-by-stage behavior, persistence and planned processing.
 
@@ -48,19 +48,20 @@ These files are treated as authoritative project metadata. They should be preser
 Implemented:
 - discovery crawler
 - discovery dry-run support
-- bounded PDF downloader with immutable raw files, receipts and catalog checkpoints
+- bounded PDF and explicitly enabled static HTML downloading with immutable raw files, receipts and catalog checkpoints
+- native PDF/HTML extraction and replaceable local-image OCR, using Surya by default
+- conservative cleaning, source review and corrected text approval by two reviewers
+- exact/near duplicate grouping, source-version split checks and reviewed pretraining JSONL export
+- persistent-store initialization, pipeline status, resumable page processing and production Colab setup
 - source/subject configuration
 - document catalog metadata
 - offline discovery review sampling and reporting
 - pinned dependencies and automated regression/review checks
 
-Planned / not yet implemented:
-- extraction
-- OCR
-- cleaning
-- deduplication
-- quality validation
-- dataset generation
+Still planned or awaiting validation:
+- accurate legacy-font decoding, browser-rendered HTML and standalone image/video/audio acquisition
+- automated QA/instruction dataset construction and richer verified metadata enrichment
+- the new production Surya GPU smoke test, independent OCR accuracy measurements and real human-approved training releases
 
 ## Development environment
 
@@ -153,7 +154,7 @@ The main handoff and continuation guide is in:
 
 - `docs/PIPELINE_GUIDE.md`
 
-The competition review, confirmed bugs, source plan, data contracts, implementation backlog, and report/manifest templates are indexed in [docs/README.md](docs/README.md). The current catalog contains eight intended pilots without source URLs. Finish discovery validation before bulk downloading.
+The competition review, source plan, data contracts and report templates are indexed in [docs/README.md](docs/README.md). The catalog includes discovered resources with URLs alongside the eight original URL-less pilots. Human candidate review remains pending; use bounded acquisition batches.
 
 In this project, `verified` is explicit source approval for crawling. It does not verify all hosted documents, their language, answer correctness, or redistribution rights. Preserve separate evidence for those checks.
 
@@ -161,32 +162,30 @@ Use that file to understand the end-to-end pipeline and the intended next steps.
 
 ## Current status summary
 
-Implemented:
-- subject configuration
-- source configuration
-- discovery crawler
-- bounded PDF downloader
-- dry-run discovery
-- catalog metadata tracking
-
-Planned / not yet implemented:
-- extraction
-- OCR
-- cleaning
-- deduplication
-- quality validation
-- dataset generation
-
-The repository is intentionally structured so that these later stages can be added without disrupting the configured discovery and catalog setup.
+The PDF/static-HTML collection-to-reviewed-text path is implemented. Surya is the current replaceable OCR backend. Source-based corrections, two-reviewer approval, duplicate/split checks and JSONL export are available. The new production Colab trial and real human-approved training release are pending; see [the production guide](docs/CORPUS_PRODUCTION_GUIDE.md).
 
 ## Downloading resources
 
-Preview the download queue with `python3 -B -m pipeline.download.downloader --dry-run`. The initial pilots have no URLs, so they do not qualify yet. See the [downloader guide](pipeline/download/README.md) before selecting a small batch. It supports PDFs; extraction, OCR and other resource formats remain planned. Candidate suitability is currently a provisional project assumption while independent review is pending.
+Preview the download queue with `python3 -B -m pipeline.download.downloader --dry-run`. The initial pilots have no URLs, so they do not qualify yet; discovered resources do. PDF is the repository default; static HTML is explicitly enabled in the persistent-store configuration. See the [downloader guide](pipeline/download/README.md) before selecting a small batch. Candidate suitability remains provisional while independent review is pending.
 
 Production PDFs and receipts save to `corpus/raw/pdf/<doc_id>/<sha256>.pdf` and `.json`. After validation and persistence, the downloader checkpoints the catalog to `DOWNLOADED`; events go to `corpus/logs/download/`. Earlier raw versions are retained.
 
-Defaults are five jobs per run, 50 MiB per PDF, 300 seconds and 50 requests per source, a 20-second socket timeout, at least one second between requests, two transient request retries and a 30-second maximum retry wait. Edit [configs/pipeline.yaml](configs/pipeline.yaml) to change paths or limits. See [production save locations and limits](pipeline/download/README.md#production-save-locations) for exact scope and restrictions. The isolated smoke-test download is under `corpus/logs/download/smoke_20261009/raw/`; the production catalog currently has zero eligible jobs.
+Defaults are five jobs per run, 50 MiB per PDF, 300 seconds and 50 requests per source, a 20-second socket timeout, at least one second between requests, two transient request retries and a 30-second maximum retry wait. HTML has a 2 MiB cap. Edit [configs/pipeline.yaml](configs/pipeline.yaml) to change paths or limits. See [production save locations and limits](pipeline/download/README.md#production-save-locations) for exact scope. The earlier isolated smoke test is under `corpus/logs/download/smoke_20261009/raw/`; current eligibility is reported by dry-run.
 
 ## Live progress and background status
 
 Discovery and downloads now support `--progress auto|plain|off` and `--quiet`, with atomic per-run snapshots and a read-only `python3 -B -m pipeline.progress <snapshot-path>` checker. Download reports remain JSON on stdout; discovery offers `--json`. See the [progress guide](docs/PROGRESS_GUIDE.md) for commands, counters, snapshot paths and interruption/staleness behavior. Downloader dry-runs still make no requests or writes.
+
+## Implemented PDF extraction
+
+Local PDF extraction verifies raw receipts/hashes, preserves emitted text and coordinates in immutable bundles and flags pages needing OCR review. Its standalone checkpoints retain `DOWNLOADED` for flagged documents and set `EXTRACTED` for complete unflagged native extraction. Production OCR/HTML processing and cleaning are separate stages; see the [extraction guide](docs/EXTRACTION_GUIDE.md) and [production workflow](docs/CORPUS_PRODUCTION_GUIDE.md).
+
+## Implemented selective OCR baseline
+
+Flagged PDF pages can now be rendered and recognized locally with Sinhala/English Tesseract models, using separate immutable image/TSV/text/page outputs and shared progress. All OCR text stays pending review and the catalog is not promoted. The handwritten pilot is poorly recognized. See the [OCR guide](docs/OCR_GUIDE.md) for setup, safe page sampling and validation.
+
+For a laptop without a usable GPU, start with the [Colab OCR guide](docs/COLAB_OCR_GUIDE.md) and [notebook](notebooks/ocr_accuracy_colab.ipynb). The ten-page [accuracy reference packet](reviews/ocr/pilot_20261011/README.md) has empty references awaiting independent human review. Gemma T4 execution has maintainer-supplied evidence; complete GPU comparisons and measured accuracy remain pending; see the [accuracy/acceptance guide](docs/OCR_ACCURACY_GUIDE.md).
+
+The [broader OCR pilot](docs/OCR_BROAD_PILOT.md) adds 14 public-source pages across six subject groups and a paired Qwen/Gemma Colab workflow. Qwen executed on the supplied first page but produced Hindi from Sinhala handwriting; independent-reference accuracy remains pending. The experiment downloads use a separate catalog and raw-storage folder; the production catalog is unchanged.
+
+The [pinned Surya trial](docs/SURYA_OCR_TRIAL.md) executed on T4: 10 selected pages finished, 7 complete and 3 truncated, with recognition errors still visible. Independent-reference accuracy is pending. The [production notebook](notebooks/corpus_pipeline_colab.ipynb) connects that adapter to review and export; its new GPU smoke test is pending.

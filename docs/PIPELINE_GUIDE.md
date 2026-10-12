@@ -4,7 +4,7 @@
 
 This repository supports the creation of a Sinhala / Sri Lankan educational corpus and the downstream processing needed to turn discovered educational materials into usable datasets. The broad goal is to gather material relevant to Sri Lankan education, especially Sinhala-language resources, while keeping the pipeline explicit, auditable, and configurable.
 
-The project is intentionally staged. At the current point, discovery is implemented and operational. Downloading, extraction, OCR, cleaning, quality validation, deduplication, and dataset generation remain planned stages unless they are added later.
+Discovery, bounded PDF/HTML download, native extraction, configurable OCR, conservative cleaning, review/corrections, deduplication and reviewed text export are now implemented. Use [CORPUS_PRODUCTION_GUIDE.md](CORPUS_PRODUCTION_GUIDE.md) for the current end-to-end commands and Colab deployment. This guide retains the discovery/catalog handover; actual training approval requires source review.
 
 ## 2. Architecture
 
@@ -63,14 +63,13 @@ Implemented:
 - candidate filtering / catalog preview
 - document catalog metadata
 
-Planned / not yet implemented:
-- downloader
-- extraction
-- OCR
-- cleaning
-- deduplication
-- quality validation
-- dataset generation
+Also implemented since the initial handover:
+- bounded PDF/HTML acquisition and native extraction
+- Surya OCR with replaceable backends and versioned source-page artifacts
+- conservative cleaning and source-based corrections/approval
+- exact/near deduplication, split protection and reviewed pretraining text export
+
+Production GPU smoke testing, independent OCR accuracy measurement, legacy-font decoding and richer dataset formats remain pending.
 
 ## 4. Configuration
 
@@ -246,19 +245,18 @@ Logs are stored under the relevant `corpus/logs/` subdirectories.
 
 ### Planned / not yet implemented
 
-- downloader
-- extraction
-- OCR
-- cleaning
-- deduplication
-- quality validation
-- dataset generation
+- legacy-font decoding and browser-rendered HTML
+- richer QA/instruction outputs and independently verified metadata enrichment
+- full PDF visual asset extraction and additional media acquisition
+
+The current production implementation adds download, extraction, configurable OCR,
+cleaning, source review, duplicate/split checks and text export; see the production guide.
 
 Only mark a stage as implemented if it exists in the repository and is actively maintained.
 
 ## 14. How to continue
 
-The recommended next step is to proceed to the downloader stage only after the discovery stage is stable and the source list is verified. Do not begin extraction or dataset generation until the discovery and catalog stages are validated and the source configuration is intentional.
+Use the small production Colab trial, verify the saved artifacts and restart behavior, then complete source-based review before exporting training text. Continue independent discovery/OCR quality measurements before increasing acquisition or acceptance scope.
 
 This keeps the pipeline predictable and helps preserve data provenance as the project grows.
 
@@ -310,3 +308,11 @@ Currently only PDFs from the source's exact configured host qualify. The eight p
 ## Live progress and background status
 
 Discovery and downloads now support `--progress auto|plain|off` and `--quiet`, with atomic per-run snapshots and a read-only `python3 -B -m pipeline.progress <snapshot-path>` checker. Download reports remain JSON on stdout; discovery offers `--json`. See the [progress guide](PROGRESS_GUIDE.md) for commands, counters, snapshot paths and interruption/staleness behavior. Downloader dry-runs still make no requests or writes.
+
+## Implemented PDF extraction
+
+Local native PDF extraction verifies raw provenance and writes complete immutable bundles; its standalone checkpoints retain `DOWNLOADED` for flagged documents and set `EXTRACTED` for complete unflagged documents. Production OCR, static HTML and cleaning are now separate implemented stages. Full visual asset extraction remains planned; see [EXTRACTION_GUIDE.md](EXTRACTION_GUIDE.md) and [CORPUS_PRODUCTION_GUIDE.md](CORPUS_PRODUCTION_GUIDE.md).
+
+## Implemented selective OCR baseline
+
+Flagged PDF pages can now be rendered and recognized locally with Sinhala/English Tesseract models, using separate immutable image/TSV/text/page outputs and shared progress. All OCR text stays pending review and the catalog is not promoted. The handwritten pilot is poorly recognized. See the [OCR guide](OCR_GUIDE.md) for setup, safe page sampling and validation.

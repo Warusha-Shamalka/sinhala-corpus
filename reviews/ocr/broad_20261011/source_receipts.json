@@ -1,0 +1,175 @@
+{
+  "purpose": "public-source OCR evaluation provenance",
+  "catalog_namespace": "isolated experiment ocr_broad_20261011; IDs 000490–000492 are not production catalog registrations",
+  "receipts": [
+    {
+      "schema_version": "raw-download-1",
+      "doc_id": "LK-EDU-000104",
+      "source_id": "alapiedu",
+      "requested_url": "https://www.alapiedu.com/uploads/%E0%B6%BA%E0%B7%8F%E0%B6%B1%E0%B7%8A%E0%B6%AD%E0%B7%8A%E2%80%8D%E0%B6%BB_%E0%B7%80%E0%B7%92%E0%B6%AF%E0%B7%8A%E2%80%8D%E0%B6%BA%E0%B7%8F%E0%B7%80_Practical_notes%202.pdf",
+      "final_url": "https://www.alapiedu.com/uploads/%E0%B6%BA%E0%B7%8F%E0%B6%B1%E0%B7%8A%E0%B6%AD%E0%B7%8A%E2%80%8D%E0%B6%BB_%E0%B7%80%E0%B7%92%E0%B6%AF%E0%B7%8A%E2%80%8D%E0%B6%BA%E0%B7%8F%E0%B7%80_Practical_notes%202.pdf",
+      "http_status": 200,
+      "mime": "application/pdf",
+      "bytes": 2677270,
+      "sha256": "08e36d57acb36fabccac55027230c0714edbfd6fff31ab76713f99d33625d85f",
+      "artifact_path": "pdf/LK-EDU-000104/08e36d57acb36fabccac55027230c0714edbfd6fff31ab76713f99d33625d85f.pdf",
+      "local_filename": "corpus/experiments/ocr_broad_20261011/raw/pdf/LK-EDU-000104/08e36d57acb36fabccac55027230c0714edbfd6fff31ab76713f99d33625d85f.pdf",
+      "started_at_utc": "2026-10-11T16:37:12.346433+00:00",
+      "completed_at_utc": "2026-10-11T16:37:15.321248+00:00",
+      "etag": "",
+      "last_modified": "Tue, 22 Jul 2025 01:20:02 GMT",
+      "pipeline_version": "download-0.1",
+      "robots_outcomes": {
+        "https://www.alapiedu.com": "absent"
+      }
+    },
+    {
+      "schema_version": "raw-download-1",
+      "doc_id": "LK-EDU-000231",
+      "source_id": "alapiedu",
+      "requested_url": "https://www.alapiedu.com/uploads/Applied%20biology_241118_055211.pdf",
+      "final_url": "https://www.alapiedu.com/uploads/Applied%20biology_241118_055211.pdf",
+      "http_status": 200,
+      "mime": "application/pdf",
+      "bytes": 8323047,
+      "sha256": "29b8c8f6e8e1818f6d004f75f4b31734e25b8622d9952eb6732147360b0a7fbf",
+      "artifact_path": "pdf/LK-EDU-000231/29b8c8f6e8e1818f6d004f75f4b31734e25b8622d9952eb6732147360b0a7fbf.pdf",
+      "local_filename": "corpus/experiments/ocr_broad_20261011/raw/pdf/LK-EDU-000231/29b8c8f6e8e1818f6d004f75f4b31734e25b8622d9952eb6732147360b0a7fbf.pdf",
+      "started_at_utc": "2026-10-11T16:37:16.493565+00:00",
+      "completed_at_utc": "2026-10-11T16:37:25.970969+00:00",
+      "etag": "",
+      "last_modified": "Fri, 25 Jul 2025 10:11:44 GMT",
+      "pipeline_version": "download-0.1",
+      "robots_outcomes": {
+        "https://www.alapiedu.com": "absent"
+      }
+    },
+    {
+      "schema_version": "raw-download-1",
+      "doc_id": "LK-EDU-000264",
+      "source_id": "alapiedu",
+      "requested_url": "https://www.alapiedu.com/Category/guide_hub/uploads/1786557881_grade-13-biology-teacher-guide-619dd2ec42815.pdf",
+      "final_url": "https://www.alapiedu.com/Category/guide_hub/uploads/1786557881_grade-13-biology-teacher-guide-619dd2ec42815.pdf",
+      "http_status": 200,
+      "mime": "application/pdf",
+      "bytes": 730362,
+      "sha256": "ec7a0d3fe79bfbcbf83212272ff5a7696436a225386775a3c82857ac73deb018",
+      "artifact_path": "pdf/LK-EDU-000264/ec7a0d3fe79bfbcbf83212272ff5a7696436a225386775a3c82857ac73deb018.pdf",
+      "local_filename": "corpus/experiments/ocr_broad_20261011/raw/pdf/LK-EDU-000264/ec7a0d3fe79bfbcbf83212272ff5a7696436a225386775a3c82857ac73deb018.pdf",
+      "started_at_utc": "2026-10-11T16:37:28.166257+00:00",
+      "completed_at_utc": "2026-10-11T16:37:29.850843+00:00",
+      "etag": "",
+      "last_modified": "Wed, 12 Aug 2026 18:04:41 GMT",
+      "pipeline_version": "download-0.1",
+      "robots_outcomes": {
+        "https://www.alapiedu.com": "absent"
+      }
+    },
+    {
+      "schema_version": "raw-download-1",
+      "doc_id": "LK-EDU-000285",
+      "source_id": "alapiedu",
+      "requested_url": "https://www.alapiedu.com/Category/paper_hub/uploads/1753587205_2020_AL_COMBINED_MATHS_PART_I_NEW_SYLLABUS_SINHALA_MEDIUM_AlevelApi.pdf",
+      "final_url": "https://www.alapiedu.com/Category/paper_hub/uploads/1753587205_2020_AL_COMBINED_MATHS_PART_I_NEW_SYLLABUS_SINHALA_MEDIUM_AlevelApi.pdf",
+      "http_status": 200,
+      "mime": "application/pdf",
+      "bytes": 2106892,
+      "sha256": "fdb72cbc663ddb8edc67d420b25c6c33ed149945408709ec2fbe09639441b338",
+      "artifact_path": "pdf/LK-EDU-000285/fdb72cbc663ddb8edc67d420b25c6c33ed149945408709ec2fbe09639441b338.pdf",
+      "local_filename": "corpus/experiments/ocr_broad_20261011/raw/pdf/LK-EDU-000285/fdb72cbc663ddb8edc67d420b25c6c33ed149945408709ec2fbe09639441b338.pdf",
+      "started_at_utc": "2026-10-11T16:37:31.320639+00:00",
+      "completed_at_utc": "2026-10-11T16:37:33.980294+00:00",
+      "etag": "",
+      "last_modified": "Sun, 27 Jul 2025 03:33:25 GMT",
+      "pipeline_version": "download-0.1",
+      "robots_outcomes": {
+        "https://www.alapiedu.com": "absent"
+      }
+    },
+    {
+      "schema_version": "raw-download-1",
+      "doc_id": "LK-EDU-000490",
+      "source_id": "e_thaksalawa",
+      "requested_url": "https://e-thaksalawa.moe.gov.lk/lcms/pluginfile.php/19425/mod_resource/content/1/Grade%206%20%20Sinhala.pdf",
+      "final_url": "https://e-thaksalawa.moe.gov.lk/lcms/pluginfile.php/19425/mod_resource/content/1/Grade%206%20%20Sinhala.pdf",
+      "http_status": 200,
+      "mime": "application/pdf",
+      "bytes": 682515,
+      "sha256": "31a0e25acca710fcc29ba062c6dfad1fef5b74d38c4d6e6c8283e57ba07cb271",
+      "artifact_path": "pdf/LK-EDU-000490/31a0e25acca710fcc29ba062c6dfad1fef5b74d38c4d6e6c8283e57ba07cb271.pdf",
+      "local_filename": "corpus/experiments/ocr_broad_20261011/raw/pdf/LK-EDU-000490/31a0e25acca710fcc29ba062c6dfad1fef5b74d38c4d6e6c8283e57ba07cb271.pdf",
+      "started_at_utc": "2026-10-11T16:37:36.783164+00:00",
+      "completed_at_utc": "2026-10-11T16:37:37.646222+00:00",
+      "etag": "\"955cdc922d59c2b2a18f93732f468c4c91947a2a\"",
+      "last_modified": "Tue, 10 Dec 2024 07:10:01 GMT",
+      "pipeline_version": "download-0.1",
+      "robots_outcomes": {
+        "https://e-thaksalawa.moe.gov.lk": "absent"
+      }
+    },
+    {
+      "schema_version": "raw-download-1",
+      "doc_id": "LK-EDU-000491",
+      "source_id": "e_thaksalawa",
+      "requested_url": "https://e-thaksalawa.moe.gov.lk/lcms/pluginfile.php/41407/mod_resource/content/2/11%20%E0%B6%93%E0%B6%AD%E0%B7%92%E0%B7%84%E0%B7%8F%E0%B7%83%E0%B7%92%E0%B6%9A%20%E0%B6%AF%E0%B7%90%E0%B6%B1%E0%B7%94%E0%B6%B8%20%E0%B7%84%E0%B7%8F%20%E0%B6%91%E0%B7%84%E0%B7%92%20%E0%B6%B4%E0%B7%8A_%E0%B6%BB%E0%B7%8F%E0%B6%BA%E0%B7%9D%E0%B6%9C%E0%B7%92%E0%B6%9A%20%E0%B6%86%E0%B6%AF%E0%B7%9A%E0%B7%81%E0%B6%B1%E0%B6%BA%E0%B6%9A%E0%B7%92%E0%B6%BA%E0%B7%80%E0%B7%93%E0%B6%B8%E0%B7%8A%20%E0%B6%B4%E0%B6%AD%E0%B7%8A_%E0%B6%BB%E0%B7%92%E0%B6%9A%E0%B7%8F%E0%B7%80.pdf",
+      "final_url": "https://e-thaksalawa.moe.gov.lk/lcms/pluginfile.php/41407/mod_resource/content/2/11%20%E0%B6%93%E0%B6%AD%E0%B7%92%E0%B7%84%E0%B7%8F%E0%B7%83%E0%B7%92%E0%B6%9A%20%E0%B6%AF%E0%B7%90%E0%B6%B1%E0%B7%94%E0%B6%B8%20%E0%B7%84%E0%B7%8F%20%E0%B6%91%E0%B7%84%E0%B7%92%20%E0%B6%B4%E0%B7%8A_%E0%B6%BB%E0%B7%8F%E0%B6%BA%E0%B7%9D%E0%B6%9C%E0%B7%92%E0%B6%9A%20%E0%B6%86%E0%B6%AF%E0%B7%9A%E0%B7%81%E0%B6%B1%E0%B6%BA%E0%B6%9A%E0%B7%92%E0%B6%BA%E0%B7%80%E0%B7%93%E0%B6%B8%E0%B7%8A%20%E0%B6%B4%E0%B6%AD%E0%B7%8A_%E0%B6%BB%E0%B7%92%E0%B6%9A%E0%B7%8F%E0%B7%80.pdf",
+      "http_status": 200,
+      "mime": "application/pdf",
+      "bytes": 577888,
+      "sha256": "52b88645e0189639588d818a7053e93190c5831f08b29ace5eea1df5d3f2794c",
+      "artifact_path": "pdf/LK-EDU-000491/52b88645e0189639588d818a7053e93190c5831f08b29ace5eea1df5d3f2794c.pdf",
+      "local_filename": "corpus/experiments/ocr_broad_20261011/raw/pdf/LK-EDU-000491/52b88645e0189639588d818a7053e93190c5831f08b29ace5eea1df5d3f2794c.pdf",
+      "started_at_utc": "2026-10-11T16:37:39.345131+00:00",
+      "completed_at_utc": "2026-10-11T16:37:39.904115+00:00",
+      "etag": "\"b708a59576206327a47021fd24c91db5ce813c5d\"",
+      "last_modified": "Tue, 17 Dec 2024 15:26:15 GMT",
+      "pipeline_version": "download-0.1",
+      "robots_outcomes": {
+        "https://e-thaksalawa.moe.gov.lk": "absent"
+      }
+    },
+    {
+      "schema_version": "raw-download-1",
+      "doc_id": "LK-EDU-000492",
+      "source_id": "e_thaksalawa",
+      "requested_url": "https://e-thaksalawa.moe.gov.lk/lcms/pluginfile.php/29008/mod_resource/content/2/Chapter%2004.pdf",
+      "final_url": "https://e-thaksalawa.moe.gov.lk/lcms/pluginfile.php/29008/mod_resource/content/2/Chapter%2004.pdf",
+      "http_status": 200,
+      "mime": "application/pdf",
+      "bytes": 230245,
+      "sha256": "4eb84460897e782cef0d558b8b8455018346868bb99a3c3f3811c68072ec1a0f",
+      "artifact_path": "pdf/LK-EDU-000492/4eb84460897e782cef0d558b8b8455018346868bb99a3c3f3811c68072ec1a0f.pdf",
+      "local_filename": "corpus/experiments/ocr_broad_20261011/raw/pdf/LK-EDU-000492/4eb84460897e782cef0d558b8b8455018346868bb99a3c3f3811c68072ec1a0f.pdf",
+      "started_at_utc": "2026-10-11T16:37:40.948038+00:00",
+      "completed_at_utc": "2026-10-11T16:37:42.110013+00:00",
+      "etag": "\"459d03d2a9ca7abdb165383c8b79615f487eb870\"",
+      "last_modified": "Tue, 10 Dec 2024 13:54:17 GMT",
+      "pipeline_version": "download-0.1",
+      "robots_outcomes": {
+        "https://e-thaksalawa.moe.gov.lk": "absent"
+      }
+    },
+    {
+      "schema_version": "raw-download-1",
+      "doc_id": "LK-EDU-000012",
+      "source_id": "alapiedu",
+      "requested_url": "https://www.alapiedu.com/uploads/%E0%B6%AF%E0%B7%9B%E0%B7%81%E0%B7%92%E0%B6%9A.pdf",
+      "final_url": "https://www.alapiedu.com/uploads/%E0%B6%AF%E0%B7%9B%E0%B7%81%E0%B7%92%E0%B6%9A.pdf",
+      "http_status": 200,
+      "mime": "application/pdf",
+      "bytes": 1918978,
+      "sha256": "3451d07f06476f962a745d22a84269c93a3cbff8ae0daa0ce9a25033db8545ba",
+      "artifact_path": "pdf/LK-EDU-000012/3451d07f06476f962a745d22a84269c93a3cbff8ae0daa0ce9a25033db8545ba.pdf",
+      "local_filename": "corpus/experiments/ocr_broad_20261011/raw/pdf/LK-EDU-000012/3451d07f06476f962a745d22a84269c93a3cbff8ae0daa0ce9a25033db8545ba.pdf",
+      "started_at_utc": "2026-10-09T14:18:32.269000+00:00",
+      "completed_at_utc": "2026-10-09T14:18:52.435434+00:00",
+      "etag": "",
+      "last_modified": "Mon, 21 Jul 2025 13:19:13 GMT",
+      "pipeline_version": "download-0.1",
+      "robots_outcomes": {
+        "https://www.alapiedu.com": "absent"
+      },
+      "copied_from_local_filename": "corpus/raw/pdf/LK-EDU-000012/3451d07f06476f962a745d22a84269c93a3cbff8ae0daa0ce9a25033db8545ba.pdf"
+    }
+  ]
+}

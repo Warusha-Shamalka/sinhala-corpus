@@ -30,6 +30,7 @@ from pipeline.progress import ProgressReporter
 VERSION = "download-0.1"
 PIPELINE_PATH = ROOT / "configs/pipeline.yaml"
 PDF_MIMES = {"application/pdf", "application/x-pdf", "application/octet-stream"}
+HTML_MIMES = {"text/html", "application/xhtml+xml"}
 
 
 class DownloadError(Exception):
@@ -61,6 +62,9 @@ def load_settings(path: Path) -> dict:
     if not isinstance(data, dict) or data.get("schema_version") != "pipeline-1" or not isinstance(data.get("download"), dict):
         raise ValueError("Expected pipeline-1 configuration with download settings")
     settings = dict(data["download"])
+    settings.setdefault('accepted_formats', ['pdf'])
+    if not isinstance(settings['accepted_formats'], list) or not settings['accepted_formats'] or any(v not in {'pdf', 'html'} for v in settings['accepted_formats']):
+        raise ValueError('accepted_formats must contain pdf and/or html')
     for name in ("catalog_path", "raw_root", "log_root"):
         value = settings.get(name)
         if not isinstance(value, str) or not value.strip():
@@ -164,10 +168,12 @@ def artifact_name(path: Path) -> str:
 
 
 def recover(row: dict, raw_root: Path) -> dict | None:
-    folder = raw_root / "pdf" / row["doc_id"]
-    receipts = sorted(folder.glob("*.json"), key=lambda p: (p.stat().st_mtime_ns, p.name), reverse=True) if folder.exists() else []
+    folders = [raw_root / kind / row['doc_id'] for kind in ('pdf', 'html')]
+    receipts = sorted((p for folder in folders for p in folder.glob('*.json')),
+                      key=lambda p: (p.stat().st_mtime_ns, p.name), reverse=True)
     if row["status"] == "DOWNLOADED":
-        receipts = [folder / f"{row['sha256']}.json"]
+        kind = 'html' if row['local_filename'].lower().endswith('.html') else 'pdf'
+        receipts = [raw_root / kind / row['doc_id'] / f"{row['sha256']}.json"]
     for path in receipts:
         receipt = json.loads(path.read_text(encoding="utf-8"))
         if not isinstance(receipt, dict) or receipt.get("schema_version") != "raw-download-1" or receipt.get("doc_id") != row["doc_id"]:
@@ -177,7 +183,10 @@ def recover(row: dict, raw_root: Path) -> dict | None:
         digest = receipt.get("sha256", "")
         if len(digest) != 64 or any(c not in "0123456789abcdef" for c in digest) or path.stem != digest:
             raise DownloadError("Invalid receipt hash")
-        artifact = folder / f"{digest}.pdf"
+        kind = receipt.get('format', 'pdf')
+        if kind not in {'pdf', 'html'} or path.parent != raw_root / kind / row['doc_id']:
+            raise DownloadError('Invalid receipt format/path')
+        artifact = path.parent / f"{digest}.{kind}"
         if type(receipt.get("bytes")) is not int or receipt["bytes"] < 1:
             raise DownloadError("Invalid receipt byte count")
         if receipt.get("artifact_path") != str(artifact.relative_to(raw_root)) or receipt.get("local_filename") != artifact_name(artifact):
@@ -206,16 +215,18 @@ def persist_pdf(row: dict, source: dict, settings: dict, fetcher: PoliteFetcher,
         if response.getcode() != 200:
             raise DownloadError("Expected HTTP 200 (partial responses are not resumed)")
         mime = response.headers.get_content_type().lower()
-        if mime not in PDF_MIMES:
-            raise DownloadError(f"Not a supported PDF MIME type: {mime}")
+        kind = 'pdf' if mime in PDF_MIMES else 'html' if mime in HTML_MIMES else None
+        if kind not in settings.get('accepted_formats', ['pdf']):
+            raise DownloadError(f"Not a supported resource MIME type: {mime}")
+        byte_limit = min(settings['max_bytes'], 2097152) if kind == 'html' else settings['max_bytes']
         if response.headers.get("Content-Encoding", "identity").lower() != "identity":
             raise DownloadError("Compressed transport is not supported")
         declared = response.headers.get("Content-Length")
-        if declared is not None and (not declared.isdigit() or int(declared) > settings["max_bytes"]):
+        if declared is not None and (not declared.isdigit() or int(declared) > byte_limit):
             raise DownloadError("Invalid or excessive Content-Length")
         if progress:
             progress.begin_transfer(int(declared) if declared is not None else None)
-        folder = settings["raw_root"] / "pdf" / row["doc_id"]
+        folder = settings["raw_root"] / kind / row["doc_id"]
         folder.mkdir(parents=True, exist_ok=True)
         fd, name = tempfile.mkstemp(prefix=".download-", suffix=".tmp", dir=folder)
         temporary = Path(name)
@@ -225,14 +236,14 @@ def persist_pdf(row: dict, source: dict, settings: dict, fetcher: PoliteFetcher,
             while True:
                 if fetcher._remaining() <= 0:
                     raise DownloadError("time_limit")
-                chunk = read(min(65536, settings["max_bytes"] + 1 - size))
+                chunk = read(min(65536, byte_limit + 1 - size))
                 if not chunk:
                     break
                 size += len(chunk)
-                if size > settings["max_bytes"]:
+                if size > byte_limit:
                     raise DownloadError("Resource exceeds byte limit")
-                prefix = (prefix + chunk)[:16]
-                if len(prefix) >= 5 and not prefix.startswith(b"%PDF-"):
+                prefix = (prefix + chunk)[:2048]
+                if kind == 'pdf' and len(prefix) >= 5 and not prefix.startswith(b"%PDF-"):
                     raise DownloadError("PDF signature missing; possible HTML/login/error response")
                 tail = (tail + chunk)[-2048:]
                 digest.update(chunk)
@@ -241,14 +252,16 @@ def persist_pdf(row: dict, source: dict, settings: dict, fetcher: PoliteFetcher,
                     progress.transfer(size, int(declared) if declared is not None else None)
             if declared is not None and size != int(declared):
                 raise DownloadError("Content-Length mismatch; interrupted response")
-            if not prefix.startswith(b"%PDF-") or b"%%EOF" not in tail:
+            if kind == 'pdf' and (not prefix.startswith(b"%PDF-") or b"%%EOF" not in tail):
                 raise DownloadError("Incomplete PDF signature/end marker")
+            if kind == 'html' and b'<html' not in prefix.lower() and b'<!doctype html' not in prefix.lower():
+                raise DownloadError('Missing HTML document signature')
             stream.flush()
             os.fsync(stream.fileno())
         if progress:
             progress.update(force=True, phase="persisting")
         sha = digest.hexdigest()
-        artifact = folder / f"{sha}.pdf"
+        artifact = folder / f"{sha}.{kind}"
         if artifact.exists():
             if file_hash(artifact) != sha:
                 raise DownloadError("Existing raw artifact is corrupted; refusing overwrite")
@@ -256,6 +269,7 @@ def persist_pdf(row: dict, source: dict, settings: dict, fetcher: PoliteFetcher,
             os.replace(temporary, artifact)
             sync_directory(folder)
         receipt = {"schema_version": "raw-download-1", "doc_id": row["doc_id"], "source_id": source["id"],
+                   "format": kind, "charset": response.headers.get_content_charset() or '',
                    "requested_url": url, "final_url": final_url, "http_status": 200, "mime": mime,
                    "bytes": size, "sha256": sha, "artifact_path": str(artifact.relative_to(settings["raw_root"])),
                    "local_filename": artifact_name(artifact), "started_at_utc": started, "completed_at_utc": utc_now(),

@@ -56,3 +56,15 @@ The immediate priority remains discovery filtering and validation. Several hando
 - [PDF download validation](DOWNLOAD_VALIDATION_RESULTS.md): offline tests, isolated live transfer, recovery and current limits.
 
 - [Detailed pipeline architecture](PIPELINE_ARCHITECTURE.md): diagrams of collection, download recovery, document states, planned processing and storage.
+
+- [OCR baseline results](OCR_VALIDATION_RESULTS.md), [accuracy and human references](OCR_ACCURACY_GUIDE.md), and [Colab setup](COLAB_OCR_GUIDE.md): current extraction quality work and GPU experiments awaiting execution.
+
+- [Guarded Gemma pilot review](GEMMA_PILOT_REVIEW.md): supplied ten-page outcomes, source-image spot checks and the reference-first next step.
+
+- [OCR_BROAD_PILOT.md](OCR_BROAD_PILOT.md): 14-page subject/style pilot, isolated acquisition, frozen source provenance and paired Qwen/Gemma Colab instructions.
+
+- [Surya OCR trial](SURYA_OCR_TRIAL.md): pinned local detector/recognizer, T4 Colab steps, completion checks and limits following the Qwen handwriting failure.
+
+- [Native text datasets](NATIVE_TEXT_DATASET_GUIDE.md): conservative cleaning, page review, approved JSONL export and the 95-page printed-PDF pilot findings.
+
+- [Production corpus workflow](CORPUS_PRODUCTION_GUIDE.md): persistent PDF/HTML collection, configurable Surya processing, human correction, duplicate/split checks, reviewed releases and the production Colab notebook.

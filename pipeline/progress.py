@@ -139,11 +139,13 @@ def format_status(state: dict) -> str:
         pieces.append("source=" + safe_text(state["source_id"]))
     if "jobs_total" in counts:
         pieces.append(f"jobs={counts.get('jobs_completed', 0)}/{counts['jobs_total']}")
+    if item.get("page_number") is not None:
+        pieces.append(f"page={item['page_number']}")
     if item.get("doc_id"):
         pieces.append(safe_text(item["doc_id"]))
     if item.get("title") or item.get("url"):
         pieces.append(safe_text(item.get("title") or item["url"], 72))
-    for key in ("pages_visited", "queued", "candidates", "rejected", "requests", "retries", "deferred",
+    for key in ("pages_visited", "pages_completed", "pages_total", "ocr_pages", "extracted", "ocr_required", "queued", "candidates", "rejected", "requests", "retries", "deferred",
                 "downloaded", "verified_existing", "recovered", "failed", "catalog_conflict"):
         if key in counts:
             pieces.append(f"{key}={counts[key]}")

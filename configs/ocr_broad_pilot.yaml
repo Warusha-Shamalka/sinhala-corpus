@@ -1,0 +1,137 @@
+schema_version: ocr-selection-1
+coverage_note: Small diagnostic public-source pilot, not representative curriculum
+  coverage. Style/subject hints are engineering image inspections, not human reference
+  verification. Handwritten language/history/business and printed physics are missing.
+  Documents are kept within one split; some subject/style cells lack holdout coverage.
+samples:
+- doc_id: LK-EDU-000104
+  page_number: 1
+  split: calibration
+  subject_group: Physics
+  content_type_hint: handwritten
+  layout_tags: &id001
+  - equations
+  - diagrams
+  metadata_evidence: Page images show handwritten Sinhala mechanics practical notes,
+    apparatus, force diagrams and equations.
+- doc_id: LK-EDU-000104
+  page_number: 2
+  split: calibration
+  subject_group: Physics
+  content_type_hint: handwritten
+  layout_tags: *id001
+  metadata_evidence: Page images show handwritten Sinhala mechanics practical notes,
+    apparatus, force diagrams and equations.
+- doc_id: LK-EDU-000231
+  page_number: 1
+  split: calibration
+  subject_group: Biology
+  content_type_hint: handwritten
+  layout_tags: &id002
+  - columns
+  - colored_background
+  metadata_evidence: Page images show handwritten Sinhala applied biology notes on
+    aquatic organisms and fishing.
+- doc_id: LK-EDU-000231
+  page_number: 2
+  split: calibration
+  subject_group: Biology
+  content_type_hint: handwritten
+  layout_tags: *id002
+  metadata_evidence: Page images show handwritten Sinhala applied biology notes on
+    aquatic organisms and fishing.
+- doc_id: LK-EDU-000264
+  page_number: 12
+  split: holdout
+  subject_group: Biology
+  content_type_hint: printed
+  layout_tags: &id003
+  - bullets
+  - dense_prose
+  metadata_evidence: Page images show printed Sinhala biology teacher guide on the
+    human nervous system; PDF page numbers differ from printed numbers.
+- doc_id: LK-EDU-000264
+  page_number: 13
+  split: holdout
+  subject_group: Biology
+  content_type_hint: printed
+  layout_tags: *id003
+  metadata_evidence: Page images show printed Sinhala biology teacher guide on the
+    human nervous system; PDF page numbers differ from printed numbers.
+- doc_id: LK-EDU-000285
+  page_number: 2
+  split: holdout
+  subject_group: Maths
+  content_type_hint: printed
+  layout_tags: &id004
+  - equations
+  - watermark
+  - answer_space
+  metadata_evidence: Page images show printed Sinhala combined mathematics structured
+    questions. Catalog title incorrectly suggests Part I; inspected pages are structured,
+    not MCQ.
+- doc_id: LK-EDU-000285
+  page_number: 3
+  split: holdout
+  subject_group: Maths
+  content_type_hint: printed
+  layout_tags: *id004
+  metadata_evidence: Page images show printed Sinhala combined mathematics structured
+    questions. Catalog title incorrectly suggests Part I; inspected pages are structured,
+    not MCQ.
+- doc_id: LK-EDU-000490
+  page_number: 1
+  split: calibration
+  subject_group: Sinhala Language
+  content_type_hint: printed
+  layout_tags:
+  - worksheet
+  - prose
+  metadata_evidence: Page image identifies Grade 6 Sinhala and contains spelling and
+    word exercises.
+- doc_id: LK-EDU-000491
+  page_number: 2
+  split: holdout
+  subject_group: History
+  content_type_hint: printed
+  layout_tags: &id005
+  - diagrams
+  - prose
+  metadata_evidence: Page images identify Grade 10 History and contain historical
+    society reading material with diagrams.
+- doc_id: LK-EDU-000491
+  page_number: 3
+  split: holdout
+  subject_group: History
+  content_type_hint: printed
+  layout_tags: *id005
+  metadata_evidence: Page images identify Grade 10 History and contain historical
+    society reading material with diagrams.
+- doc_id: LK-EDU-000492
+  page_number: 2
+  split: calibration
+  subject_group: Business and Accounting
+  content_type_hint: printed
+  layout_tags: &id006
+  - prose
+  - table
+  metadata_evidence: Page images show Sinhala accounting chapter prose and an asset/liability
+    classification exercise table.
+- doc_id: LK-EDU-000492
+  page_number: 10
+  split: calibration
+  subject_group: Business and Accounting
+  content_type_hint: printed
+  layout_tags: *id006
+  metadata_evidence: Page images show Sinhala accounting chapter prose and an asset/liability
+    classification exercise table.
+- doc_id: LK-EDU-000012
+  page_number: 1
+  split: calibration
+  subject_group: Maths
+  content_type_hint: handwritten
+  layout_tags:
+  - equations
+  - diagrams
+  metadata_evidence: Reuses the existing calibration page of handwritten vector mathematics
+    notes; preserves its prior split.
