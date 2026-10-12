@@ -1,6 +1,11 @@
 # Purpose
 
-`discovery_review.py` implements offline sampling and reporting for independent discovery-candidate review. Other corpus content-quality validation remains planned. See [DISCOVERY_REVIEW_GUIDE.md](../../docs/DISCOVERY_REVIEW_GUIDE.md) for commands, labeling rules and statistical limits.
+`discovery_review.py` implements independent discovery-candidate sampling/reporting;
+`ocr_benchmark.py` measures OCR against verified independent references. `text.py`
+provides warning heuristics, and `corpus.py` reports production review coverage,
+correction burden and export preflight without auto-approval. See
+[CORPUS_QUALITY_GUIDE.md](../../docs/CORPUS_QUALITY_GUIDE.md) for production commands
+and the distinction between correction burden and independent OCR accuracy.
 
 This directory is reserved for quality-assessment workflows.
 

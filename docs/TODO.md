@@ -247,3 +247,17 @@ See [CORPUS_PRODUCTION_GUIDE.md](CORPUS_PRODUCTION_GUIDE.md) for current limits 
 - [x] Add five regression tests covering resource types, URL/title evidence, phrase boundaries and audit explanations.
 - [x] Run the complete offline checks: 226 tests ran, 225 passed and one Tesseract test was skipped.
 - [ ] Review Sinhala syllabus-version wording and other real-source formats before extending the rules.
+
+## Corpus review quality reporting (12 October 2026)
+
+- [x] Add offline review coverage, OCR outcomes/warnings, edited-pending drafts and prioritized review IDs.
+- [x] Diagnose invalid approvals without weakening the strict exporter; verify source evidence and reject changing report snapshots.
+- [x] Add approved-correction editing distances with bounded computation and explicit scored/skipped coverage; do not label these as independent OCR accuracy.
+- [x] Check source/version and duplicate split conflicts, with an optional shell preflight gate.
+- [x] Save immutable JSON/Markdown reports outside review packets; include input/component hashes and unverified metadata coverage.
+- [x] Add a production Colab reporting cell and default its clone branch to merged `dev`; set a pushed feature branch explicitly when trialing unmerged changes.
+- [x] Add eleven regression tests covering pending reviews, corrections, invalid approval, failures, budgets, split leakage, duplicates, corruption, concurrent edits and CLI gate behavior.
+- [x] Pass the full offline suite: 237 tests ran, 236 passed and one Tesseract test was skipped; validate all ten production notebook code cells and embedded setup programs syntactically.
+- [ ] Generate reports from actual Colab production packets before/after source-checked human review; real GPU/Drive testing and the first approved release remain pending.
+
+See [CORPUS_QUALITY_GUIDE.md](CORPUS_QUALITY_GUIDE.md). Keep these changes with the document-type fix for one larger PR into `dev` when ready.
