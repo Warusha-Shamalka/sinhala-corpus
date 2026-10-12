@@ -92,6 +92,18 @@ class _DomainRedirectHandler(HTTPRedirectHandler):
         return super().redirect_request(req, fp, code, msg, headers, target)
 
 
+def source_start_urls(source):
+    """Explicit hubs prevent a small crawl budget being consumed before key listings."""
+    base = normalize_url(source.get('base_url', ''))
+    urls = source.get('start_urls', [])
+    if not isinstance(urls, list) or any(not isinstance(url, str) for url in urls):
+        raise ValueError('start_urls must be a list of HTTP(S) URLs')
+    normalized = [normalize_url(url) for url in urls]
+    if any(not url or not is_within_domain(url, base) or not should_crawl(url) for url in normalized):
+        raise ValueError('Every start URL must be a crawlable page within its configured source domain')
+    return list(dict.fromkeys([*normalized, base]))
+
+
 def load_configuration(source_path=None, subject_path=None, catalog_path=None) -> tuple[list[dict], dict]:
     source_path = source_path or SOURCES_PATH
     subject_path = subject_path or SUBJECTS_PATH
@@ -125,6 +137,7 @@ def load_configuration(source_path=None, subject_path=None, catalog_path=None) -
             source["enabled"] and source["verified"] and not base_url
         ):
             raise ValueError(f"Source {source['id']} requires a valid HTTP(S) base_url")
+        if base_url: source_start_urls(source)
     for domain, details in subjects_config["domains"].items():
         if not isinstance(details, dict) or not isinstance(details.get("subjects"), list):
             raise ValueError(f"Domain {domain} requires a subjects list")
@@ -639,11 +652,15 @@ def discover_source(
     fetcher = PoliteFetcher(limits["request_delay_seconds"], limits["timeout_seconds"], logger,
                             max_requests=limits["max_requests"], max_seconds=limits["max_seconds"],
                             max_retries=limits["max_retries"], max_retry_wait=limits["max_retry_wait"])
+    starts = source_start_urls(source)
+    if len(starts) > limits['max_queue']:
+        raise ValueError('Configured start URLs exceed the crawl queue limit')
     if progress:
         fetcher.progress = progress
-        progress.update(force=True, source_id=source["id"], robots_outcome="", stop_reason="", transfer={}, counts={"pages_visited": 0, "queued": 1, "candidates": 0, "rejected": 0, "requests": 0, "retries": 0})
-    queue = deque([(base_url, 0)])
-    scheduled = {base_url}
+        progress.update(force=True, source_id=source["id"], robots_outcome="", stop_reason="", transfer={}, counts={"pages_visited": 0, "queued": len(starts), "candidates": 0, "rejected": 0, "requests": 0, "retries": 0})
+    queue = deque((url, 0) for url in starts)
+    scheduled = set(starts)
+    stats['queue_peak'] = len(starts)
     visited: set[str] = set()
     candidate_by_url: dict[str, dict[str, str]] = {}
     rejected_by_url: dict[str, tuple[str, int, str]] = {}
@@ -654,7 +671,7 @@ def discover_source(
         in_domain = bool(candidate_url) and is_within_domain(candidate_url, base_url)
         if decision_sink is not None:
             decision_sink({
-                "schema_version": "discovery-decision-1", "rule_version": "discovery-0.5",
+                "schema_version": "discovery-decision-1", "rule_version": "discovery-0.6",
                 "source_id": source["id"], "referring_url": page_url, "candidate_url": candidate_url,
                 "href": link.href,
                 "title": decision.title, "accepted": bool(candidate and in_domain),

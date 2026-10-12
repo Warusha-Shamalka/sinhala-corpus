@@ -95,7 +95,7 @@ class _PageParser(HTMLParser):
                    or "hidden" in attributes or str(attributes.get("aria-hidden") or "").casefold() == "true")
         classes = set(str(attributes.get("class") or "").casefold().split())
         scoped = (tag in {"tr", "li", "article", "dd"}
-                  or tag == "div" and bool(classes & {"card", "resource", "resource-card", "document", "material", "item"}))
+                  or tag == "div" and bool(classes & {"card", "resource", "resource-card", "paper-card", "document", "material", "item"}))
         if tag not in VOID_TAGS and not self._context_disabled:
             if len(self._stack) >= MAX_CONTEXT_DEPTH:
                 # Keep discovering explicit links, but stop structural inference

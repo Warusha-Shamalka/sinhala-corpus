@@ -35,6 +35,9 @@ sources:
   - id: alapiedu
     name: AlApiEdu
     base_url: "https://www.alapiedu.com/"
+    # Start with the public marking listing so bounded crawls also see answer keys.
+    start_urls:
+      - "https://www.alapiedu.com/Category/marking_hub/MarkingSubject"
     type: educational_portal
     country: Sri Lanka
     language: si

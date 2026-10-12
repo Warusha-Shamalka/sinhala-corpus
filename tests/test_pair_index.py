@@ -53,3 +53,14 @@ class PairIndexTests(unittest.TestCase):
         self.assertEqual(output[0]['year'],''); self.assertEqual(output[0]['collection_id'],'UNRESOLVED')
         self.assertEqual(output[1]['role'],'key')
         self.assertTrue(all(r['metadata_status']=='unverified' for r in output))
+
+    def test_subject_and_medium_hints_are_separate_and_conflicts_stay_unknown(self):
+        path=self.root/'catalog.csv'
+        rows=[{'doc_id':'P','title':'2020 AL Physics paper I Sinhala Medium','document_type':'past_paper','subject':''},
+              {'doc_id':'K','title':'2020 AL Physics answer key Sinhala Medium','document_type':'marking_scheme','subject':'Biology'}]
+        with path.open('w',newline='') as f:
+            w=csv.DictWriter(f,fieldnames=list(rows[0]));w.writeheader();w.writerows(rows)
+        pair_index.prepare(path,self.root/'index')
+        with (self.root/'index/documents.csv').open() as f: output=list(csv.DictReader(f))
+        self.assertEqual(output[0]['subject'],'Physics'); self.assertEqual(output[0]['language'],'si')
+        self.assertEqual(output[0]['paper_number'],'1'); self.assertEqual(output[1]['subject'],'')

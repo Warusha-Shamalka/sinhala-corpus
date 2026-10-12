@@ -11,7 +11,7 @@ from urllib.parse import quote, unquote, urljoin, urlsplit, urlunsplit
 
 DEFAULT_CANDIDATE_THRESHOLD = 4
 DOCUMENT_TYPES = {
-    "marking_scheme": ("marking scheme", "marking schemes", "answer scheme", "answer schemes"),
+    "marking_scheme": ("marking scheme", "marking schemes", "answer scheme", "answer schemes", "answer key", "answer keys", "ලකුණු දීමේ පටිපාටිය", "ලකුණු දීමේ පටිපාටි"),
     "past_paper": ("past paper", "past papers", "question paper", "question papers", "model paper", "model papers", "exam paper", "examination paper"),
     "teacher_guide": ("teacher guide", "teacher guides", "teachers guide", "teacher's guide", "teacher's guides", "teacher guidebook", "teacher guide book"),
     "syllabus": ("syllabus", "curriculum", "විෂය නිර්දේශය"),
@@ -27,7 +27,7 @@ POSITIVE_TERMS = (
     "marking", "answer scheme", "model paper", "model answer", "resource", "tutorial", "guide",
     "පෙළපොත", "ගුරු මාර්ගෝපදේශ", "විෂය නිර්දේශය", "පාඩම්", "ප්‍රශ්න පත්‍ර", "පසුගිය ප්‍රශ්න පත්‍ර",
     "සටහන්", "වැඩපොත", "උත්තර පත්‍ර",
-)
+) + DOCUMENT_TYPES['marking_scheme']
 INFRASTRUCTURE_TERMS = (
     "privacy", "privacy policy", "terms", "terms of use", "sitemap", "login", "log in",
     "register", "registration", "dashboard", "account", "profile",
@@ -311,7 +311,7 @@ def classify_candidate(
     has_specific_resource = any(
         _contains_phrase(value, term)
         for value in (urlsplit(url).path, filename, anchor, title)
-        for term in specific_document_terms
+        for term in (*specific_document_terms, *DOCUMENT_TYPES['marking_scheme'])
     )
     if has_specific_resource:
         score += 4

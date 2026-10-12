@@ -4,9 +4,11 @@ import io
 from collections import Counter
 from pathlib import Path
 import re
+import yaml
 
 from pipeline.dataset.native import digest, encode, publish
 from pipeline.download.downloader import file_hash
+from pipeline.discovery.filters import detect_document_type, extract_medium_hint, subject_matches
 
 
 FIELDS = ['doc_id', 'source_url', 'title', 'raw_sha256', 'role', 'exam', 'subject', 'year',
@@ -21,6 +23,7 @@ def canonical(value):
 def prepare(catalog, output):
     catalog, output = Path(catalog), Path(output)
     sha = file_hash(catalog)
+    subjects = yaml.safe_load((Path(__file__).resolve().parents[2] / 'configs/subjects.yaml').read_text())
     rows, ids = [], set()
     with catalog.open(encoding='utf-8', newline='') as stream:
         for source in csv.DictReader(stream):
@@ -29,7 +32,7 @@ def prepare(catalog, output):
             ids.add(sid)
             text = title.casefold()
             kind = source.get('document_type', '')
-            key = kind == 'marking_scheme' or bool(re.search(r'\b(marking\s+scheme|answer\s+key|answers)\b', text))
+            key = kind == 'marking_scheme' or detect_document_type('', title) == 'marking_scheme' or bool(re.search(r'\banswers\b', text))
             paper = kind == 'past_paper' or bool(re.search(r'\b(past\s+paper|question\s+paper|pesuru)\b', text))
             if not (key or paper): continue
             years = set(re.findall(r'\b(?:19|20)[0-9]{2}\b', title))
@@ -47,6 +50,16 @@ def prepare(catalog, output):
                        paper_number=next(iter(parts)) if len(parts) == 1 else '',
                        language=source.get('language', ''), metadata_status='unverified',
                        notes='Catalog/title hints only; verify from the original document.')
+            subject, _ = subject_matches(title, subjects)
+            medium = extract_medium_hint(title, subjects)
+            for field, hint in (('subject', subject), ('language', medium)):
+                if hint:
+                    if row[field] and canonical(row[field]) != canonical(hint):
+                        row[field] = ''
+                        row['notes'] += f' Conflicting catalog/title {field}; original-source review required.'
+                    else:
+                        row[field] = hint
+            row['paper_number'] = {'I': '1', 'II': '2', 'III': '3'}.get(row['paper_number'], row['paper_number'])
             if 'pesuru' in text or len(years) > 1:
                 row['notes'] += ' Possible compilation: record collection/edition ID; do not infer one exam year.'
                 row['year'] = ''
