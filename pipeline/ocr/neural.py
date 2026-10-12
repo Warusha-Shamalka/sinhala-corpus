@@ -21,7 +21,7 @@ PROMPT = ('Transcribe all visible text from this Sinhala educational page in rea
           'Output only the transcription.')
 MODELS = {'gemma': 'google/gemma-4-E2B-it', 'deepseek': 'deepseek-ai/DeepSeek-OCR-2',
           'qwen': 'Qwen/Qwen2.5-VL-3B-Instruct', 'surya':'datalab/surya-ocr-0.17.1',
-          'gemini_api': 'gemini-1.5-flash'}
+          'gemini_api': 'gemini-2.5-flash'}
 
 
 def repetition_loop(tokens):
@@ -196,7 +196,7 @@ def run(packet, output, backend, model_path, revision, *, max_pages=10, max_new_
         loading_started = time.monotonic()
         if engine is None and backend=='gemini_api':
             from pipeline.ocr.gemini_backend import GeminiBackend
-            engine=GeminiBackend(api_key, max_generation_seconds=max_generation_seconds)
+            engine=GeminiBackend(api_key, model_name=MODELS['gemini_api'], max_generation_seconds=max_generation_seconds)
         elif engine is None and backend=='surya':
             from pipeline.ocr.surya_backend import SuryaBackend, block_network
             block_network()
