@@ -329,7 +329,9 @@ See [MCQ_ANSWER_MATCHING_GUIDE.md](MCQ_ANSWER_MATCHING_GUIDE.md).
 - [x] Prepare an editable pairing index from existing catalog/title hints, without approving identities.
 - [x] Suggest compatible paper/key candidates with matched/missing fields, ambiguity and unresolved reports.
 - [ ] Identify actual Pesuru/past-paper source sites and check their crawl configuration and source-use conditions.
-- [ ] Discover marking schemes as well as papers; improve source-specific resource classification where needed.
+- [x] Run bounded ALapi marking-scheme discovery; retain local resource-card headings and recognize answer-key labels.
+- [x] Add unverified subject/medium title hints and normalize Roman paper numbers in the pairing index.
+- [ ] Collect matching paper counterparts and recover missing identity evidence from their originals.
 - [ ] Extract exam, subject, year, paper number, language and edition evidence from public document headers.
 - [ ] Review suggested pairs against both originals and record confirmed metadata and pairing decisions.
 - [ ] Track Pesuru/other compilation editions and each question's original paper reference; never join collections by year alone.
@@ -339,3 +341,5 @@ See [MCQ_ANSWER_MATCHING_GUIDE.md](MCQ_ANSWER_MATCHING_GUIDE.md).
 The index is a separate editable review artifact; it does not modify the master catalog.
 
 Validation: 296 offline tests ran (295 passed, one Tesseract test skipped). The current catalog produced 87 draft paper entries, no key entries and zero pair suggestions. These are metadata candidates, not verified documents.
+
+2026-10-12 marking discovery pilot: 543 unique candidates from one listing, including 212 marking-scheme candidates. An isolated index with the existing 87 paper entries still produced zero pair suggestions: 83 paper entries lack a subject and 72 lack an exam hint. Production catalog unchanged; no PDFs downloaded. Full suite: 301 tests, 300 passed and one skipped. See [MARKING_DISCOVERY_PILOT.md](MARKING_DISCOVERY_PILOT.md).

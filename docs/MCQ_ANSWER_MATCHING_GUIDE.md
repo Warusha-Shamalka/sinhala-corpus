@@ -179,3 +179,5 @@ compilation to an ordinary exam solely by year. Compilation question-origin mapp
 remains future work. Discovery of new sites and header extraction are not performed
 by these offline commands. Zero suggestions means more metadata or key documents
 are needed, not that the catalog should be guessed.
+
+Title-based subject and medium hints now supplement the pairing index. Conflicts with catalog values leave the field blank with a review note. Roman paper numbers I/II/III normalize to 1/2/3; none of these hints approve an identity. See [the marking discovery pilot](MARKING_DISCOVERY_PILOT.md) for current coverage and remaining gaps.

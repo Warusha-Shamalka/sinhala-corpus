@@ -8,7 +8,7 @@ The crawler loads `configs/sources.yaml` and `configs/subjects.yaml` from the re
 
 ## Crawling and classification
 
-Each selected source is traversed breadth-first from its configured base URL. URLs are normalized, fragments are discarded, external hosts are rejected, revisits are prevented, and links are bounded by depth and per-source page count. The crawler consults `robots.txt`, sends a descriptive User-Agent, applies a request delay, and handles HTTP, timeout, and page-read failures without aborting other sources. Only HTML/XHTML responses are read (up to a bounded amount); likely resource files are never fetched. Redirects outside the configured source domain are rejected.
+Each selected source is traversed breadth-first from optional `start_urls`, followed by its configured base URL. These seeds must be a list of absolute HTTP(S) HTML-page URLs on the configured host; file URLs and external hosts are rejected. Duplicates are removed and all seeds share the same queue, page, request and time budgets. ALapi starts at its public marking-scheme listing so a small crawl budget can reach keys. URLs are normalized, fragments are discarded, external hosts are rejected, revisits are prevented, and links are bounded by depth and per-source page count. The crawler consults `robots.txt`, sends a descriptive User-Agent, applies a request delay, and handles HTTP, timeout, and page-read failures without aborting other sources. Only HTML/XHTML responses are read (up to a bounded amount); likely resource files are never fetched. Redirects outside the configured source domain are rejected.
 
 Page traversal is deliberately independent from catalog decisions: same-domain HTML navigation, category, and search pages remain crawlable, but obvious infrastructure/navigation/listing pages are normally excluded from the catalog. Candidate scoring uses weighted, explainable evidence from the resource URL, filename, anchor/title, local surrounding text, and configured subject list. A direct document link is strong evidence; category/navigation cues are negative evidence. Dry-run output prints scores, reasons, accepted examples, and rejected navigation/listing examples. Configured subject names support subject/domain matching; grade and education level are filled only for explicit Grade/Class numbers or O/L/A/L labels. Document types use the existing controlled values (`textbook`, `teacher_guide`, `syllabus`, `past_paper`, `marking_scheme`, `lesson`, `article`, `workbook`, `other`). Ambiguous metadata is left empty. A PDF link is recorded as a candidate, not downloaded or parsed.
 
@@ -25,7 +25,7 @@ Individual subjects may specify `excluded_phrases`. History excludes “life his
 without assigning Biology automatically. A separate explicit History occurrence
 still counts, and independent subject conflicts remain unknown. These configurable
 rules cover known phrases, not complete semantic understanding. Rule version is
-`discovery-0.5`; existing catalog rows and historical review packets are not rewritten.
+`discovery-0.6`; existing catalog rows and historical review packets are not rewritten.
 
 Document typing also distinguishes syllabus versions from resource identity:
 “Physics new syllabus notes” is a lesson candidate, and “2024 Physics new syllabus
@@ -80,3 +80,5 @@ Generic Download/Open links can use a short, completed table row, list item, art
 ## Live progress and background status
 
 Discovery and downloads now support `--progress auto|plain|off` and `--quiet`, with atomic per-run snapshots and a read-only `python3 -B -m pipeline.progress <snapshot-path>` checker. Download reports remain JSON on stdout; discovery offers `--json`. See the [progress guide](../../docs/PROGRESS_GUIDE.md) for commands, counters, snapshot paths and interruption/staleness behavior. Downloader dry-runs still make no requests or writes.
+
+Resource headings inside `paper-card` containers supply local title evidence for generic View/Download links. Answer-key and Sinhala marking-scheme labels use the existing `marking_scheme` type. These are discovery hints, not source verification. See [the marking discovery pilot](../../docs/MARKING_DISCOVERY_PILOT.md).
