@@ -42,3 +42,18 @@ sources:
     priority: medium
     verified: true
     notes: "URL provided by the user; official status and Sinhala educational scope need verification."
+
+  - id: govdoc
+    name: GovDoc
+    base_url: "https://govdoc.lk/category/syllabus/grade-6/history?medium=sinhala"
+    type: educational_portal
+    country: Sri Lanka
+    language: si
+    enabled: true
+    priority: high
+    verified: true
+    resource_hosts:
+      - "govdoc.lk"
+      - "govdoc.nyc3.digitaloceanspaces.com"
+    crawl_pattern: "grade-6.*history|history.*grade-6"
+    notes: "Sri Lankan government documents, school syllabi, and educational materials (govdoc.lk)"
