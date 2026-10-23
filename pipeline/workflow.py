@@ -15,7 +15,7 @@ from pipeline.processing import pages
 from pipeline.processing import batch
 from pipeline.dataset import reviewed, provisional, daily
 from pipeline.quality import corpus as corpus_quality
-from pipeline.dataset.native import encode, digest, publish
+from pipeline.dataset.native import encode, digest, publish, visible_manifests
 
 
 def initialize(store, seed):
@@ -58,7 +58,7 @@ def status(config_path):
     settings = pages.load_settings(config_path)
     catalog = read_catalog(settings['catalog_path'])
     processed, errors = [], []
-    for path in settings['output_root'].rglob('manifest.json'):
+    for path in visible_manifests(settings['output_root']):
         try:
             manifest = json.loads(path.read_text(encoding='utf-8'))
             processed.append(pages.verify_page(path.parent, manifest['identity']))
@@ -90,11 +90,20 @@ def main():
             stage.add_argument('--source')
         if name == 'process':
             stage.add_argument('--page-number', action='append', type=int, dest='page_numbers')
+            stage.add_argument('--retry-incomplete', action='store_true')
         if name == 'prepare-review':
             stage.add_argument('--output', type=Path, required=True)
             stage.add_argument('--config-hash')
     export = commands.add_parser('export')
     export.add_argument('--packet', type=Path, required=True); export.add_argument('--output', type=Path, required=True)
+    image_import = commands.add_parser('import-image', help='Register a local PNG/JPEG with explicit source provenance')
+    image_import.add_argument('--config', type=Path, default=ROOT / 'configs/pipeline.yaml')
+    image_import.add_argument('--sources', type=Path)
+    image_import.add_argument('--image', type=Path, required=True)
+    image_import.add_argument('--source', required=True, help='Configured source ID')
+    image_import.add_argument('--source-url', required=True)
+    image_import.add_argument('--title', required=True)
+    image_import.add_argument('--dry-run', action='store_true')
     verify = commands.add_parser('verify-release')
     verify.add_argument('--root', type=Path, required=True)
     quality = commands.add_parser('quality')
@@ -132,6 +141,11 @@ def main():
     args = parser.parse_args()
     try:
         if args.command == 'init': result = initialize(args.store, args.seed)
+        elif args.command == 'import-image':
+            from pipeline.processing.import_image import import_image
+            result = import_image(pages.load_settings(args.config),
+                                  downloader.load_sources(args.sources or args.config.parent / 'sources.yaml'),
+                                  args.image, args.source, args.source_url, args.title, dry_run=args.dry_run)
         elif args.command == 'status': result = status(args.config)
         elif args.command == 'collect':
             result = downloader.run(downloader.load_settings(args.config), downloader.load_sources(args.sources or args.config.parent / 'sources.yaml'),
@@ -139,7 +153,7 @@ def main():
         elif args.command == 'process':
             result = pages.run(pages.load_settings(args.config), extractor.load_settings(args.config), doc_ids=args.doc_ids,
                                page_numbers=args.page_numbers,
-                               dry_run=args.dry_run, progress_mode=args.progress)
+                               dry_run=args.dry_run, progress_mode=args.progress, retry_incomplete=args.retry_incomplete)
         elif args.command == 'prepare-review':
             result = reviewed.prepare(pages.load_settings(args.config)['output_root'], args.output, args.config_hash)
         elif args.command == 'verify-release': result = reviewed.verify_release(args.root)
@@ -159,7 +173,7 @@ def main():
         elif args.command == 'verify-daily-release': result = daily.verify(args.root)
         else: result = reviewed.export(args.packet, args.output)
         print(json.dumps(result, ensure_ascii=False, indent=2))
-        failed = bool(result.get('errors') or result.get('artifact_errors') or any(r.get('outcome') in {'failed', 'catalog_conflict'} for r in result.get('results', [])))
+        failed = bool(pages.has_failures(result) or result.get('artifact_errors') or any(r.get('outcome') == 'catalog_conflict' for r in result.get('results', [])))
         if args.command == 'quality' and args.require_exportable:
             failed = failed or result['export_preflight']['status'] != 'checks_passed'
         return int(failed)

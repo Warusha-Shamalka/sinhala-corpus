@@ -98,7 +98,10 @@ def token_completion(sequences,eos,no_output):
 
 
 class SuryaBackend:
-    def __init__(self,model_path,revision,max_generation_seconds=120):
+    def __init__(self,model_path,revision,max_generation_seconds=120, *, columns=1):
+        if type(columns) is not int or columns not in (1, 2):
+            raise ValueError('columns must be 1 or 2')
+        self.columns = columns
         require_version()
         manifest=verify_models(model_path,revision)
         import torch
@@ -136,7 +139,7 @@ class SuryaBackend:
             'model_components':manifest['components'],'dtype':str(self.foundation.model.dtype),
             'detection_dtype':str(self.detection.model.dtype),'attention':'eager',
             'recognition_batch_size':4,'detection_batch_size':1,'region_max_tokens':256,
-            'math_mode':True,'sort_lines':True,'max_page_seconds':max_generation_seconds,
+            'math_mode':True,'sort_lines':True,'columns':columns,'max_page_seconds':max_generation_seconds,
             'completion_check':'captured regional EOS/no-output tokens',
             'drop_repeated_tokens':False,'network':'blocked during model loading and inference'}
 
@@ -160,11 +163,14 @@ class SuryaBackend:
             if len(results)!=1:
                 raise ValueError('Surya returned an unexpected page count')
             raw=results[0].model_dump(mode='json')
-            text='\n'.join(line['text'] for line in raw['text_lines'])
+            from pipeline.ocr.images import reading_order
+            order = reading_order(raw['text_lines'], page.width, self.columns) if self.columns != 1 else list(range(len(raw['text_lines'])))
+            text='\n'.join(raw['text_lines'][i]['text'] for i in order)
             complete=self.completion
             if time.monotonic()>=self.deadline:
                 complete='time_limit'
-            return {'text':text,'raw_result':raw,'region_generated_tokens':[len(seq) for seq in self.tokens],
+            return {'text':text,'raw_result':raw,'reading_order_indices':order,
+                'region_generated_tokens':[len(seq) for seq in self.tokens],
                 'completion_status':complete,
                 'outcome':'predicted' if complete=='complete' else ('completion_unverified' if complete=='unverified_upstream' else 'truncated')}
         finally:

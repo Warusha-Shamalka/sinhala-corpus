@@ -73,7 +73,7 @@ def run(config_path, *, sources_path=None, source_id=None, doc_ids=None,
     def processable(rows, failed):
         return [row['doc_id'] for row in scoped(rows) if row['doc_id'] not in failed
                 and row['status'] in {'DOWNLOADED', 'EXTRACTED'} and row['sha256']
-                and row['local_filename'].lower().endswith(('.pdf', '.html'))]
+                and row['local_filename'].lower().endswith(('.pdf', '.html', '.png', '.jpg'))]
     result = {'schema_version': 'corpus-batch-run-1', 'dry_run': dry_run,
               'limits': {'max_batches': max_batches, 'max_download_jobs': max_download_jobs, 'max_new_pages': max_new_pages},
               'download_jobs_reserved': 0, 'new_pages': 0, 'batches': [], 'errors': [],
@@ -130,9 +130,11 @@ def run(config_path, *, sources_path=None, source_id=None, doc_ids=None,
                         # Count saved artifacts, including completion_unverified or
                         # future outcome labels; completion is not a page-budget gate.
                         bundle = row.get('bundle')
-                        if bundle and row.get('outcome') != 'verified_existing' and bundle not in new_bundles:
+                        if bundle and not row.get('reused') and row.get('outcome') != 'verified_existing' and bundle not in new_bundles:
                             new_bundles.add(bundle); result['new_pages'] += 1
-                        if row.get('outcome') == 'failed': result['errors'].append({'stage': 'process', **row})
+                        if pages.has_failures({'results': [row]}):
+                            failed_docs.add(row['doc_id'])
+                            result['errors'].append({'stage': 'process', **row})
                 result['processed_bundles'] = sorted(bundles)
                 checkpoint()
                 process_report = cycle['process'] or {}

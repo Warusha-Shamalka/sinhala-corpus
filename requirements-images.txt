@@ -1,0 +1,3 @@
+# Optional local image import/preprocessing dependencies (Python 3.11-3.14).
+# The isolated Surya Colab environment retains its separately pinned dependencies.
+Pillow==12.1.1

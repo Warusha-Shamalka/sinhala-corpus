@@ -461,9 +461,16 @@ class PoliteFetcher:
 
         class BoundedRedirectHandler(_DomainRedirectHandler):
             def redirect_request(self, req, fp, code, msg, headers, newurl):
-                redirected = super().redirect_request(req, fp, code, msg, headers, newurl)
-                if owner.allowed_hosts is not None and urlsplit(redirected.full_url).hostname not in owner.allowed_hosts:
-                    raise HTTPError(req.full_url, code, "redirect outside allowed resource hosts", headers, fp)
+                target = resolve_url(req.full_url, newurl)
+                if owner.allowed_hosts is not None:
+                    if target and urlsplit(target).hostname not in owner.allowed_hosts:
+                        raise HTTPError(req.full_url, code, "redirect outside allowed resource hosts", headers, fp)
+                    if not target:
+                        raise HTTPError(req.full_url, code, "redirect outside configured source domain", headers, fp)
+                else:
+                    if not target or not is_within_domain(target, self.base_url):
+                        raise HTTPError(req.full_url, code, "redirect outside configured source domain", headers, fp)
+                redirected = HTTPRedirectHandler.redirect_request(self, req, fp, code, msg, headers, target)
                 if check_redirect_robots and not owner.robots_allowed(redirected.full_url):
                     raise HTTPError(req.full_url, code, "redirect forbidden by robots policy", headers, fp)
                 if not owner._wait() or not owner._charge_request():
@@ -575,9 +582,10 @@ class PoliteFetcher:
         Caller owns response closure and streaming/type validation. Discovery
         continues to use fetch_html and never calls this resource API.
         """
-        if not is_within_domain(url, base_url) or (
-            self.allowed_hosts is not None and urlsplit(url).hostname not in self.allowed_hosts
-        ):
+        url = normalize_url(url)
+        approved = bool(url) and (urlsplit(url).hostname in self.allowed_hosts
+                                 if self.allowed_hosts is not None else is_within_domain(url, base_url))
+        if not approved:
             self.last_failure = "unapproved_resource_host"
             return None
         if not self.robots_allowed(url):
@@ -650,7 +658,7 @@ def discover_source(
 
     def process_link(link: Link, page_title: str, page_url: str) -> None:
         candidate, decision = evaluate_link(link, page_title, page_url, source, subjects_config)
-        candidate_url = resolve_url(page_url, link.href)
+        candidate_url = candidate["source_url"] if candidate else resolve_url(page_url, link.href)
         in_domain = bool(candidate_url) and is_within_domain(candidate_url, base_url)
         if decision_sink is not None:
             decision_sink({
@@ -721,6 +729,9 @@ def discover_source(
             if not target or not is_within_domain(target, base_url) or target in visited or target in scheduled:
                 continue
             if depth >= limits["max_depth"] or not should_crawl(target):
+                continue
+            crawl_pattern = source.get("crawl_pattern")
+            if crawl_pattern and not re.search(crawl_pattern, target, re.IGNORECASE):
                 continue
             if len(queue) >= limits["max_queue"]:
                 stats["queue_dropped"] += 1

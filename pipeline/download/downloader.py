@@ -119,11 +119,13 @@ def plan_downloads(rows: list[dict], sources: list[dict], *, source_id: str | No
             continue
         url = normalize_url(row["source_url"])
         reason = ""
+        source_base = normalize_url(source["base_url"]) if source else ""
+        allowed = set(source.get("resource_hosts", [])) | {urlsplit(source_base).hostname} if source else set()
         if not url:
             reason = "missing_source_url"
         elif not source or not source["enabled"] or not source["verified"]:
             reason = "source_not_approved"
-        elif urlsplit(url).hostname != urlsplit(normalize_url(source["base_url"])).hostname:
+        elif urlsplit(url).hostname not in allowed:
             reason = "resource_host_not_approved"
         elif row["status"] not in {"DISCOVERED", "DOWNLOAD_FAILED", "DOWNLOADED"}:
             reason = "stage_already_advanced"
@@ -168,11 +170,13 @@ def artifact_name(path: Path) -> str:
 
 
 def recover(row: dict, raw_root: Path) -> dict | None:
-    folders = [raw_root / kind / row['doc_id'] for kind in ('pdf', 'html')]
+    folders = [raw_root / kind / row['doc_id'] for kind in ('pdf', 'html', 'png', 'jpg')]
     receipts = sorted((p for folder in folders for p in folder.glob('*.json')),
                       key=lambda p: (p.stat().st_mtime_ns, p.name), reverse=True)
     if row["status"] == "DOWNLOADED":
-        kind = 'html' if row['local_filename'].lower().endswith('.html') else 'pdf'
+        kind = Path(row['local_filename']).suffix.lower().lstrip('.')
+        if kind not in {'pdf', 'html', 'png', 'jpg'}:
+            raise DownloadError('Unsupported raw artifact format')
         receipts = [raw_root / kind / row['doc_id'] / f"{row['sha256']}.json"]
     for path in receipts:
         receipt = json.loads(path.read_text(encoding="utf-8"))
@@ -184,7 +188,7 @@ def recover(row: dict, raw_root: Path) -> dict | None:
         if len(digest) != 64 or any(c not in "0123456789abcdef" for c in digest) or path.stem != digest:
             raise DownloadError("Invalid receipt hash")
         kind = receipt.get('format', 'pdf')
-        if kind not in {'pdf', 'html'} or path.parent != raw_root / kind / row['doc_id']:
+        if kind not in {'pdf', 'html', 'png', 'jpg'} or path.parent != raw_root / kind / row['doc_id']:
             raise DownloadError('Invalid receipt format/path')
         artifact = path.parent / f"{digest}.{kind}"
         if type(receipt.get("bytes")) is not int or receipt["bytes"] < 1:
@@ -210,7 +214,9 @@ def persist_pdf(row: dict, source: dict, settings: dict, fetcher: PoliteFetcher,
     started = utc_now()
     try:
         final_url = normalize_url(response.geturl())
-        if not final_url or urlsplit(final_url).hostname != urlsplit(url).hostname:
+        source_base = normalize_url(source["base_url"])
+        allowed = set(source.get("resource_hosts", [])) | {urlsplit(source_base).hostname, urlsplit(url).hostname}
+        if not final_url or urlsplit(final_url).hostname not in allowed:
             raise DownloadError("Unapproved final resource host")
         if response.getcode() != 200:
             raise DownloadError("Expected HTTP 200 (partial responses are not resumed)")
@@ -331,7 +337,7 @@ def run(settings: dict, sources: list[dict], *, source_id=None, doc_ids=None, dr
                                     max_requests=settings["max_requests"], max_seconds=settings["max_seconds"],
                                     max_retries=settings["max_retries"], max_retry_wait=settings["max_retry_wait"],
                                     user_agent="SinhalaCorpusDownload/0.1 (+educational corpus resource downloader)",
-                                    allowed_hosts={urlsplit(normalize_url(source["base_url"])).hostname})
+                                    allowed_hosts=set(source.get("resource_hosts", [])) | {urlsplit(normalize_url(source["base_url"])).hostname})
                             if progress:
                                 fetchers[source["id"]].progress = progress
                             receipt = persist_pdf(row, source, settings, fetchers[source["id"]], progress)

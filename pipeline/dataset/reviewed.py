@@ -11,7 +11,7 @@ from urllib.parse import urlsplit
 
 from pipeline.cleaning.native import clean
 from pipeline.dataset.native import digest, encode, publish
-from pipeline.processing.pages import verify_page
+from pipeline.processing.pages import verify_page, current_pages
 from pipeline.download.downloader import file_hash
 from pipeline.deduplication.grouping import group as dedup_groups
 
@@ -30,13 +30,10 @@ def write_reviews(path, rows):
 
 def prepare(root, output, config_hash=None):
     records, files, reviews, identities = [], {}, [], set()
-    for manifest_path in sorted(root.rglob('manifest.json')):
+    for manifest_path, record in current_pages(root):
         manifest = json.loads(manifest_path.read_text(encoding='utf-8'))
-        if manifest.get('schema_version') != 'corpus-page-bundle-1':
-            continue
         if config_hash and manifest['identity'].get('processing_config_sha256') != config_hash:
             continue
-        record = verify_page(manifest_path.parent, manifest['identity'])
         identity = record['identity']
         sid = f"{identity['doc_id']}_{identity['raw_sha256']}_p{identity['page_number']:06d}"
         if sid in identities:

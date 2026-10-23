@@ -6,10 +6,14 @@ from dataclasses import dataclass, field
 from html.parser import HTMLParser
 from urllib.parse import unquote, urlsplit
 
+import re
 from .filters import (
     CandidateDecision,
     classify_candidate,
     resolve_url,
+    detect_document_type,
+    subject_matches,
+    extract_grade,
 )
 
 GENERIC_LINK_TEXT = {"view", "download", "open", "read more", "click here", "file", "බාගත කරන්න"}
@@ -203,6 +207,48 @@ def evaluate_link(
         generic = False
     if not url:
         return None, CandidateDecision(False, -999, title, rejection_reason="invalid URL")
+    if source.get('id') == 'govdoc' and urlsplit(page_url).hostname == 'govdoc.lk':
+        # Never interpret an unrelated host or arbitrary ?id= link as a download.
+        match = re.fullmatch(r'/downloadFile/(\d+)/?', urlsplit(url).path) if urlsplit(url).hostname == 'govdoc.lk' else None
+        text_lower = link.text.strip().casefold()
+        if match and ("sinhala" in text_lower or "සිංහල" in link.text or not text_lower):
+            doc_num = match.group(1)
+            download_url = f"https://govdoc.lk/downloadFile/{doc_num}"
+            clean_title = re.sub(r"\s+download\s+free.*$", "", page_title, flags=re.IGNORECASE).strip()
+            subject, domain = subject_matches(clean_title, subjects_config)
+            grade, education_level = extract_grade(clean_title, subjects_config)
+            doc_type = detect_document_type(clean_title, clean_title)
+            candidate = {
+                "title": clean_title,
+                "subject": subject,
+                "domain": domain,
+                "grade": grade,
+                "education_level": education_level,
+                "document_type": doc_type,
+                "source": str(source.get("name", "GovDoc")),
+                "source_url": download_url,
+                "language": "",
+                "_language_hint": "si" if text_lower else "",
+                "_medium_hint": "si" if text_lower else "",
+                "status": "DISCOVERED",
+                "_candidate_score": "15",
+                "_candidate_reasons": "govdoc_sinhala_download; direct_document_link +5; resource_title +4",
+            }
+            decision = CandidateDecision(
+                accepted=True,
+                score=15,
+                title=clean_title,
+                subject=candidate["subject"],
+                domain=candidate["domain"],
+                grade=candidate["grade"],
+                education_level=education_level,
+                document_type=candidate["document_type"],
+                reasons=["govdoc_sinhala_download", "direct_document_link +5", "resource_title +4"],
+                medium_hint=candidate['_medium_hint'],
+            )
+            return candidate, decision
+        elif not url.endswith((".pdf", ".doc", ".docx")) and not match:
+            return None, CandidateDecision(False, 0, title, rejection_reason="govdoc navigation page")
     filename = unquote(urlsplit(url).path.rsplit("/", 1)[-1])
     filename_title = filename.rsplit(".", 1)[0] if "." in filename else filename
     if generic:

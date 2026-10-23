@@ -10,7 +10,7 @@ import shutil
 import tempfile
 
 from pipeline.cleaning.native import VERSION, clean, reasons
-from pipeline.discovery.crawler import read_catalog
+from pipeline.discovery.crawler import read_catalog, _catalog_lock
 from pipeline.extraction.extractor import ExtractionError, verify_bundle
 
 FIELDS = ['record_id', 'text_sha256', 'decision', 'reviewer', 'review_notes',
@@ -30,8 +30,13 @@ def publish(output, files):
     if output.exists():
         raise ValueError('Output already exists; choose a new directory')
     output.parent.mkdir(parents=True, exist_ok=True)
-    lock = output.parent / ('.' + output.name + '.publish-lock')
-    lock.mkdir()
+    # Stable file locks are released by the OS even after SIGKILL/runtime loss.
+    # The old mkdir lock may remain from a previous version; it is not reused.
+    with _catalog_lock(output.with_name(output.name + '.publish'), 0):
+        _publish_locked(output, files)
+
+
+def _publish_locked(output, files):
     temporary = None
     try:
         if output.exists():
@@ -57,7 +62,12 @@ def publish(output, files):
     finally:
         if temporary is not None and temporary.exists():
             shutil.rmtree(temporary)
-        lock.rmdir()
+
+
+def visible_manifests(root):
+    """Exclude unpublished staging directories left by abrupt termination."""
+    return (path for path in root.rglob('manifest.json')
+            if not any(part.startswith('.') for part in path.relative_to(root).parts))
 
 
 def prepare(extraction_root, catalog_path, output, min_chars=80, min_sinhala_ratio=0.8, dry_run=False):
@@ -66,7 +76,7 @@ def prepare(extraction_root, catalog_path, output, min_chars=80, min_sinhala_rat
     catalog = {r['doc_id']: r for r in read_catalog(catalog_path)}
     candidates, rejected, seen = [], [], set()
     bundles = []
-    for path in sorted(extraction_root.rglob('manifest.json')):
+    for path in sorted(visible_manifests(extraction_root)):
         manifest = json.loads(path.read_text(encoding='utf-8'))
         row = catalog.get(manifest.get('doc_id'))
         if row is None:

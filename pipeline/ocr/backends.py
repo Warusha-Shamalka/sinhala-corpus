@@ -18,6 +18,9 @@ def validate(selection):
     seconds = selection.get('max_page_seconds', 120)
     if type(seconds) is not int or seconds < 1:
         raise ValueError('Invalid OCR page deadline')
+    columns = selection.get('columns', 1)
+    if type(columns) is not int or columns not in (1, 2) or (columns != 1 and selection['backend'] != 'surya'):
+        raise ValueError('Two-column reading order is supported only by Surya')
 
 
 def create(selection):
@@ -28,7 +31,8 @@ def create(selection):
     # A separate process is used for acquisition; no network inside OCR workers.
     block_network()
     if selection['backend'] == 'surya':
-        return SuryaBackend(Path(selection['model_path']), selection['revision'], selection.get('max_page_seconds', 120))
+        return SuryaBackend(Path(selection['model_path']), selection['revision'], selection.get('max_page_seconds', 120),
+                            columns=selection.get('columns', 1))
     root = Path(selection['model_path']).resolve()
     expected_repo = 'models--' + MODELS[selection['backend']].replace('/', '--')
     if root.name != selection['revision'] or root.parent.name != 'snapshots' or root.parent.parent.name != expected_repo:
