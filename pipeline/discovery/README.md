@@ -1,5 +1,9 @@
 # Corpus discovery
 
+Use [paper discovery and pairing](../../docs/PAPER_DISCOVERY_AND_PAIRING.md) for
+multiple category entry points, automatic resource types and proposed related
+marking schemes. The workflow CLI exposes `discover` and `pair-papers` commands.
+
 This package discovers links to potentially relevant Sinhala/Sri Lankan educational resources and can append those candidates to `corpus/catalog/documents.csv`. It is intentionally limited to discovery; it does not retrieve resource files.
 
 ## Configuration and source eligibility

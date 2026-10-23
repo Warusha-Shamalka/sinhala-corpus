@@ -44,6 +44,13 @@ document/image in that store with `PAGE_NUMBERS=None`, `PROCESS_ALL_AVAILABLE=Tr
 and `RUN_UNTIL_DONE=True`. See [complete-store processing](PROCESS_ALL_AVAILABLE.md).
 The historical `corpus_pipeline_colab_updatedVM.ipynb` variant is not maintained.
 
+Automatic [resource discovery and proposed paper/scheme pairing](PAPER_DISCOVERY_AND_PAIRING.md)
+are included in the notebook. `IMPORT_VM_PDFS=False` skips VM staging by default;
+`DISCOVER_RESOURCES=True` searches configured category entry points. Collection
+downloads a bounded batch of textbooks, papers and marking schemes, while the
+processing stage can visit all verified available pages. Website access blocks
+and incomplete pairing metadata remain visible in the reports.
+
 Run cells in order:
 
 1. Mount Drive and clone the branch into temporary `/content/sinhala-corpus`.

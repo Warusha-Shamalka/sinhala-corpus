@@ -150,7 +150,8 @@ class PathRepairTests(unittest.TestCase):
         shutil.copytree(self.artifact.parent, stage / 'pdf' / self.row['doc_id'])
         notebook = json.loads((crawler.ROOT / 'notebooks/corpus_pipeline_colab.ipynb').read_text())
         cell = next(c for c in notebook['cells'] if c.get('id') == 'a139d27e')
-        namespace = {'STORE': store, 'ROOT': crawler.ROOT, 'DOC_IDS': [self.row['doc_id']], 'PYTHON': sys.executable}
+        namespace = {'STORE': store, 'ROOT': crawler.ROOT, 'DOC_IDS': [self.row['doc_id']],
+                     'PYTHON': sys.executable, 'IMPORT_VM_PDFS': True}
         exec(compile(''.join(cell['source']), 'colab_import', 'exec'), namespace)
         row = crawler.read_catalog(target_catalog)[0]
         receipt = downloader.recover(row, store / 'corpus/raw')

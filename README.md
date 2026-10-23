@@ -18,6 +18,8 @@ verification and remaining accuracy work. For moved VM/Drive files, use the
 is covered by the [image OCR guide](docs/IMAGE_OCR_GUIDE.md).
 Use [complete-store processing](docs/PROCESS_ALL_AVAILABLE.md) to visit every
 available registered page/image without document/page batch interruptions.
+For automatic URL discovery and proposed paper/marking-scheme relationships, use
+the [discovery and pairing guide](docs/PAPER_DISCOVERY_AND_PAIRING.md).
 
 ## High-level architecture
 

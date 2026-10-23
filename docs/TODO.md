@@ -110,7 +110,8 @@ See [PROGRESS_GUIDE.md](PROGRESS_GUIDE.md) for usage and limitations.
 - [ ] Implement exact SHA256 and near-duplicate grouping while retaining source aliases.
 - [ ] Validate language, provenance, content integrity and release rights.
 - [ ] Extract complete MCQ stems and ordered options.
-- [ ] Pair papers with authoritative marking schemes using subject, medium, session/year and version evidence.
+- [x] Propose paper/marking-scheme pairs using explicit subject, medium, year, part and version hints, with ambiguity reports and pending review packets.
+- [ ] Confirm scheme authority and source-level pairings, resolve missing identifiers, and link verified question/answer evidence. See [pairing guide](PAPER_DISCOVERY_AND_PAIRING.md).
 - [ ] Verify one supported answer; quarantine ambiguous, incomplete and unsupported visual questions.
 - [ ] Group related documents/questions and synthetic families before assigning dataset splits.
 - [ ] Produce separate pretraining, instruction, QA and evaluation products with versioned manifests/hashes.

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from html.parser import HTMLParser
-from urllib.parse import unquote, urlsplit
+from urllib.parse import parse_qs, unquote, urlsplit
 
 import re
 from .filters import (
@@ -15,6 +15,7 @@ from .filters import (
     subject_matches,
     extract_grade,
 )
+from .exams import enrich_candidate
 
 GENERIC_LINK_TEXT = {"view", "download", "open", "read more", "click here", "file", "බාගත කරන්න"}
 LOCAL_TEXT_LIMIT = 500
@@ -99,7 +100,7 @@ class _PageParser(HTMLParser):
                    or "hidden" in attributes or str(attributes.get("aria-hidden") or "").casefold() == "true")
         classes = set(str(attributes.get("class") or "").casefold().split())
         scoped = (tag in {"tr", "li", "article", "dd"}
-                  or tag == "div" and bool(classes & {"card", "resource", "resource-card", "document", "material", "item"}))
+                  or tag == "div" and bool(classes & {"card", "resource", "resource-card", "paper-card", "document", "material", "item"}))
         if tag not in VOID_TAGS and not self._context_disabled:
             if len(self._stack) >= MAX_CONTEXT_DEPTH:
                 # Keep discovering explicit links, but stop structural inference
@@ -210,16 +211,27 @@ def evaluate_link(
     if source.get('id') == 'govdoc' and urlsplit(page_url).hostname == 'govdoc.lk':
         # Never interpret an unrelated host or arbitrary ?id= link as a download.
         match = re.fullmatch(r'/downloadFile/(\d+)/?', urlsplit(url).path) if urlsplit(url).hostname == 'govdoc.lk' else None
-        text_lower = link.text.strip().casefold()
-        if match and ("sinhala" in text_lower or "සිංහල" in link.text or not text_lower):
-            doc_num = match.group(1)
+        doc_num = match.group(1) if match else ''
+        if urlsplit(url).hostname == 'govdoc.lk' and urlsplit(url).path == '/view':
+            query = parse_qs(urlsplit(url).query)
+            ids, files = query.get('id', []), query.get('fid', [])
+            if len(ids) == len(files) == 1 and re.fullmatch(r'[1-9]\d*', ids[0]) and re.fullmatch(r'[0-9a-fA-F]{8,64}', files[0]):
+                doc_num = ids[0]
+        if doc_num:
             download_url = f"https://govdoc.lk/downloadFile/{doc_num}"
             clean_title = re.sub(r"\s+download\s+free.*$", "", page_title, flags=re.IGNORECASE).strip()
+            # Page title identifies the resource; the exact link identifies its medium/type/part.
+            qualifier = link.text.strip() or link.title.strip()
+            medium = next((code for word, code in (('sinhala', 'si'), ('සිංහල', 'si'),
+                          ('tamil', 'ta'), ('english', 'en')) if word in qualifier.casefold()), '')
+            if qualifier.casefold() in {'sinhala', 'tamil', 'english', 'සිංහල'}:
+                qualifier += ' medium'
+            resource_title = f'{clean_title} - {qualifier}' if qualifier and qualifier.casefold() not in GENERIC_LINK_TEXT else clean_title
             subject, domain = subject_matches(clean_title, subjects_config)
             grade, education_level = extract_grade(clean_title, subjects_config)
-            doc_type = detect_document_type(clean_title, clean_title)
+            doc_type = detect_document_type(resource_title, resource_title)
             candidate = {
-                "title": clean_title,
+                "title": resource_title,
                 "subject": subject,
                 "domain": domain,
                 "grade": grade,
@@ -228,25 +240,25 @@ def evaluate_link(
                 "source": str(source.get("name", "GovDoc")),
                 "source_url": download_url,
                 "language": "",
-                "_language_hint": "si" if text_lower else "",
-                "_medium_hint": "si" if text_lower else "",
+                "_language_hint": medium,
+                "_medium_hint": medium,
                 "status": "DISCOVERED",
                 "_candidate_score": "15",
-                "_candidate_reasons": "govdoc_sinhala_download; direct_document_link +5; resource_title +4",
+                "_candidate_reasons": "govdoc_document_download; direct_document_link +5; resource_title +4",
             }
             decision = CandidateDecision(
                 accepted=True,
                 score=15,
-                title=clean_title,
+                title=resource_title,
                 subject=candidate["subject"],
                 domain=candidate["domain"],
                 grade=candidate["grade"],
                 education_level=education_level,
                 document_type=candidate["document_type"],
-                reasons=["govdoc_sinhala_download", "direct_document_link +5", "resource_title +4"],
+                reasons=["govdoc_document_download", "direct_document_link +5", "resource_title +4"],
                 medium_hint=candidate['_medium_hint'],
             )
-            return candidate, decision
+            return enrich_candidate(candidate, subjects_config), decision
         elif not url.endswith((".pdf", ".doc", ".docx")) and not match:
             return None, CandidateDecision(False, 0, title, rejection_reason="govdoc navigation page")
     filename = unquote(urlsplit(url).path.rsplit("/", 1)[-1])
@@ -270,6 +282,29 @@ def evaluate_link(
         decision.reasons.append(f"resource_local_evidence:{link.context_kind}")
     if not decision.accepted:
         return None, decision
+    # This site's hubs explicitly label their direct PDF resources. Generic
+    # "Download"/year labels otherwise lose the marking-scheme category.
+    hub = urlsplit(page_url).path.rstrip('/').casefold()
+    if source.get('id') == 'alapiedu' and urlsplit(url).path.casefold().endswith('.pdf'):
+        known_hubs = {'/marking', '/paper', '/category/marking_hub/markingsubject', '/category/paper_hub/papersubject'}
+        if hub in known_hubs and not decision.subject:
+            values = parse_qs(urlsplit(page_url).query).get('subject', [])
+            if len(values) == 1:
+                subject, domain = subject_matches(values[0], subjects_config)
+                if subject:
+                    title = f'{subject} - {title}'
+                    decision.title, decision.subject, decision.domain = title, subject, domain
+                    decision.reasons.append('source_subject_filter:alapiedu')
+        if hub in {'/marking', '/category/marking_hub/markingsubject'} and decision.document_type in {'past_paper', 'other'}:
+            decision.document_type = 'marking_scheme'
+            title = f'{title} marking scheme'
+            decision.title = title
+            decision.reasons.append('source_category:alapiedu_marking_hub')
+        elif hub in {'/paper', '/category/paper_hub/papersubject'} and decision.document_type == 'other':
+            decision.document_type = 'past_paper'
+            title = f'{title} exam paper'
+            decision.title = title
+            decision.reasons.append('source_category:alapiedu_paper_hub')
     subject, domain = decision.subject, decision.domain
     grade, education_level = decision.grade, decision.education_level
     candidate = {
@@ -288,4 +323,4 @@ def evaluate_link(
         "_candidate_score": str(decision.score),
         "_candidate_reasons": "; ".join(decision.reasons),
     }
-    return candidate, decision
+    return enrich_candidate(candidate, subjects_config), decision

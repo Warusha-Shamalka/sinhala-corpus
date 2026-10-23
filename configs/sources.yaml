@@ -34,7 +34,14 @@ sources:
 
   - id: alapiedu
     name: AlApiEdu
-    base_url: "https://www.alapiedu.com/"
+    base_url: "https://alapiedu.com/"
+    start_urls:
+      - "https://alapiedu.com/Paper"
+      - "https://alapiedu.com/Marking"
+      - "https://alapiedu.com/Category/paper_hub/PaperSubject?subject=Physics"
+      - "https://alapiedu.com/Category/marking_hub/MarkingSubject?subject=physics"
+      - "https://alapiedu.com/teacher-guides"
+    resource_hosts: ["alapiedu.com", "www.alapiedu.com"]
     type: educational_portal
     country: Sri Lanka
     language: si
@@ -45,7 +52,14 @@ sources:
 
   - id: govdoc
     name: GovDoc
-    base_url: "https://govdoc.lk/category/syllabus/grade-6/history?medium=sinhala"
+    base_url: "https://govdoc.lk/"
+    start_urls:
+      - "https://govdoc.lk/category/past-papers"
+      - "https://govdoc.lk/category/text-books"
+      - "https://govdoc.lk/category/term-test-papers"
+      - "https://govdoc.lk/category/model-papers"
+      - "https://govdoc.lk/category/syllabus"
+      - "https://govdoc.lk/category/teacher-guides"
     type: educational_portal
     country: Sri Lanka
     language: si
@@ -55,5 +69,5 @@ sources:
     resource_hosts:
       - "govdoc.lk"
       - "govdoc.nyc3.digitaloceanspaces.com"
-    crawl_pattern: "grade-6.*history|history.*grade-6"
+    crawl_pattern: "(?i)(past[-/]papers?|model[-/]papers?|term[-/]test|text[-/]books?|marking|answer[-/]scheme|syllabus|teacher[-/]guides?)"
     notes: "Sri Lankan government documents, school syllabi, and educational materials (govdoc.lk)"

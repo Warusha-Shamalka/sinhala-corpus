@@ -20,7 +20,7 @@ from urllib.parse import urlsplit
 import yaml
 
 from pipeline.discovery.crawler import (
-    ROOT, SOURCES_PATH, CatalogError, PoliteFetcher,
+    ROOT, SOURCES_PATH, CatalogError, PoliteFetcher, DOCUMENT_TYPES,
     _catalog_lock, _read_catalog, _validate_rows, read_catalog,
 )
 from pipeline.discovery.filters import normalize_url
@@ -103,7 +103,11 @@ def load_sources(path: Path) -> list[dict]:
 
 
 def plan_downloads(rows: list[dict], sources: list[dict], *, source_id: str | None = None,
-                   doc_ids: list[str] | None = None, maximum: int = 5, refresh: bool = False) -> tuple[list[tuple[dict, dict]], list[dict]]:
+                   doc_ids: list[str] | None = None, maximum: int = 5, refresh: bool = False,
+                   document_types=None) -> tuple[list[tuple[dict, dict]], list[dict]]:
+    if document_types is not None and (not isinstance(document_types, (list, tuple, set))
+            or not document_types or any(kind not in DOCUMENT_TYPES for kind in document_types)):
+        raise ValueError('Choose known document types')
     if source_id and source_id not in {s["id"] for s in sources}:
         raise ValueError(f"Unknown source: {source_id}")
     if doc_ids and set(doc_ids) - {r["doc_id"] for r in rows}:
@@ -113,6 +117,9 @@ def plan_downloads(rows: list[dict], sources: list[dict], *, source_id: str | No
     # Fresh work before already-completed records avoids starving later batches.
     for row in sorted(rows, key=lambda r: r["status"] == "DOWNLOADED"):
         if doc_ids and row["doc_id"] not in doc_ids:
+            continue
+        if document_types and row['document_type'] not in document_types:
+            excluded.append({'doc_id': row['doc_id'], 'reason': 'document_type_not_selected'})
             continue
         source = by_name.get(row["source"])
         if source_id and (not source or source["id"] != source_id):
@@ -301,10 +308,12 @@ def persist_pdf(row: dict, source: dict, settings: dict, fetcher: PoliteFetcher,
             temporary.unlink(missing_ok=True)
 
 
-def run(settings: dict, sources: list[dict], *, source_id=None, doc_ids=None, dry_run=False, refresh=False, progress_mode=None) -> dict:
+def run(settings: dict, sources: list[dict], *, source_id=None, doc_ids=None, dry_run=False, refresh=False,
+        progress_mode=None, document_types=None) -> dict:
     catalog = settings["catalog_path"]
     jobs, excluded = plan_downloads(read_catalog(catalog), sources, source_id=source_id,
-                                   doc_ids=doc_ids, maximum=settings["max_documents"], refresh=refresh)
+                                   doc_ids=doc_ids, maximum=settings["max_documents"], refresh=refresh,
+                                   document_types=document_types)
     report = {"schema_version": "download-run-1", "dry_run": dry_run, "refresh": refresh,
               "planned": [r["doc_id"] for r, _ in jobs], "excluded": excluded, "results": []}
     if dry_run or not jobs:
@@ -380,6 +389,7 @@ def main() -> int:
     parser.add_argument("--source")
     parser.add_argument("--doc-id", action="append", dest="doc_ids")
     parser.add_argument("--max-documents", type=int)
+    parser.add_argument('--document-type', action='append', dest='document_types', choices=sorted(DOCUMENT_TYPES))
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--refresh", action="store_true", help="Fetch a new version; retain old raw artifacts")
     parser.add_argument("--progress", choices=("auto", "plain", "off"), default="auto")
@@ -392,7 +402,8 @@ def main() -> int:
                 raise ValueError("max-documents must be positive")
             settings["max_documents"] = args.max_documents
         report = run(settings, load_sources(args.sources), source_id=args.source, doc_ids=args.doc_ids,
-                     dry_run=args.dry_run, refresh=args.refresh, progress_mode="off" if args.quiet else args.progress)
+                     dry_run=args.dry_run, refresh=args.refresh, progress_mode="off" if args.quiet else args.progress,
+                     document_types=args.document_types)
         print(json.dumps(report, ensure_ascii=False, indent=2))
         return int(any(r["outcome"] in {"failed", "catalog_conflict"} for r in report["results"]))
     except KeyboardInterrupt:

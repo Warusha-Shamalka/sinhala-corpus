@@ -78,6 +78,23 @@ def main():
     init = commands.add_parser('init')
     init.add_argument('--store', type=Path, required=True)
     init.add_argument('--seed', type=Path, default=ROOT / 'corpus/catalog/documents.csv')
+    discover = commands.add_parser('discover', help='Find and classify resources on configured websites')
+    discover.add_argument('--config', type=Path, default=ROOT / 'configs/pipeline.yaml')
+    discover.add_argument('--sources', type=Path)
+    discover.add_argument('--subjects', type=Path)
+    discover.add_argument('--source')
+    discover.add_argument('--max-pages', type=int, default=30)
+    discover.add_argument('--max-depth', type=int, default=3)
+    discover.add_argument('--dry-run', action='store_true')
+    discover.add_argument('--progress', choices=['auto', 'plain', 'off'], default='auto')
+    pair = commands.add_parser('pair-papers', help='Propose paper/marking-scheme pairs for source review')
+    pair.add_argument('--config', type=Path, default=ROOT / 'configs/pipeline.yaml')
+    pair.add_argument('--subjects', type=Path)
+    pair.add_argument('--output', type=Path)
+    pair.add_argument('--max-candidates', type=int, default=10000)
+    pair.add_argument('--subject', help='Optional canonical subject name, e.g. Physics')
+    pair.add_argument('--exam-year', type=int)
+    pair.add_argument('--dry-run', action='store_true')
     for name in ('collect', 'process', 'status', 'prepare-review'):
         stage = commands.add_parser(name)
         stage.add_argument('--config', type=Path, default=ROOT / 'configs/pipeline.yaml')
@@ -88,6 +105,7 @@ def main():
         if name == 'collect':
             stage.add_argument('--sources', type=Path, help='Defaults to sources.yaml beside the pipeline config')
             stage.add_argument('--source')
+            stage.add_argument('--document-type', action='append', dest='document_types', choices=sorted(downloader.DOCUMENT_TYPES))
         if name == 'process':
             stage.add_argument('--page-number', action='append', type=int, dest='page_numbers')
             stage.add_argument('--retry-incomplete', action='store_true')
@@ -142,6 +160,24 @@ def main():
     args = parser.parse_args()
     try:
         if args.command == 'init': result = initialize(args.store, args.seed)
+        elif args.command == 'discover':
+            from pipeline.discovery import crawler
+            settings = downloader.load_settings(args.config)
+            discovery_args = ['--catalog', str(settings['catalog_path']),
+                              '--sources', str(args.sources or args.config.parent / 'sources.yaml'),
+                              '--subjects', str(args.subjects or args.config.parent / 'subjects.yaml'),
+                              '--log-root', str(settings['log_root'].parent / 'discovery'),
+                              '--max-pages', str(args.max_pages), '--max-depth', str(args.max_depth),
+                              '--progress', args.progress, '--json']
+            if args.source: discovery_args.extend(['--source', args.source])
+            if args.dry_run: discovery_args.append('--dry-run')
+            return crawler.run(crawler.build_argument_parser().parse_args(discovery_args))
+        elif args.command == 'pair-papers':
+            from pipeline.discovery.pairs import prepare
+            result = prepare(downloader.load_settings(args.config)['catalog_path'],
+                             args.subjects or args.config.parent / 'subjects.yaml', args.output,
+                             dry_run=args.dry_run, max_candidates=args.max_candidates,
+                             subject=args.subject, exam_year=args.exam_year)
         elif args.command == 'import-image':
             from pipeline.processing.import_image import import_image
             result = import_image(pages.load_settings(args.config),
@@ -150,7 +186,8 @@ def main():
         elif args.command == 'status': result = status(args.config)
         elif args.command == 'collect':
             result = downloader.run(downloader.load_settings(args.config), downloader.load_sources(args.sources or args.config.parent / 'sources.yaml'),
-                                    source_id=args.source, doc_ids=args.doc_ids, dry_run=args.dry_run, progress_mode=args.progress)
+                                    source_id=args.source, doc_ids=args.doc_ids, dry_run=args.dry_run, progress_mode=args.progress,
+                                    document_types=args.document_types)
         elif args.command == 'process':
             result = pages.run(pages.load_settings(args.config), extractor.load_settings(args.config), doc_ids=args.doc_ids,
                                page_numbers=args.page_numbers,

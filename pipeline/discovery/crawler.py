@@ -125,6 +125,11 @@ def load_configuration(source_path=None, subject_path=None, catalog_path=None) -
             source["enabled"] and source["verified"] and not base_url
         ):
             raise ValueError(f"Source {source['id']} requires a valid HTTP(S) base_url")
+        starting_urls(source)
+        if source.get('crawl_pattern') is not None:
+            if not isinstance(source['crawl_pattern'], str): raise ValueError('crawl_pattern must be a string')
+            try: re.compile(source['crawl_pattern'])
+            except re.error as exc: raise ValueError('Invalid crawl_pattern') from exc
     for domain, details in subjects_config["domains"].items():
         if not isinstance(details, dict) or not isinstance(details.get("subjects"), list):
             raise ValueError(f"Domain {domain} requires a subjects list")
@@ -157,6 +162,21 @@ def load_configuration(source_path=None, subject_path=None, catalog_path=None) -
             raise ValueError(f"Unknown grade marker position: {position}")
         _validate_aliases(values, f"grade markers {position}")
     return sources, subjects_config
+
+
+def starting_urls(source):
+    """One approved website can have several category entry points."""
+    entries = source.get('start_urls', [])
+    if not isinstance(entries, list) or len(entries) > 32 or any(not isinstance(v, str) for v in entries):
+        raise ValueError('start_urls must be a list of at most 32 same-domain URLs')
+    base = normalize_url(source.get('base_url', ''))
+    urls = [base] if base else []
+    for entry in entries:
+        url = normalize_url(entry)
+        if not url or not is_within_domain(url, base):
+            raise ValueError('Each start URL must belong to the configured source domain')
+        if url not in urls: urls.append(url)
+    return urls
 
 
 def _validate_aliases(values: object, context: str) -> None:
@@ -644,14 +664,17 @@ def discover_source(
         logger.warning("Source %s has no valid base_url; skipped", source.get("id", ""))
         stats["pages_skipped"] += 1
         return [], stats
+    seeds = starting_urls(source)
+    if len(seeds) > limits['max_queue']: raise ValueError('Start URLs exceed max_queue')
+    stats['queue_peak'] = len(seeds)
     fetcher = PoliteFetcher(limits["request_delay_seconds"], limits["timeout_seconds"], logger,
                             max_requests=limits["max_requests"], max_seconds=limits["max_seconds"],
                             max_retries=limits["max_retries"], max_retry_wait=limits["max_retry_wait"])
     if progress:
         fetcher.progress = progress
-        progress.update(force=True, source_id=source["id"], robots_outcome="", stop_reason="", transfer={}, counts={"pages_visited": 0, "queued": 1, "candidates": 0, "rejected": 0, "requests": 0, "retries": 0})
-    queue = deque([(base_url, 0)])
-    scheduled = {base_url}
+        progress.update(force=True, source_id=source["id"], robots_outcome="", stop_reason="", transfer={}, counts={"pages_visited": 0, "queued": len(seeds), "candidates": 0, "rejected": 0, "requests": 0, "retries": 0})
+    queue = deque((url, 0) for url in seeds)
+    scheduled = set(seeds)
     visited: set[str] = set()
     candidate_by_url: dict[str, dict[str, str]] = {}
     rejected_by_url: dict[str, tuple[str, int, str]] = {}
@@ -659,7 +682,8 @@ def discover_source(
     def process_link(link: Link, page_title: str, page_url: str) -> None:
         candidate, decision = evaluate_link(link, page_title, page_url, source, subjects_config)
         candidate_url = candidate["source_url"] if candidate else resolve_url(page_url, link.href)
-        in_domain = bool(candidate_url) and is_within_domain(candidate_url, base_url)
+        in_domain = bool(candidate_url) and (is_within_domain(candidate_url, base_url)
+                    or urlsplit(candidate_url).hostname in source.get('resource_hosts', []))
         if decision_sink is not None:
             decision_sink({
                 "schema_version": "discovery-decision-1", "rule_version": "discovery-0.5",

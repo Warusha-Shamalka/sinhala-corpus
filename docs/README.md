@@ -7,6 +7,8 @@ Read in this order:
 Current OCR work: [23 October reliability changes](OCR_PIPELINE_FIXES.md),
 [process all available pages/images](PROCESS_ALL_AVAILABLE.md),
 [Colab path recovery](COLAB_PATH_RECOVERY.md), and [image OCR](IMAGE_OCR_GUIDE.md).
+The [paper discovery and pairing guide](PAPER_DISCOVERY_AND_PAIRING.md) covers
+category entry points, automatic resource types and proposed matching schemes.
 
 Implementation update: the [9 October discovery validation results](DISCOVERY_VALIDATION_RESULTS.md) document completed fixes and current verification. The original current-state review below remains a dated baseline rather than a claim that every listed defect is still open.
 

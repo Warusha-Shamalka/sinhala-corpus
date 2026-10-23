@@ -10,6 +10,10 @@ For complete-store processing without page-count interruptions, see
 [process all available pages/images](PROCESS_ALL_AVAILABLE.md). The notebook now
 defaults to this mode; the original bounded pilot remains optional.
 
+The later [discovery and pairing extension](PAPER_DISCOVERY_AND_PAIRING.md) adds
+category entry points, typed collection, provisional paper/scheme relationships
+and optional VM staging. It does not automatically approve answer keys.
+
 ## Changes and reasons
 
 | Problem | Implemented behavior |
