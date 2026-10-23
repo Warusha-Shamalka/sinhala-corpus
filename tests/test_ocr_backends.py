@@ -14,7 +14,7 @@ class BackendSelectionTests(unittest.TestCase):
             selection = {'backend': 'surya', 'model_path': folder, 'revision': 'a' * 64, 'max_page_seconds': 90}
             with patch.object(surya_backend, 'block_network') as guard, patch.object(surya_backend, 'SuryaBackend') as adapter:
                 self.assertEqual(backends.create(selection), adapter.return_value)
-                adapter.assert_called_once_with(Path(folder), 'a' * 64, 90)
+                adapter.assert_called_once_with(Path(folder), 'a' * 64, 90, columns=1)
                 guard.assert_called_once()
 
     def test_different_backend_snapshot_is_hashed_and_revision_checked(self):

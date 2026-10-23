@@ -17,7 +17,8 @@ class ProvisionalExportTests(unittest.TestCase):
 
     def report(self, **updates):
         value = {'schema_version': 'corpus-batch-run-1', 'active_phase': 'finished',
-                 'processed_bundles': [str(path) for path in self.fixture.processed.iterdir()]}
+                 'processed_bundles': [str(path.parent) for path in self.fixture.processed.rglob('manifest.json')
+                                       if not any(p.startswith('.') for p in path.relative_to(self.fixture.processed).parts)]}
         value.update(updates); self.run.write_text(json.dumps(value))
 
     def test_unreviewed_text_keeps_flags_and_never_grants_training_approval(self):
@@ -57,7 +58,7 @@ class ProvisionalExportTests(unittest.TestCase):
 
     def test_multiple_processing_versions_of_one_page_are_rejected(self):
         self.fixture.add_page(1, 'text')
-        original = next(self.fixture.processed.iterdir())
+        original = next(self.fixture.processed.rglob('manifest.json')).parent
         alternate = self.fixture.processed / 'alternate'
         shutil.copytree(original, alternate)
         record = json.loads((alternate / 'page.json').read_text())

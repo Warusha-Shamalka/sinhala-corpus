@@ -133,7 +133,8 @@ def run(config_path, *, sources_path=None, source_id=None, doc_ids=None,
                         if bundle and not row.get('reused') and row.get('outcome') != 'verified_existing' and bundle not in new_bundles:
                             new_bundles.add(bundle); result['new_pages'] += 1
                         if pages.has_failures({'results': [row]}):
-                            failed_docs.add(row['doc_id'])
+                            if row.get('outcome') in {'failed', 'existing_incomplete'}:
+                                failed_docs.add(row['doc_id'])
                             result['errors'].append({'stage': 'process', **row})
                 result['processed_bundles'] = sorted(bundles)
                 checkpoint()

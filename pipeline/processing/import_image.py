@@ -7,7 +7,7 @@ from urllib.parse import urlsplit
 
 from pipeline.dataset.native import digest, encode, publish
 from pipeline.discovery.crawler import (_catalog_lock, _read_catalog, _validate_rows,
-                                        CATALOG_COLUMNS, make_doc_id, next_document_number)
+                                        make_doc_id, next_document_number)
 from pipeline.discovery.filters import normalize_url
 from pipeline.download.downloader import artifact_name, file_hash, recover, sync_directory, utc_now
 from pipeline.ocr.images import decode

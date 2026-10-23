@@ -10,6 +10,9 @@ processing:
   max_image_side: 3000
   render_timeout_seconds: 60
   max_image_bytes: 52428800
+  max_input_pixels: 40000000
+  # Explicit experiments only; keep raw images and unmodified page.png.
+  preprocessing: {}
   # Use all while native Sinhala font accuracy is unresolved; auto keeps usable native pages.
   ocr_mode: all
   ocr:
@@ -19,6 +22,7 @@ processing:
     revision: ''
     max_page_seconds: 120
     max_new_tokens: 8192
+    columns: 1
 # Paths are relative to this repository, or absolute on persistent storage.
 download:
   accepted_formats: [pdf]

@@ -1,6 +1,7 @@
 # Production corpus workflow
 
-Updated 12 October 2026. The implemented path is:
+Updated 23 October 2026. See [the reliability change report](OCR_PIPELINE_FIXES.md)
+for recent fixes and their verification limits. The implemented path is:
 
 Discovery → bounded PDF/HTML download → verified native extraction/Surya OCR →
 conservative cleaning and warnings → source review and corrections → deduplication
@@ -36,8 +37,10 @@ not an independent blind reference, and these releases claim no measured OCR CER
 ## Start in Colab
 
 Use [notebooks/corpus_pipeline_colab.ipynb](../notebooks/corpus_pipeline_colab.ipynb)
-after pushing `feat/corpus-pipeline`. Upload that notebook to Colab and select a
-**T4 GPU** runtime. Its defaults are one downloaded Biology guide and pages 12–13.
+after publishing the latest `fix/ocr-pipeline-reliability` branch changes. Upload
+that notebook to Colab and select a **T4 GPU** runtime. Its defaults select IDs
+`LK-EDU-001501`–`LK-EDU-001505`, pages 1–6, and a 30-page processing limit.
+The historical `corpus_pipeline_colab_updatedVM.ipynb` variant is not maintained.
 
 Run cells in order:
 

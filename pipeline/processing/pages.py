@@ -108,6 +108,7 @@ def saved_attempt(folder, identity):
 
 def has_failures(report):
     return bool(report.get('errors') or any(row.get('outcome') in {'failed', 'existing_incomplete', 'truncated', 'completion_unverified', 'empty'}
+                                          or row.get('completion_status') not in (None, 'complete')
                                           for row in report.get('results', [])))
 
 
@@ -308,7 +309,8 @@ def run(settings, extract_settings, *, doc_ids=None, page_numbers=None, dry_run=
                         publish(folder, {**files, 'manifest.json': encode({'schema_version': 'corpus-page-bundle-1', 'identity': identity,
                                          'output_sha256': {name: hashlib.sha256(data).hexdigest() for name, data in files.items()}})})
                         report['results'].append({'doc_id': row['doc_id'], 'page_number': page['page_number'],
-                                                  'outcome': prediction['outcome'], 'bundle': str(folder), 'quality_flags': quality_flags})
+                                                  'outcome': prediction['outcome'], 'completion_status': prediction['completion_status'],
+                                                  'bundle': str(folder), 'quality_flags': quality_flags})
                         progress.update(force=True, counts={'pages_completed': used})
                     if report['stop_reason'].startswith('batch_'):
                         break

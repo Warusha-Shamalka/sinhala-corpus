@@ -12,6 +12,11 @@ The [daily release builder](docs/DAILY_TRAINING_RELEASE_GUIDE.md) filters experi
 
 See the [detailed architecture diagrams](docs/PIPELINE_ARCHITECTURE.md) for stage-by-stage behavior, persistence and planned processing.
 
+The [OCR reliability change report](docs/OCR_PIPELINE_FIXES.md) documents fixes,
+verification and remaining accuracy work. For moved VM/Drive files, use the
+[Colab path recovery steps](docs/COLAB_PATH_RECOVERY.md). Standalone PNG/JPEG input
+is covered by the [image OCR guide](docs/IMAGE_OCR_GUIDE.md).
+
 ## High-level architecture
 
 - `configs/` stores controlled source and subject configurations.

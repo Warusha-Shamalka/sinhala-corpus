@@ -21,7 +21,8 @@ class DailyReleaseTests(unittest.TestCase):
     def snapshot(self, name):
         report = self.root / f'{name}.json'
         report.write_text(json.dumps({'schema_version': 'corpus-batch-run-1', 'active_phase': 'finished',
-                                     'processed_bundles': [str(path) for path in self.fixture.processed.iterdir()]}))
+                                     'processed_bundles': [str(path.parent) for path in self.fixture.processed.rglob('manifest.json')
+                                                           if not any(p.startswith('.') for p in path.relative_to(self.fixture.processed).parts)]}))
         root = self.root / name
         provisional.export(report, root)
         return root
