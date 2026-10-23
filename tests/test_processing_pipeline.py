@@ -85,12 +85,15 @@ class ProductionPipelineTests(unittest.TestCase):
         self.assertEqual(second['outcomes'], {'verified_existing': 2, 'predicted': 1})
         self.assertEqual(self.engine.calls, 3)
 
-    def test_explicit_pages_save_gpu_work_and_out_of_range_fails(self):
+    def test_explicit_pages_save_gpu_work_and_out_of_range_is_skipped(self):
         self.fixture.backend.pages = [fixtures.NATIVE] * 3
         result = self.run_stage(page_numbers=[3])
         self.assertEqual([r['page_number'] for r in result['results']], [3])
         self.assertEqual(self.engine.calls, 1)
-        self.assertEqual(len(self.run_stage(page_numbers=[4])['errors']), 1)
+        missing = self.run_stage(page_numbers=[4])
+        self.assertEqual(missing['errors'], [])
+        self.assertEqual(missing['results'], [])
+        self.assertEqual(missing['warnings'][0]['skipped_page_numbers'], [4])
 
     def test_dry_run_never_loads_gpu_or_writes_outputs(self):
         with patch.object(backends, 'create', side_effect=AssertionError('GPU loaded')):

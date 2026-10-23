@@ -91,6 +91,7 @@ def main():
         if name == 'process':
             stage.add_argument('--page-number', action='append', type=int, dest='page_numbers')
             stage.add_argument('--retry-incomplete', action='store_true')
+            stage.add_argument('--until-done', action='store_true', help='Continue through all eligible pages without batch caps')
         if name == 'prepare-review':
             stage.add_argument('--output', type=Path, required=True)
             stage.add_argument('--config-hash')
@@ -153,7 +154,8 @@ def main():
         elif args.command == 'process':
             result = pages.run(pages.load_settings(args.config), extractor.load_settings(args.config), doc_ids=args.doc_ids,
                                page_numbers=args.page_numbers,
-                               dry_run=args.dry_run, progress_mode=args.progress, retry_incomplete=args.retry_incomplete)
+                               dry_run=args.dry_run, progress_mode=args.progress, retry_incomplete=args.retry_incomplete,
+                               until_done=args.until_done)
         elif args.command == 'prepare-review':
             result = reviewed.prepare(pages.load_settings(args.config)['output_root'], args.output, args.config_hash)
         elif args.command == 'verify-release': result = reviewed.verify_release(args.root)

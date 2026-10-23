@@ -5,6 +5,7 @@ Prepared on 8 October 2026 from repository commit `373ce62`, the competition rul
 Read in this order:
 
 Current OCR work: [23 October reliability changes](OCR_PIPELINE_FIXES.md),
+[process all available pages/images](PROCESS_ALL_AVAILABLE.md),
 [Colab path recovery](COLAB_PATH_RECOVERY.md), and [image OCR](IMAGE_OCR_GUIDE.md).
 
 Implementation update: the [9 October discovery validation results](DISCOVERY_VALIDATION_RESULTS.md) document completed fixes and current verification. The original current-state review below remains a dated baseline rather than a claim that every listed defect is still open.

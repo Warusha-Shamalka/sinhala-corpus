@@ -38,8 +38,10 @@ not an independent blind reference, and these releases claim no measured OCR CER
 
 Use [notebooks/corpus_pipeline_colab.ipynb](../notebooks/corpus_pipeline_colab.ipynb)
 after publishing the latest `fix/ocr-pipeline-reliability` branch changes. Upload
-that notebook to Colab and select a **T4 GPU** runtime. Its defaults select IDs
-`LK-EDU-001501`–`LK-EDU-001505`, pages 1–6, and a 30-page processing limit.
+that notebook to Colab and select a **T4 GPU** runtime. It imports staged IDs
+`LK-EDU-001501`–`LK-EDU-001505`, then defaults to every available registered
+document/image in that store with `PAGE_NUMBERS=None`, `PROCESS_ALL_AVAILABLE=True`
+and `RUN_UNTIL_DONE=True`. See [complete-store processing](PROCESS_ALL_AVAILABLE.md).
 The historical `corpus_pipeline_colab_updatedVM.ipynb` variant is not maintained.
 
 Run cells in order:
@@ -47,11 +49,11 @@ Run cells in order:
 1. Mount Drive and clone the branch into temporary `/content/sinhala-corpus`.
 2. Create isolated Python 3.12.12; install pinned Surya/PyTorch dependencies and Poppler.
 3. Initialize a fresh persistent store at
-   `/content/drive/MyDrive/sinhala-corpus/production_v1` if it does not already exist.
+   `/content/drive/MyDrive/sinhala-corpus/production_02` if it does not already exist.
 4. Download/verify both Surya checkpoint components, freeze their hashes and save
    the dependency lock and repository commit to Drive.
 5. Preview and execute the selected public-resource download.
-6. Process the two selected pages and check the saved report.
+6. Process all available pages/images and check the saved report for incomplete OCR or document errors.
 7. Prepare a new source-review packet, without approving or exporting anything.
 
 Model caches live in `/content` and may need downloading again after reconnection.

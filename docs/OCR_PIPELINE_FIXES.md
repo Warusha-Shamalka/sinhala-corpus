@@ -6,6 +6,10 @@ For the Colab error `Catalog and raw artifact path disagree`, follow
 [the recovery steps](COLAB_PATH_RECOVERY.md). For standalone image input, see
 [the image OCR guide](IMAGE_OCR_GUIDE.md).
 
+For complete-store processing without page-count interruptions, see
+[process all available pages/images](PROCESS_ALL_AVAILABLE.md). The notebook now
+defaults to this mode; the original bounded pilot remains optional.
+
 ## Changes and reasons
 
 | Problem | Implemented behavior |
@@ -24,6 +28,8 @@ For the Colab error `Catalog and raw artifact path disagree`, follow
 | The VM importer kept an old path when an existing catalog row already had the same SHA256. | Matching rows update their local path. A separate verified repair step repairs relocated receipt paths too. |
 | Colab displayed progress only after a command exited and could print a failed report twice. | A small dependency-free helper streams stderr immediately and prints stdout JSON once. |
 | Copying source configuration could silently discard Drive edits. | Notebook copying is an explicit switch; destination source/subject files are backed up first. The Drive pipeline configuration is preserved and its deployment paths are repaired. |
+| One shared page range failed shorter documents, while a batch cap required manual reruns. | Missing page numbers produce warnings; `process --until-done` visits the whole selected queue, including native PDFs above their former page cap, with one reusable engine. |
+| A partial OCR report raised `CalledProcessError` in Colab. | The process cell accepts valid partial processing reports, displays issues and continues to handoff. Individual page errors no longer discard later pages in the same document. |
 
 The image dependency is optional for ordinary PDF/HTML processing:
 `requirements-images.txt` pins Pillow for the supported Python 3.11–3.14 range.
@@ -68,7 +74,7 @@ five-document configuration, process death during publication, failed/empty OCR
 and immutable retries, direct PNG/JPEG import, preprocessing and review packet
 creation without PDF tools, CDN scoping and unknown sources.
 
-The offline suite passed locally on Python 3.14.4: 277 tests ran, with one
+The initial reliability suite passed locally on Python 3.14.4: 277 tests ran, with one
 Tesseract integration test skipped. `pip check` found no broken requirements.
 Local tests use fake OCR predictions and synthetic source material. They verify
 pipeline behavior; they do not establish Sinhala recognition accuracy. The

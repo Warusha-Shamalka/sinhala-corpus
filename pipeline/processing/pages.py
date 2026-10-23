@@ -112,8 +112,19 @@ def has_failures(report):
                                           for row in report.get('results', [])))
 
 
+def available_selection(report, doc_id, requested, count):
+    """A shared selection may include pages absent from a shorter document."""
+    if not requested:
+        return None
+    missing = sorted(set(requested) - set(range(1, count + 1)))
+    if missing:
+        report['warnings'].append({'doc_id': doc_id, 'reason': 'requested_pages_not_available',
+                                   'page_count': count, 'skipped_page_numbers': missing})
+    return set(requested) & set(range(1, count + 1))
+
+
 def run(settings, extract_settings, *, doc_ids=None, page_numbers=None, dry_run=False, progress_mode='auto',
-        engine=None, pdf_backend=None, retry_incomplete=False):
+        engine=None, pdf_backend=None, retry_incomplete=False, until_done=False):
     if page_numbers and any(type(n) is not int or n < 1 for n in page_numbers):
         raise ValueError('Page numbers must be positive integers')
     rows = read_catalog(settings['catalog_path'])
@@ -122,7 +133,8 @@ def run(settings, extract_settings, *, doc_ids=None, page_numbers=None, dry_run=
     jobs = [r for r in rows if (not doc_ids or r['doc_id'] in doc_ids) and r['status'] in {'DOWNLOADED', 'EXTRACTED'}
             and r['sha256'] and r['local_filename'].lower().endswith(('.pdf', '.html', '.png', '.jpg'))]
     report = {'schema_version': 'page-processing-run-1', 'planned': [r['doc_id'] for r in jobs],
-              'dry_run': dry_run, 'retry_incomplete': retry_incomplete, 'results': [], 'errors': [], 'stop_reason': 'queue_finished'}
+              'dry_run': dry_run, 'retry_incomplete': retry_incomplete, 'until_done': until_done,
+              'results': [], 'errors': [], 'warnings': [], 'stop_reason': 'queue_finished'}
     if dry_run or not jobs:
         return report
     # Both stages must be scoped to the same verified raw source tree.
@@ -169,8 +181,9 @@ def run(settings, extract_settings, *, doc_ids=None, page_numbers=None, dry_run=
                         continue
                     seen[row['sha256']] = row['doc_id']
                     if receipt.get('format', 'pdf') == 'html':
-                        if page_numbers and set(page_numbers) != {1}:
-                            raise ValueError('An HTML document has only page 1')
+                        selected_pages = available_selection(report, row['doc_id'], page_numbers, 1)
+                        if selected_pages is not None and 1 not in selected_pages:
+                            continue
                         raw = settings['raw_root'] / receipt['artifact_path']
                         identity = {'doc_id': row['doc_id'], 'raw_sha256': row['sha256'], 'page_number': 1,
                                     'html_extraction_version': 'html-main-1', 'processing_config_sha256': config_hash}
@@ -179,7 +192,7 @@ def run(settings, extract_settings, *, doc_ids=None, page_numbers=None, dry_run=
                             verify_page(folder, identity)
                             report['results'].append({'doc_id': row['doc_id'], 'page_number': 1, 'outcome': 'verified_existing', 'bundle': str(folder)})
                             continue
-                        if used >= settings['max_pages'] or len(new_documents) >= settings['max_documents']:
+                        if not until_done and (used >= settings['max_pages'] or len(new_documents) >= settings['max_documents']):
                             report['stop_reason'] = 'batch_page_limit' if used >= settings['max_pages'] else 'batch_document_limit'
                             break
                         new_documents.add(row['doc_id']); used += 1
@@ -211,107 +224,118 @@ def run(settings, extract_settings, *, doc_ids=None, page_numbers=None, dry_run=
                         if backend is None:
                             backend = PopplerBackend(extract_settings)
                         progress.update(force=True, phase='native_extraction')
-                        manifest, native_folder, _ = extract_document(row, extract_settings, backend)
+                        document_settings = extract_settings
+                        if until_done:
+                            # Use the actual length, including PDFs above the native-stage page cap.
+                            count = backend.page_count(settings['raw_root'] / receipt['artifact_path'],
+                                                       extract_settings['command_timeout_seconds'])
+                            document_settings = {**extract_settings, 'max_pages': max(extract_settings['max_pages'], count)}
+                        manifest, native_folder, _ = extract_document(row, document_settings, backend)
                         native_pages = [json.loads(line) for line in (native_folder / 'pages.jsonl').read_text(encoding='utf-8').splitlines()]
                         source_manifest_hash = file_hash(native_folder / 'manifest.json')
-                    if page_numbers and max(page_numbers) > len(native_pages):
-                        raise ValueError('Selected page exceeds document page count')
+                    selected_pages = available_selection(report, row['doc_id'], page_numbers, len(native_pages))
                     for page in native_pages:
-                        if page_numbers and page['page_number'] not in page_numbers:
+                        if selected_pages is not None and page['page_number'] not in selected_pages:
                             continue
-                        identity = {'doc_id': row['doc_id'], 'raw_sha256': row['sha256'], 'page_number': page['page_number'],
-                                    ('image_source_sha256' if is_image else 'native_manifest_sha256'): source_manifest_hash,
-                                    'processing_config_sha256': config_hash}
-                        folder = settings['output_root'] / row['doc_id'] / row['sha256'] / fingerprint(identity) / f"page_{page['page_number']:06d}"
-                        previous = saved_attempt(folder, identity)
-                        attempt = 1
-                        if previous:
-                            number, prior_folder, record = previous
-                            if not incomplete(record) or not retry_incomplete:
-                                needs_retry = incomplete(record)
-                                report['results'].append({'doc_id': row['doc_id'], 'page_number': page['page_number'],
-                                    'outcome': 'existing_incomplete' if needs_retry else 'verified_existing',
-                                    'reused': True, 'bundle': str(prior_folder), 'retry_required': needs_retry,
-                                    'prediction_outcome': record.get('prediction', {}).get('outcome')})
-                                continue
-                            attempt = number + 1
-                            folder = folder.with_name(folder.name + f'_attempt_{attempt:06d}')
-                        if used >= settings['max_pages']:
-                            report['stop_reason'] = 'batch_page_limit'
-                            break
-                        if row['doc_id'] not in new_documents and len(new_documents) >= settings['max_documents']:
-                            report['stop_reason'] = 'batch_document_limit'
-                            break
-                        new_documents.add(row['doc_id'])
-                        used += 1
-                        progress.update(force=True, phase='rendering_page', item={'doc_id': row['doc_id'], 'page_number': page['page_number']},
-                                        counts={'pages_completed': used - 1, 'page_limit': settings['max_pages'], 'document_pages_total': len(native_pages)})
-                        start = time.monotonic()
-                        raw_path = settings['raw_root'] / receipt['artifact_path']
-                        if is_image:
-                            if raw_path.stat().st_size > settings['max_image_bytes']: raise ValueError('Image exceeds byte limit')
-                            image, _ = images.prepare(raw_path.read_bytes(), settings['max_image_side'],
-                                                      maximum_pixels=settings.get('max_input_pixels', 40_000_000))
-                        else:
-                            image = command([renderer, '-f', str(page['page_number']), '-l', str(page['page_number']), '-singlefile',
-                                         '-r', str(settings['dpi']), '-scale-to', str(settings['max_image_side']), '-png',
-                                         str(raw_path)],
-                                        timeout=settings['render_timeout_seconds'], maximum=settings['max_image_bytes'])
-                        if len(image) > settings['max_image_bytes']: raise ValueError('Rendered image exceeds byte limit')
-                        width, height = png_dimensions(image)
-                        if max(width, height) > settings['max_image_side']:
-                            raise ValueError('Renderer dimension limit')
-                        route_flags = reasons(page, clean(page['text']))
-                        use_ocr = is_image or settings['ocr_mode'] == 'all' or bool(route_flags)
-                        ocr_image, transform = image, None
-                        if use_ocr and settings.get('preprocessing'):
-                            ocr_image, transform = images.prepare(image, settings['max_image_side'], settings['preprocessing'],
-                                                                 settings.get('max_input_pixels', 40_000_000))
-                            if len(ocr_image) > settings['max_image_bytes']: raise ValueError('OCR image exceeds byte limit')
-                        prediction = {'text': page['text'], 'outcome': 'predicted', 'completion_status': 'complete'}
-                        engine_identity = page['backend']
-                        if use_ocr:
-                            if engine is None:
-                                progress.update(force=True, phase='loading_ocr_model')
-                                with redirect_stdout(sys.stderr):
-                                    engine = backends.create(settings['ocr'])
-                            progress.update(force=True, phase='ocr_page')
-                            import tempfile
-                            with tempfile.TemporaryDirectory(prefix='corpus-ocr-') as temporary:
-                                path = Path(temporary) / 'page.png'; path.write_bytes(ocr_image)
-                                try:
+                        try:
+                            identity = {'doc_id': row['doc_id'], 'raw_sha256': row['sha256'], 'page_number': page['page_number'],
+                                        ('image_source_sha256' if is_image else 'native_manifest_sha256'): source_manifest_hash,
+                                        'processing_config_sha256': config_hash}
+                            folder = settings['output_root'] / row['doc_id'] / row['sha256'] / fingerprint(identity) / f"page_{page['page_number']:06d}"
+                            previous = saved_attempt(folder, identity)
+                            attempt = 1
+                            if previous:
+                                number, prior_folder, record = previous
+                                if not incomplete(record) or not retry_incomplete:
+                                    needs_retry = incomplete(record)
+                                    report['results'].append({'doc_id': row['doc_id'], 'page_number': page['page_number'],
+                                        'outcome': 'existing_incomplete' if needs_retry else 'verified_existing',
+                                        'reused': True, 'bundle': str(prior_folder), 'retry_required': needs_retry,
+                                        'prediction_outcome': record.get('prediction', {}).get('outcome')})
+                                    continue
+                                attempt = number + 1
+                                folder = folder.with_name(folder.name + f'_attempt_{attempt:06d}')
+                            if not until_done and used >= settings['max_pages']:
+                                report['stop_reason'] = 'batch_page_limit'
+                                break
+                            if not until_done and row['doc_id'] not in new_documents and len(new_documents) >= settings['max_documents']:
+                                report['stop_reason'] = 'batch_document_limit'
+                                break
+                            new_documents.add(row['doc_id'])
+                            used += 1
+                            progress.update(force=True, phase='rendering_page', item={'doc_id': row['doc_id'], 'page_number': page['page_number']},
+                                            counts={'pages_completed': used - 1, 'page_limit': None if until_done else settings['max_pages'],
+                                                    'document_pages_total': len(native_pages)})
+                            start = time.monotonic()
+                            raw_path = settings['raw_root'] / receipt['artifact_path']
+                            if is_image:
+                                if raw_path.stat().st_size > settings['max_image_bytes']: raise ValueError('Image exceeds byte limit')
+                                image, _ = images.prepare(raw_path.read_bytes(), settings['max_image_side'],
+                                                          maximum_pixels=settings.get('max_input_pixels', 40_000_000))
+                            else:
+                                image = command([renderer, '-f', str(page['page_number']), '-l', str(page['page_number']), '-singlefile',
+                                             '-r', str(settings['dpi']), '-scale-to', str(settings['max_image_side']), '-png',
+                                             str(raw_path)],
+                                            timeout=settings['render_timeout_seconds'], maximum=settings['max_image_bytes'])
+                            if len(image) > settings['max_image_bytes']: raise ValueError('Rendered image exceeds byte limit')
+                            width, height = png_dimensions(image)
+                            if max(width, height) > settings['max_image_side']:
+                                raise ValueError('Renderer dimension limit')
+                            route_flags = reasons(page, clean(page['text']))
+                            use_ocr = is_image or settings['ocr_mode'] == 'all' or bool(route_flags)
+                            ocr_image, transform = image, None
+                            if use_ocr and settings.get('preprocessing'):
+                                ocr_image, transform = images.prepare(image, settings['max_image_side'], settings['preprocessing'],
+                                                                     settings.get('max_input_pixels', 40_000_000))
+                                if len(ocr_image) > settings['max_image_bytes']: raise ValueError('OCR image exceeds byte limit')
+                            prediction = {'text': page['text'], 'outcome': 'predicted', 'completion_status': 'complete'}
+                            engine_identity = page['backend']
+                            if use_ocr:
+                                if engine is None:
+                                    progress.update(force=True, phase='loading_ocr_model')
                                     with redirect_stdout(sys.stderr):
-                                        prediction = engine.recognize(path)
-                                except Exception as exc:
-                                    prediction = {'text': '', 'outcome': 'failed', 'completion_status': 'failed', 'error': f'{type(exc).__name__}: {exc}'}
-                            engine_identity = engine.identity
-                            if not prediction.get('text', '').strip() and prediction.get('outcome') == 'predicted':
-                                prediction['outcome'] = 'empty'
-                        if file_hash(settings['raw_root'] / receipt['artifact_path']) != row['sha256']:
-                            raise ValueError('Raw source changed during processing')
-                        text = clean(prediction['text'])
-                        quality_flags = reasons({'extraction_method': 'poppler-bbox-layout', 'ocr_required': False}, text) + text_flags(text)
-                        if prediction['completion_status'] != 'complete' or prediction['outcome'] != 'predicted':
-                            quality_flags.append('incomplete_or_failed_prediction')
-                        record = {'schema_version': 'corpus-page-1', 'identity': identity, 'source_url': row['source_url'],
-                                  'attempt': attempt, 'previous_attempt_bundle': str(previous[1]) if previous else None,
-                                  'preprocessing': transform, 'ocr_input_sha256': hashlib.sha256(ocr_image).hexdigest() if use_ocr else None,
-                                  'title': row['title'], 'source': row['source'], 'metadata_hints': {k: row[k] for k in ('subject', 'domain', 'grade', 'language', 'license')},
-                                  'method': 'ocr' if use_ocr else 'native', 'ocr_backend': settings['ocr']['backend'] if use_ocr else None,
-                                  'model_id': backends.MODELS[settings['ocr']['backend']] if use_ocr else None,
-                                  'model_revision': settings['ocr']['revision'] if use_ocr else None, 'runtime': engine_identity,
-                                  'processing_config': config, 'native_text': page['text'], 'routing_flags': route_flags,
-                                  'prediction': prediction, 'text': text, 'quality_flags': quality_flags,
-                                  'image_sha256': hashlib.sha256(image).hexdigest(), 'image_dimensions': [width, height],
-                                  'seconds': round(time.monotonic() - start, 3), 'review_required': True, 'training_approved': False}
-                        files = {'page.json': encode(record), 'page.png': image, 'text.txt': text.encode('utf-8')}
-                        if transform is not None: files['ocr_input.png'] = ocr_image
-                        publish(folder, {**files, 'manifest.json': encode({'schema_version': 'corpus-page-bundle-1', 'identity': identity,
-                                         'output_sha256': {name: hashlib.sha256(data).hexdigest() for name, data in files.items()}})})
-                        report['results'].append({'doc_id': row['doc_id'], 'page_number': page['page_number'],
-                                                  'outcome': prediction['outcome'], 'completion_status': prediction['completion_status'],
-                                                  'bundle': str(folder), 'quality_flags': quality_flags})
-                        progress.update(force=True, counts={'pages_completed': used})
+                                        engine = backends.create(settings['ocr'])
+                                progress.update(force=True, phase='ocr_page')
+                                import tempfile
+                                with tempfile.TemporaryDirectory(prefix='corpus-ocr-') as temporary:
+                                    path = Path(temporary) / 'page.png'; path.write_bytes(ocr_image)
+                                    try:
+                                        with redirect_stdout(sys.stderr):
+                                            prediction = engine.recognize(path)
+                                    except Exception as exc:
+                                        prediction = {'text': '', 'outcome': 'failed', 'completion_status': 'failed', 'error': f'{type(exc).__name__}: {exc}'}
+                                engine_identity = engine.identity
+                                if not prediction.get('text', '').strip() and prediction.get('outcome') == 'predicted':
+                                    prediction['outcome'] = 'empty'
+                            if file_hash(settings['raw_root'] / receipt['artifact_path']) != row['sha256']:
+                                raise ValueError('Raw source changed during processing')
+                            text = clean(prediction['text'])
+                            quality_flags = reasons({'extraction_method': 'poppler-bbox-layout', 'ocr_required': False}, text) + text_flags(text)
+                            if prediction['completion_status'] != 'complete' or prediction['outcome'] != 'predicted':
+                                quality_flags.append('incomplete_or_failed_prediction')
+                            record = {'schema_version': 'corpus-page-1', 'identity': identity, 'source_url': row['source_url'],
+                                      'attempt': attempt, 'previous_attempt_bundle': str(previous[1]) if previous else None,
+                                      'preprocessing': transform, 'ocr_input_sha256': hashlib.sha256(ocr_image).hexdigest() if use_ocr else None,
+                                      'title': row['title'], 'source': row['source'], 'metadata_hints': {k: row[k] for k in ('subject', 'domain', 'grade', 'language', 'license')},
+                                      'method': 'ocr' if use_ocr else 'native', 'ocr_backend': settings['ocr']['backend'] if use_ocr else None,
+                                      'model_id': backends.MODELS[settings['ocr']['backend']] if use_ocr else None,
+                                      'model_revision': settings['ocr']['revision'] if use_ocr else None, 'runtime': engine_identity,
+                                      'processing_config': config, 'native_text': page['text'], 'routing_flags': route_flags,
+                                      'prediction': prediction, 'text': text, 'quality_flags': quality_flags,
+                                      'image_sha256': hashlib.sha256(image).hexdigest(), 'image_dimensions': [width, height],
+                                      'seconds': round(time.monotonic() - start, 3), 'review_required': True, 'training_approved': False}
+                            files = {'page.json': encode(record), 'page.png': image, 'text.txt': text.encode('utf-8')}
+                            if transform is not None: files['ocr_input.png'] = ocr_image
+                            publish(folder, {**files, 'manifest.json': encode({'schema_version': 'corpus-page-bundle-1', 'identity': identity,
+                                             'output_sha256': {name: hashlib.sha256(data).hexdigest() for name, data in files.items()}})})
+                            report['results'].append({'doc_id': row['doc_id'], 'page_number': page['page_number'],
+                                                      'outcome': prediction['outcome'], 'completion_status': prediction['completion_status'],
+                                                      'bundle': str(folder), 'quality_flags': quality_flags})
+                            progress.update(force=True, counts={'pages_completed': used})
+                        except Exception as exc:
+                            report['errors'].append({'doc_id': row['doc_id'], 'page_number': page['page_number'],
+                                                     'error': f'{type(exc).__name__}: {exc}'})
+                            progress.update(force=True, phase='page_failed', counts={'pages_completed': used})
                     if report['stop_reason'].startswith('batch_'):
                         break
                 except Exception as exc:
@@ -333,10 +357,12 @@ def main():
     parser.add_argument('--page-number', action='append', type=int, dest='page_numbers')
     parser.add_argument('--dry-run', action='store_true')
     parser.add_argument('--retry-incomplete', action='store_true', help='Save new attempts for failed/incomplete OCR pages')
+    parser.add_argument('--until-done', action='store_true', help='Process the entire selected queue without document/page batch caps')
     parser.add_argument('--progress', choices=['auto', 'plain', 'off'], default='auto')
     args = parser.parse_args()
     try:
-        report = run(load_settings(args.config), extraction_settings(args.config), doc_ids=args.doc_ids, page_numbers=args.page_numbers, dry_run=args.dry_run, progress_mode=args.progress, retry_incomplete=args.retry_incomplete)
+        report = run(load_settings(args.config), extraction_settings(args.config), doc_ids=args.doc_ids, page_numbers=args.page_numbers,
+                     dry_run=args.dry_run, progress_mode=args.progress, retry_incomplete=args.retry_incomplete, until_done=args.until_done)
         print(json.dumps(report, ensure_ascii=False, indent=2))
         return int(has_failures(report))
     except Exception as exc:
