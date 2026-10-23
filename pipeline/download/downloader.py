@@ -104,7 +104,7 @@ def load_sources(path: Path) -> list[dict]:
 
 def plan_downloads(rows: list[dict], sources: list[dict], *, source_id: str | None = None,
                    doc_ids: list[str] | None = None, maximum: int = 5, refresh: bool = False,
-                   document_types=None) -> tuple[list[tuple[dict, dict]], list[dict]]:
+                   document_types=None, allowed_doc_ids=None) -> tuple[list[tuple[dict, dict]], list[dict]]:
     if document_types is not None and (not isinstance(document_types, (list, tuple, set))
             or not document_types or any(kind not in DOCUMENT_TYPES for kind in document_types)):
         raise ValueError('Choose known document types')
@@ -117,6 +117,9 @@ def plan_downloads(rows: list[dict], sources: list[dict], *, source_id: str | No
     # Fresh work before already-completed records avoids starving later batches.
     for row in sorted(rows, key=lambda r: r["status"] == "DOWNLOADED"):
         if doc_ids and row["doc_id"] not in doc_ids:
+            continue
+        if allowed_doc_ids is not None and row['doc_id'] not in allowed_doc_ids:
+            excluded.append({'doc_id': row['doc_id'], 'reason': 'outside_collection_selection'})
             continue
         if document_types and row['document_type'] not in document_types:
             excluded.append({'doc_id': row['doc_id'], 'reason': 'document_type_not_selected'})
@@ -274,6 +277,13 @@ def persist_pdf(row: dict, source: dict, settings: dict, fetcher: PoliteFetcher,
         if progress:
             progress.update(force=True, phase="persisting")
         sha = digest.hexdigest()
+        if settings.get('deduplicate_content'):
+            for existing in read_catalog(settings['catalog_path']):
+                if (existing['doc_id'] != row['doc_id'] and existing['sha256'] == sha
+                        and existing['local_filename']):
+                    old = recover({**existing, 'status': 'DOWNLOADED'}, settings['raw_root'])
+                    if old:
+                        return {'sha256': sha, 'bytes': size, 'duplicate_of': existing['doc_id']}
         artifact = folder / f"{sha}.{kind}"
         if artifact.exists():
             if file_hash(artifact) != sha:
@@ -309,11 +319,11 @@ def persist_pdf(row: dict, source: dict, settings: dict, fetcher: PoliteFetcher,
 
 
 def run(settings: dict, sources: list[dict], *, source_id=None, doc_ids=None, dry_run=False, refresh=False,
-        progress_mode=None, document_types=None) -> dict:
+        progress_mode=None, document_types=None, allowed_doc_ids=None) -> dict:
     catalog = settings["catalog_path"]
     jobs, excluded = plan_downloads(read_catalog(catalog), sources, source_id=source_id,
                                    doc_ids=doc_ids, maximum=settings["max_documents"], refresh=refresh,
-                                   document_types=document_types)
+                                   document_types=document_types, allowed_doc_ids=allowed_doc_ids)
     report = {"schema_version": "download-run-1", "dry_run": dry_run, "refresh": refresh,
               "planned": [r["doc_id"] for r, _ in jobs], "excluded": excluded, "results": []}
     if dry_run or not jobs:
@@ -354,7 +364,12 @@ def run(settings: dict, sources: list[dict], *, source_id=None, doc_ids=None, dr
                         else:
                             result["outcome"] = "verified_existing" if row["status"] == "DOWNLOADED" else "recovered"
                         result["sha256"] = receipt["sha256"]
-                        updates = {"status": "DOWNLOADED", "sha256": receipt["sha256"],
+                        if receipt.get('duplicate_of'):
+                            result.update(outcome='duplicate_content', duplicate_of=receipt['duplicate_of'])
+                            updates = {'status': 'DUPLICATE', 'sha256': receipt['sha256'], 'local_filename': '',
+                                       'error': 'duplicate_of:' + receipt['duplicate_of'], 'last_processed': utc_now()}
+                        else:
+                            updates = {"status": "DOWNLOADED", "sha256": receipt["sha256"],
                                    "local_filename": receipt["local_filename"], "pipeline_version": VERSION,
                                    "last_processed": utc_now(), "error": ""}
                         if progress:

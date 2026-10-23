@@ -1,0 +1,11 @@
+schema_version: sinhala-collection-1
+language: si
+source_ids: [govdoc, pastpapers_wiki, alapiedu]
+source_preference: [pastpapers_wiki, alapiedu, govdoc]
+study_types: [textbook, lesson, syllabus, teacher_guide]
+exam_types: [past_paper, marking_scheme]
+mcq_only: true
+require_complete_pairs: true
+# Optional reviewed metadata corrections keyed by doc_id. Each entry requires
+# reviewer and source_evidence, plus medium/question_format/exam identifiers.
+overrides: {}

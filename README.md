@@ -20,6 +20,9 @@ Use [complete-store processing](docs/PROCESS_ALL_AVAILABLE.md) to visit every
 available registered page/image without document/page batch interruptions.
 For automatic URL discovery and proposed paper/marking-scheme relationships, use
 the [discovery and pairing guide](docs/PAPER_DISCOVERY_AND_PAIRING.md).
+The [Sinhala/MCQ policy](docs/SINHALA_MCQ_COLLECTION.md) selects study material and
+one MCQ paper/answer pair per identity, with raw-content deduplication and
+provisional structured MCQ extraction.
 
 ## High-level architecture
 

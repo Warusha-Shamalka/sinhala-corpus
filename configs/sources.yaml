@@ -41,10 +41,12 @@ sources:
       - "https://alapiedu.com/Category/paper_hub/PaperSubject?subject=Physics"
       - "https://alapiedu.com/Category/marking_hub/MarkingSubject?subject=physics"
       - "https://alapiedu.com/teacher-guides"
+      - "https://alapiedu.com/Note"
     resource_hosts: ["alapiedu.com", "www.alapiedu.com"]
     type: educational_portal
     country: Sri Lanka
     language: si
+    required_medium: si
     enabled: true
     priority: medium
     verified: true
@@ -63,6 +65,7 @@ sources:
     type: educational_portal
     country: Sri Lanka
     language: si
+    required_medium: si
     enabled: true
     priority: high
     verified: true
@@ -71,3 +74,20 @@ sources:
       - "govdoc.nyc3.digitaloceanspaces.com"
     crawl_pattern: "(?i)(past[-/]papers?|model[-/]papers?|term[-/]test|text[-/]books?|marking|answer[-/]scheme|syllabus|teacher[-/]guides?)"
     notes: "Sri Lankan government documents, school syllabi, and educational materials (govdoc.lk)"
+
+  - id: pastpapers_wiki
+    name: Past Papers Wiki
+    base_url: "https://pastpapers.wiki/"
+    start_urls:
+      - "https://pastpapers.wiki/gce-a-l-term-test-papers-past-papers-short-notes/"
+      - "https://pastpapers.wiki/o-l-past-papers-and-answers-in-sinhala-tamil-and-english-medium/"
+      - "https://pastpapers.wiki/a-l-biology-past-papers-with-answers-sinhala-medium/"
+    resource_hosts: ["pastpapers.wiki", "www.pastpapers.wiki"]
+    type: educational_portal
+    country: Sri Lanka
+    language: si
+    required_medium: si
+    enabled: true
+    verified: true
+    priority: high
+    notes: "User-selected collections. Individual medium, MCQ scope and answer authority still require evidence."

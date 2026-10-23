@@ -22,6 +22,8 @@ def child(command, config, doc_ids, sources_path, progress):
     args = [sys.executable, '-B', '-m', 'pipeline.workflow', command, '--config', str(config),
             '--progress', progress]
     if command == 'collect': args.extend(['--sources', str(sources_path)])
+    policy = yaml.safe_load(Path(config).read_text()).get('collection_policy')
+    if policy: args.extend(['--collection-policy', policy])
     for doc_id in doc_ids: args.extend(['--doc-id', doc_id])
     process = subprocess.Popen(args, cwd=ROOT, text=True, stdout=subprocess.PIPE)
     try:
@@ -43,7 +45,7 @@ def child(command, config, doc_ids, sources_path, progress):
 
 def run(config_path, *, sources_path=None, source_id=None, doc_ids=None,
         max_batches=3, max_download_jobs=5, max_new_pages=20, dry_run=False,
-        progress_mode='auto', stage_runner=None):
+        progress_mode='auto', stage_runner=None, collection_policy=None):
     for value in (max_batches, max_download_jobs, max_new_pages):
         if type(value) is not int or value < 1:
             raise ValueError('Batch, download-job and new-page limits must be positive integers')
@@ -61,7 +63,12 @@ def run(config_path, *, sources_path=None, source_id=None, doc_ids=None,
     rows = read_catalog(download['catalog_path'])
     if doc_ids and set(doc_ids) - {row['doc_id'] for row in rows}: raise ValueError('Unknown document ID')
     def scoped(rows):
+        allowed = None
+        if collection_policy:
+            from pipeline.collection import for_config
+            allowed = set(for_config(config_path, collection_policy)['selected_doc_ids'])
         return [row for row in rows if (not doc_ids or row['doc_id'] in doc_ids)
+                and (allowed is None or row['doc_id'] in allowed)
                 and (not selected_source or row['source'] == selected_source['name'])]
     def downloadable(rows, attempted, remaining):
         fresh = [row['doc_id'] for row in scoped(rows)
@@ -88,6 +95,7 @@ def run(config_path, *, sources_path=None, source_id=None, doc_ids=None,
     folder = processing['log_root'].parent / 'batch' / run_id
     attempted, failed_docs, bundles, new_bundles = set(), set(), set(), set()
     base_config = yaml.safe_load(config_path.read_text(encoding='utf-8'))
+    if collection_policy: base_config['collection_policy'] = str(Path(collection_policy).resolve())
     def checkpoint():
         temporary = folder / 'run.json.tmp'
         temporary.write_bytes(encode(result)); temporary.replace(folder / 'run.json')
@@ -95,6 +103,8 @@ def run(config_path, *, sources_path=None, source_id=None, doc_ids=None,
         folder.mkdir(parents=True, exist_ok=False)
         frozen_sources = folder / 'sources.yaml'
         frozen_sources.write_bytes(sources_path.read_bytes())
+        if collection_policy:
+            (folder / 'subjects.yaml').write_bytes((config_path.parent / 'subjects.yaml').read_bytes())
         result.update(run_id=run_id, report_path=str(folder / 'run.json'))
         result['source_config_sha256'] = file_hash(frozen_sources)
         checkpoint()

@@ -1,5 +1,9 @@
 # Discover textbooks, papers and related marking schemes
 
+The current user collection uses the stricter [Sinhala MCQ policy](SINHALA_MCQ_COLLECTION.md).
+Its canonical selected-pair report replaces broad metadata-only proposals in the
+notebook. The generic commands below remain available for inspection.
+
 You do not need to upload and categorize each document link. Configure websites
 and category entry points once in `sources.yaml`. Discovery finds individual
 links and assigns types. A separate report proposes paper/scheme relationships

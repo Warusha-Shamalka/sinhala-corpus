@@ -11,8 +11,8 @@ from urllib.parse import quote, unquote, urljoin, urlsplit, urlunsplit
 
 DEFAULT_CANDIDATE_THRESHOLD = 4
 DOCUMENT_TYPES = {
-    "marking_scheme": ("marking scheme", "marking schemes", "answer scheme", "answer schemes", "ලකුණු දීමේ පටිපාටිය", "පිළිතුරු පත්‍ර", "උත්තර පත්‍ර"),
-    "past_paper": ("past paper", "past papers", "question paper", "question papers", "model paper", "model papers", "exam paper", "examination paper", "ප්‍රශ්න පත්‍ර", "ප්‍රශ්න පත්‍රය"),
+    "marking_scheme": ("marking scheme", "marking schemes", "answer scheme", "answer schemes", "mcq answers", "mcq answer key", "ලකුණු දීමේ පටිපාටිය", "පිළිතුරු පත්‍ර", "උත්තර පත්‍ර"),
+    "past_paper": ("past paper", "past papers", "question paper", "question papers", "model paper", "model papers", "exam paper", "examination paper", "mcq paper", "mcq questions", "multiple choice paper", "ප්‍රශ්න පත්‍ර", "ප්‍රශ්න පත්‍රය"),
     "teacher_guide": ("teacher guide", "teacher guides", "teachers guide", "teacher's guide", "teacher's guides", "teacher guidebook", "teacher guide book"),
     "syllabus": ("syllabus", "curriculum", "විෂය නිර්දේශය"),
     "textbook": ("textbook", "text book", "student book", "පෙළපොත"),

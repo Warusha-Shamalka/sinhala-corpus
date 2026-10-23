@@ -15,7 +15,7 @@ from .filters import (
     subject_matches,
     extract_grade,
 )
-from .exams import enrich_candidate
+from .exams import enrich_candidate, metadata as exam_metadata
 
 GENERIC_LINK_TEXT = {"view", "download", "open", "read more", "click here", "file", "බාගත කරන්න"}
 LOCAL_TEXT_LIMIT = 500
@@ -198,6 +198,19 @@ def evaluate_link(
     source: dict,
     subjects_config: dict,
 ) -> tuple[dict | None, CandidateDecision]:
+    candidate, decision = _evaluate_link(link, page_title, page_url, source, subjects_config)
+    if candidate and source.get('required_medium'):
+        info = exam_metadata(candidate['title'], candidate['source_url'], subjects_config)
+        medium = info['medium'] or candidate.get('_medium_hint', '')
+        if medium and medium != source['required_medium']:
+            decision.accepted = False
+            decision.rejection_reason = 'resource medium not selected'
+            decision.reasons.append(f'explicit_medium_excluded:{medium}')
+            return None, decision
+    return candidate, decision
+
+
+def _evaluate_link(link, page_title, page_url, source, subjects_config):
     """Return the optional catalog record and its explainable classifier decision."""
     url = resolve_url(page_url, link.href)
     title = link.text.strip() or link.title.strip()
@@ -272,6 +285,20 @@ def evaluate_link(
         "filename": filename,
         "surrounding_text": " ".join((link.before, link.after)).strip(),
     }
+    # A single-year, single-subject Sinhala article can identify its own direct
+    # PDF. Collection/archive pages never supply blanket metadata to all links.
+    if source.get('id') == 'pastpapers_wiki' and urlsplit(url).path.lower().endswith('.pdf'):
+        parent = exam_metadata(page_title, page_url, subjects_config)
+        label_medium = re.fullmatch(r'(?:download|view|open)?\s*(sinhala|tamil|english)(?:\s+(?:pdf|paper|marking scheme|answers?))?',
+                                    link.text.strip(), re.I)
+        if label_medium:
+            title += f' ({label_medium[1]} medium)'
+            metadata['title'] = title
+        child = exam_metadata(title, url, subjects_config)
+        if parent['exam_year'] and parent['subject'] and parent['medium'] and not parent['conflicts']:
+            if (not child['medium'] or child['medium'] == parent['medium']) and (generic or not child['subject']):
+                title = f'{page_title} - {title}'
+                metadata['title'] = title
     if used_local_context:
         original = classify_candidate(url, {**metadata, "title": filename_title}, subjects_config)
         if not original.accepted and original.rejection_reason in {"navigation", "site infrastructure", "category/listing page"}:
@@ -286,7 +313,7 @@ def evaluate_link(
     # "Download"/year labels otherwise lose the marking-scheme category.
     hub = urlsplit(page_url).path.rstrip('/').casefold()
     if source.get('id') == 'alapiedu' and urlsplit(url).path.casefold().endswith('.pdf'):
-        known_hubs = {'/marking', '/paper', '/category/marking_hub/markingsubject', '/category/paper_hub/papersubject'}
+        known_hubs = {'/marking', '/paper', '/note', '/category/marking_hub/markingsubject', '/category/paper_hub/papersubject'}
         if hub in known_hubs and not decision.subject:
             values = parse_qs(urlsplit(page_url).query).get('subject', [])
             if len(values) == 1:
@@ -305,6 +332,11 @@ def evaluate_link(
             title = f'{title} exam paper'
             decision.title = title
             decision.reasons.append('source_category:alapiedu_paper_hub')
+        elif hub == '/note' and decision.document_type == 'other':
+            decision.document_type = 'lesson'
+            title = f'{title} study notes'
+            decision.title = title
+            decision.reasons.append('source_category:alapiedu_note_hub')
     subject, domain = decision.subject, decision.domain
     grade, education_level = decision.grade, decision.education_level
     candidate = {

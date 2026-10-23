@@ -34,6 +34,7 @@ from .filters import (
     is_within_domain,
     normalize_url,
     resolve_url,
+    extract_medium_hint,
 )
 from .parser import Link, evaluate_link, parse_html
 
@@ -126,6 +127,8 @@ def load_configuration(source_path=None, subject_path=None, catalog_path=None) -
         ):
             raise ValueError(f"Source {source['id']} requires a valid HTTP(S) base_url")
         starting_urls(source)
+        if source.get('required_medium') not in (None, 'si', 'en', 'ta'):
+            raise ValueError('required_medium must be si, en or ta')
         if source.get('crawl_pattern') is not None:
             if not isinstance(source['crawl_pattern'], str): raise ValueError('crawl_pattern must be a string')
             try: re.compile(source['crawl_pattern'])
@@ -753,6 +756,9 @@ def discover_source(
             if not target or not is_within_domain(target, base_url) or target in visited or target in scheduled:
                 continue
             if depth >= limits["max_depth"] or not should_crawl(target):
+                continue
+            medium = extract_medium_hint(target + ' ' + link.text, subjects_config)
+            if source.get('required_medium') and medium and medium != source['required_medium']:
                 continue
             crawl_pattern = source.get("crawl_pattern")
             if crawl_pattern and not re.search(crawl_pattern, target, re.IGNORECASE):

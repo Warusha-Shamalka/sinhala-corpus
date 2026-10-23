@@ -51,6 +51,10 @@ downloads a bounded batch of textbooks, papers and marking schemes, while the
 processing stage can visit all verified available pages. Website access blocks
 and incomplete pairing metadata remain visible in the reports.
 
+The current [Sinhala/MCQ collection policy](SINHALA_MCQ_COLLECTION.md) expands the
+study categories to notes, syllabuses and guides, filters the user's three source
+websites, and selects one MCQ pair per exam identity before acquisition/OCR.
+
 Run cells in order:
 
 1. Mount Drive and clone the branch into temporary `/content/sinhala-corpus`.

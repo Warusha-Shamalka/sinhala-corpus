@@ -17,6 +17,7 @@ FIELDS = ('exam', 'subject', 'exam_year', 'medium', 'paper_number', 'paper_kind'
 def metadata(title, url, subjects, row=None):
     parts = urlsplit(url)
     path = re.sub(r'/(?:downloadfile|download|file)/\d+/?$', '', unquote(parts.path), flags=re.I)
+    path = re.sub(r'(?<![a-zA-Z0-9])[0-9a-fA-F]{16,}(?![a-zA-Z0-9])', ' ', path)
     query = ' '.join(value for key, value in parse_qsl(parts.query)
                      if key.casefold() in {'year', 'exam_year', 'subject', 'medium', 'paper', 'session', 'syllabus'})
     raw_text = unicodedata.normalize('NFC', unquote(f'{title} {path} {query}')).casefold()
@@ -49,6 +50,8 @@ def metadata(title, url, subjects, row=None):
                           ('term_test', r'\bterm\s*(?:test|exam)|වාර\s*පරීක්ෂණ'),
                           ('past', r'\bpast\s+papers?|පසුගිය\s*ප්‍රශ්න')):
         if re.search(pattern, text): values['paper_kind'].add(kind)
+    if values['paper_kind'] & {'model', 'term_test'}:
+        values['paper_kind'].discard('past')  # "term-test past paper" is a term test.
     grade, _ = extract_grade(raw_text, subjects)
     if grade:
         values['grade'].add(grade)

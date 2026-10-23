@@ -182,7 +182,7 @@ class ConfigurationRegressionTests(unittest.TestCase):
                 return crawler.load_configuration()
 
     def test_actual_configuration_loads(self):
-        self.assertEqual(len(crawler.load_configuration()[0]), 4)
+        self.assertEqual(len(crawler.load_configuration()[0]), 5)
 
     def test_disabled_unverified_source_can_await_a_url(self):
         sources, _ = self.load({"sources": [{**SOURCE, "enabled": False, "verified": False, "base_url": ""}]}, CONFIG)

@@ -124,13 +124,14 @@ def available_selection(report, doc_id, requested, count):
 
 
 def run(settings, extract_settings, *, doc_ids=None, page_numbers=None, dry_run=False, progress_mode='auto',
-        engine=None, pdf_backend=None, retry_incomplete=False, until_done=False):
+        engine=None, pdf_backend=None, retry_incomplete=False, until_done=False, allowed_doc_ids=None):
     if page_numbers and any(type(n) is not int or n < 1 for n in page_numbers):
         raise ValueError('Page numbers must be positive integers')
     rows = read_catalog(settings['catalog_path'])
     if doc_ids and set(doc_ids) - {r['doc_id'] for r in rows}:
         raise ValueError('Unknown selected document')
-    jobs = [r for r in rows if (not doc_ids or r['doc_id'] in doc_ids) and r['status'] in {'DOWNLOADED', 'EXTRACTED'}
+    jobs = [r for r in rows if (not doc_ids or r['doc_id'] in doc_ids)
+            and (allowed_doc_ids is None or r['doc_id'] in allowed_doc_ids) and r['status'] in {'DOWNLOADED', 'EXTRACTED'}
             and r['sha256'] and r['local_filename'].lower().endswith(('.pdf', '.html', '.png', '.jpg'))]
     report = {'schema_version': 'page-processing-run-1', 'planned': [r['doc_id'] for r in jobs],
               'dry_run': dry_run, 'retry_incomplete': retry_incomplete, 'until_done': until_done,

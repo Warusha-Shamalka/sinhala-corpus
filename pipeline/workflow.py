@@ -18,6 +18,16 @@ from pipeline.quality import corpus as corpus_quality
 from pipeline.dataset.native import encode, digest, publish, visible_manifests
 
 
+def collection_policy(config, explicit=None):
+    if explicit is not None: return Path(explicit)
+    data = yaml.safe_load(Path(config).read_text())
+    if not isinstance(data, dict): raise ValueError('Pipeline configuration must be a mapping')
+    value = data.get('collection_policy')
+    if not value: return None
+    path = Path(value)
+    return path if path.is_absolute() else Path(config).parent / path
+
+
 def initialize(store, seed):
     store = store.resolve()
     rows = read_catalog(seed)
@@ -47,6 +57,7 @@ def initialize(store, seed):
              'configs/pipeline.yaml': yaml.safe_dump(config, sort_keys=False, allow_unicode=True).encode(),
              'configs/sources.yaml': (ROOT / 'configs/sources.yaml').read_bytes(),
              'configs/subjects.yaml': (ROOT / 'configs/subjects.yaml').read_bytes()}
+    files['configs/collection.yaml'] = (ROOT / 'configs/collection.yaml').read_bytes()
     files['initialization.json'] = encode({'schema_version': 'corpus-store-1', 'seed_sha256': digest(seed.read_bytes()),
                                           'reset_for_new_store': reset, 'output_sha256': {k: digest(v) for k, v in files.items()}})
     publish(store, files)
@@ -85,6 +96,9 @@ def main():
     discover.add_argument('--source')
     discover.add_argument('--max-pages', type=int, default=30)
     discover.add_argument('--max-depth', type=int, default=3)
+    discover.add_argument('--max-requests', type=int, default=250)
+    discover.add_argument('--max-seconds', type=float, default=300)
+    discover.add_argument('--max-queue', type=int, default=1000)
     discover.add_argument('--dry-run', action='store_true')
     discover.add_argument('--progress', choices=['auto', 'plain', 'off'], default='auto')
     pair = commands.add_parser('pair-papers', help='Propose paper/marking-scheme pairs for source review')
@@ -95,6 +109,15 @@ def main():
     pair.add_argument('--subject', help='Optional canonical subject name, e.g. Physics')
     pair.add_argument('--exam-year', type=int)
     pair.add_argument('--dry-run', action='store_true')
+    collection = commands.add_parser('plan-collection', help='Select Sinhala study materials and one pair per MCQ exam identity')
+    collection.add_argument('--config', type=Path, default=ROOT / 'configs/pipeline.yaml')
+    collection.add_argument('--collection-policy', type=Path)
+    collection.add_argument('--output', type=Path)
+    mcq = commands.add_parser('extract-mcq', help='Parse explicit MCQ questions and answer keys into a provisional snapshot')
+    mcq.add_argument('--config', type=Path, default=ROOT / 'configs/pipeline.yaml')
+    mcq.add_argument('--collection-policy', type=Path)
+    mcq.add_argument('--output', type=Path, required=True)
+    mcq.add_argument('--config-hash')
     for name in ('collect', 'process', 'status', 'prepare-review'):
         stage = commands.add_parser(name)
         stage.add_argument('--config', type=Path, default=ROOT / 'configs/pipeline.yaml')
@@ -102,10 +125,12 @@ def main():
             stage.add_argument('--doc-id', action='append', dest='doc_ids')
             stage.add_argument('--dry-run', action='store_true')
             stage.add_argument('--progress', choices=['auto', 'plain', 'off'], default='auto')
+            stage.add_argument('--collection-policy', type=Path, help='Enforce Sinhala/MCQ scope and canonical selection')
         if name == 'collect':
             stage.add_argument('--sources', type=Path, help='Defaults to sources.yaml beside the pipeline config')
             stage.add_argument('--source')
             stage.add_argument('--document-type', action='append', dest='document_types', choices=sorted(downloader.DOCUMENT_TYPES))
+            stage.add_argument('--until-done', action='store_true', help='Attempt all selected downloads once, within source request/time budgets')
         if name == 'process':
             stage.add_argument('--page-number', action='append', type=int, dest='page_numbers')
             stage.add_argument('--retry-incomplete', action='store_true')
@@ -113,6 +138,7 @@ def main():
         if name == 'prepare-review':
             stage.add_argument('--output', type=Path, required=True)
             stage.add_argument('--config-hash')
+            stage.add_argument('--collection-policy', type=Path)
     export = commands.add_parser('export')
     export.add_argument('--packet', type=Path, required=True); export.add_argument('--output', type=Path, required=True)
     image_import = commands.add_parser('import-image', help='Register a local PNG/JPEG with explicit source provenance')
@@ -143,6 +169,7 @@ def main():
     run.add_argument('--max-new-pages', type=int, default=20)
     run.add_argument('--dry-run', action='store_true')
     run.add_argument('--progress', choices=['auto', 'plain', 'off'], default='auto')
+    run.add_argument('--collection-policy', type=Path)
     provisional_export = commands.add_parser('provisional', help='Export an explicitly unreviewed corpus text snapshot')
     provisional_export.add_argument('--run-report', type=Path, required=True)
     provisional_export.add_argument('--output', type=Path, required=True)
@@ -160,6 +187,13 @@ def main():
     args = parser.parse_args()
     try:
         if args.command == 'init': result = initialize(args.store, args.seed)
+        elif args.command == 'plan-collection':
+            from pipeline.collection import write
+            result = write(args.config, collection_policy(args.config, args.collection_policy) or args.config.parent / 'collection.yaml', args.output)
+        elif args.command == 'extract-mcq':
+            from pipeline.quality.mcq import extract
+            result = extract(args.config, collection_policy(args.config, args.collection_policy) or args.config.parent / 'collection.yaml',
+                             args.output, args.config_hash)
         elif args.command == 'discover':
             from pipeline.discovery import crawler
             settings = downloader.load_settings(args.config)
@@ -168,6 +202,8 @@ def main():
                               '--subjects', str(args.subjects or args.config.parent / 'subjects.yaml'),
                               '--log-root', str(settings['log_root'].parent / 'discovery'),
                               '--max-pages', str(args.max_pages), '--max-depth', str(args.max_depth),
+                              '--max-requests', str(args.max_requests), '--max-seconds', str(args.max_seconds),
+                              '--max-queue', str(args.max_queue),
                               '--progress', args.progress, '--json']
             if args.source: discovery_args.extend(['--source', args.source])
             if args.dry_run: discovery_args.append('--dry-run')
@@ -185,16 +221,38 @@ def main():
                                   args.image, args.source, args.source_url, args.title, dry_run=args.dry_run)
         elif args.command == 'status': result = status(args.config)
         elif args.command == 'collect':
-            result = downloader.run(downloader.load_settings(args.config), downloader.load_sources(args.sources or args.config.parent / 'sources.yaml'),
+            selection = None
+            policy_path = collection_policy(args.config, args.collection_policy)
+            if policy_path:
+                from pipeline.collection import for_config
+                selection = for_config(args.config, policy_path)
+            settings = downloader.load_settings(args.config)
+            if args.until_done: settings['max_documents'] = max(1, len(read_catalog(settings['catalog_path'])))
+            settings['deduplicate_content'] = bool(policy_path)
+            result = downloader.run(settings, downloader.load_sources(args.sources or args.config.parent / 'sources.yaml'),
                                     source_id=args.source, doc_ids=args.doc_ids, dry_run=args.dry_run, progress_mode=args.progress,
-                                    document_types=args.document_types)
+                                    document_types=args.document_types,
+                                    allowed_doc_ids=selection['selected_doc_ids'] if selection is not None else None)
+            if selection is not None: result['collection_counts'] = selection['counts']
         elif args.command == 'process':
+            selection = None
+            policy_path = collection_policy(args.config, args.collection_policy)
+            if policy_path:
+                from pipeline.collection import for_config
+                selection = for_config(args.config, policy_path)
             result = pages.run(pages.load_settings(args.config), extractor.load_settings(args.config), doc_ids=args.doc_ids,
                                page_numbers=args.page_numbers,
                                dry_run=args.dry_run, progress_mode=args.progress, retry_incomplete=args.retry_incomplete,
-                               until_done=args.until_done)
+                               until_done=args.until_done,
+                               allowed_doc_ids=selection['selected_doc_ids'] if selection is not None else None)
+            if selection is not None: result['collection_counts'] = selection['counts']
         elif args.command == 'prepare-review':
-            result = reviewed.prepare(pages.load_settings(args.config)['output_root'], args.output, args.config_hash)
+            allowed = None
+            policy_path = collection_policy(args.config, args.collection_policy)
+            if policy_path:
+                from pipeline.collection import for_config
+                allowed = for_config(args.config, policy_path)['selected_doc_ids']
+            result = reviewed.prepare(pages.load_settings(args.config)['output_root'], args.output, args.config_hash, allowed)
         elif args.command == 'verify-release': result = reviewed.verify_release(args.root)
         elif args.command == 'quality':
             limits = {'max_metric_cells': args.max_metric_cells, 'total_metric_cells': args.total_metric_cells,
@@ -203,7 +261,8 @@ def main():
         elif args.command == 'run':
             result = batch.run(args.config, sources_path=args.sources, source_id=args.source, doc_ids=args.doc_ids,
                                max_batches=args.max_batches, max_download_jobs=args.max_download_jobs,
-                               max_new_pages=args.max_new_pages, dry_run=args.dry_run, progress_mode=args.progress)
+                               max_new_pages=args.max_new_pages, dry_run=args.dry_run, progress_mode=args.progress,
+                               collection_policy=collection_policy(args.config, args.collection_policy))
         elif args.command == 'provisional': result = provisional.export(args.run_report, args.output)
         elif args.command == 'daily-release':
             result = daily.build(args.output, provisional_roots=args.provisional, reviewed_roots=args.reviewed,

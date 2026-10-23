@@ -94,6 +94,11 @@ class ProcessAllTests(unittest.TestCase):
         self.assertFalse(self.fixture.settings['output_root'].exists())
         self.assertEqual(self.fixture.engine.calls, 0)
 
+    def test_empty_collection_scope_does_not_process_unselected_documents(self):
+        report = self.fixture.run_stage(until_done=True, allowed_doc_ids=[])
+        self.assertEqual(report['planned'], [])
+        self.assertEqual(self.fixture.engine.calls, 0)
+
     def test_registered_image_is_included_with_pdf_pages(self):
         from PIL import Image
         from pipeline.processing.import_image import import_image
@@ -117,7 +122,8 @@ class ProcessAllTests(unittest.TestCase):
         def no_selection(): raise AssertionError('All-store mode should not select DOC_IDS')
         with contextlib.redirect_stdout(io.StringIO()):
             exec(''.join(cell['source']), {'PAGE_NUMBERS': None, 'PROCESS_ALL_AVAILABLE': True,
-                 'RUN_UNTIL_DONE': True, 'selection_args': no_selection, 'CONFIG': Path('/config'), 'execute': execute})
+                 'RUN_UNTIL_DONE': True, 'selection_args': no_selection, 'CONFIG': Path('/config'),
+                 'COLLECTION_POLICY': Path('/policy'), 'execute': execute})
         args, kwargs = calls[0]
         self.assertIn('--until-done', args)
         self.assertNotIn('--doc-id', args)

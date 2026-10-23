@@ -28,13 +28,15 @@ def write_reviews(path, rows):
     temporary.replace(path)
 
 
-def prepare(root, output, config_hash=None):
+def prepare(root, output, config_hash=None, allowed_doc_ids=None):
     records, files, reviews, identities = [], {}, [], set()
     for manifest_path, record in current_pages(root):
         manifest = json.loads(manifest_path.read_text(encoding='utf-8'))
         if config_hash and manifest['identity'].get('processing_config_sha256') != config_hash:
             continue
         identity = record['identity']
+        if allowed_doc_ids is not None and identity['doc_id'] not in allowed_doc_ids:
+            continue
         sid = f"{identity['doc_id']}_{identity['raw_sha256']}_p{identity['page_number']:06d}"
         if sid in identities:
             raise ValueError('Multiple processing versions for a page; choose a single version root')
